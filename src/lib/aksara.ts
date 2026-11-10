@@ -216,3 +216,69 @@ export const CONTOH_TERUJI: AksaraBreakdownItem[] = [
     catatan: 'sa + ra + taling-tarung (ꦺꦴ) + na + pangkon (꧀).',
   },
 ];
+
+export interface KartuCarakan {
+  latin: string;
+  aksara: string;
+  baris: number;
+  contohKata: string;
+  artiContoh: string;
+}
+
+export interface BarisFilosofiCarakan {
+  nomor: number;
+  bunyi: string;
+  aksara: string;
+  makna: string;
+}
+
+export const FILOSOFI_BARIS_CARAKAN: BarisFilosofiCarakan[] = [
+  {
+    nomor: 1,
+    bunyi: 'Ha Na Ca Ra Ka',
+    aksara: 'ꦲ ꦤ ꦕ ꦫ ꦏ',
+    makna: 'Ada utusan (kehidupan dan amanah ilmu pengetahuan yang diembankan kepada manusia).',
+  },
+  {
+    nomor: 2,
+    bunyi: 'Da Ta Sa Wa La',
+    aksara: 'ꦢ ꦠ ꦱ ꦮ ꦭ',
+    makna: 'Saling beradu argumen dan menguji kebenaran dengan teguh.',
+  },
+  {
+    nomor: 3,
+    bunyi: 'Pa Dha Ja Ya Nya',
+    aksara: 'ꦥ ꦝ ꦗ ꦪ ꦚ',
+    makna: 'Sama-sama kuat, seimbang dalam ilmu dan kebijaksanaan.',
+  },
+  {
+    nomor: 4,
+    bunyi: 'Ma Ga Ba Tha Nga',
+    aksara: 'ꦩ ꦒ ꦧ ꦛ ꦔ',
+    makna: 'Menyadari batas diri di hadapan sang pencipta setelah menuntaskan dharma.',
+  },
+];
+
+export const DAFTAR_20_CARAKAN: KartuCarakan[] = [
+  { latin: 'ha', aksara: 'ꦲ', baris: 1, contohKata: 'hana', artiContoh: 'ada / keberadaan' },
+  { latin: 'na', aksara: 'ꦤ', baris: 1, contohKata: 'nagara', artiContoh: 'negeri / keraton' },
+  { latin: 'ca', aksara: 'ꦕ', baris: 1, contohKata: 'canting', artiContoh: 'alat lukis batik tulis' },
+  { latin: 'ra', aksara: 'ꦫ', baris: 1, contohKata: 'rama', artiContoh: 'ksatria pemanah Ramayana' },
+  { latin: 'ka', aksara: 'ꦏ', baris: 1, contohKata: 'kelir', artiContoh: 'layar bentang wayang' },
+  { latin: 'da', aksara: 'ꦢ', baris: 2, contohKata: 'dalang', artiContoh: 'penutur lakon wayang' },
+  { latin: 'ta', aksara: 'ꦠ', baris: 2, contohKata: 'tuding', artiContoh: 'tangkai penggerak tangan wayang' },
+  { latin: 'sa', aksara: 'ꦱ', baris: 2, contohKata: 'saron', artiContoh: 'instrumen bilah gamelan' },
+  { latin: 'wa', aksara: 'ꦮ', baris: 2, contohKata: 'wayang', artiContoh: 'bayangan pertunjukan' },
+  { latin: 'la', aksara: 'ꦭ', baris: 2, contohKata: 'lakon', artiContoh: 'alur kisah pertunjukan' },
+  { latin: 'pa', aksara: 'ꦥ', baris: 3, contohKata: 'pamor', artiContoh: 'corak tempa lipat bilah keris' },
+  { latin: 'dha', aksara: 'ꦝ', baris: 3, contohKata: 'dhadha', artiContoh: 'nada ke-3 laras slendro' },
+  { latin: 'ja', aksara: 'ꦗ', baris: 3, contohKata: 'joglo', artiContoh: 'arsitektur pendopo Jawa' },
+  { latin: 'ya', aksara: 'ꦪ', baris: 3, contohKata: 'yogyakarta', artiContoh: 'pusat budaya Jawa' },
+  { latin: 'nya', aksara: 'ꦚ', baris: 3, contohKata: 'nyamplungan', artiContoh: 'wadah malam pada canting' },
+  { latin: 'ma', aksara: 'ꦩ', baris: 4, contohKata: 'malam', artiContoh: 'lilin perintang warna batik' },
+  { latin: 'ga', aksara: 'ꦒ', baris: 4, contohKata: 'gamelan', artiContoh: 'ansambel karawitan Jawa' },
+  { latin: 'ba', aksara: 'ꦧ', baris: 4, contohKata: 'batik', artiContoh: 'wastra tulis malam Nusantara' },
+  { latin: 'tha', aksara: 'ꦛ', baris: 4, contohKata: 'kethuk', artiContoh: 'instrumen penanda irama' },
+  { latin: 'nga', aksara: 'ꦔ', baris: 4, contohKata: 'gunungan', artiContoh: 'kayon pohon kehidupan' },
+];
+
