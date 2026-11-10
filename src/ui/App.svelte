@@ -72,6 +72,12 @@
     jarakCubit: 1,
     gesturAktif: 'diam',
     kemiringanPergelangan: 0,
+    kemiringanPergelanganKiri: 0,
+    angkatTudingDepan: 0.15,
+    tekukSikuDepan: 0.2,
+    angkatTudingBelakang: -0.1,
+    tekukSikuBelakang: 0.25,
+    kedalamanKelir: 0,
     kecepatanGerak: 0,
     jumlahJariTerbuka: 0,
   });
@@ -125,6 +131,9 @@
 
   let sliderRamaX = $state<number>(LAKON_KIJANG_KENCANA.babak[0].posisiAwalRama);
   let sliderKidangX = $state<number>(LAKON_KIJANG_KENCANA.babak[0].posisiAwalKidang);
+  let sliderTudingDepan = $state<number>(-0.38);
+  let sliderTudingBelakang = $state<number>(0.35);
+  let sliderCondhongRama = $state<number>(0);
 
   let inputPertanyaan = $state<string>('');
   let statusTanya = $state<'kosong' | 'memuat' | 'selesai' | 'galat'>('kosong');
@@ -1916,9 +1925,9 @@
       <div class="tata-panggung">
         <div class="bingkai-kanvas-3d anim-masuk">
           <div class="hud-atas-3d">
-            <span>KIRI: KIDANG KENCANA 3D BERARTIKULASI</span>
-            <span>TENGAH: BLENCONG &amp; GUNUNGAN 3D (SERET KANVAS UNTUK SUDUT KAMERA 3D)</span>
-            <span>KANAN: SRI RAMA &amp; BUSUR GENDEWA 3D</span>
+            <span>KIRI: KIDANG KENCANA 3D &amp; SIMPINGAN</span>
+            <span>SERET LANGSUNG TUDING LENGAN, CEMPURIT, ATAU LATAR KELIR 3D</span>
+            <span>KANAN: SRI RAMA (GELUNG SUPIT URANG &amp; DODOT BOKONGAN)</span>
           </div>
           <div
             class="kanvas-viewport"
@@ -1939,7 +1948,7 @@
           <div
             class="bilah-kendali-3d"
             role="group"
-            aria-label="Aksi sabetan dalang, panah Sri Rama, dan ketukan cempala keprak"
+            aria-label="Aksi sabetan dalang, pose tuding wayang, panah Sri Rama, dan ketukan cempala keprak"
           >
             <div style="display: flex; flex-wrap: wrap; gap: 0.45rem;">
               <button
@@ -1966,6 +1975,38 @@
               >
                 Dhodhogan Cempala Kotak
               </button>
+              <button
+                type="button"
+                class="tombol"
+                data-testid="pose-dalang-sembah"
+                onclick={() => stagePanggung?.terapkanPoseSabetDalang('sembah')}
+              >
+                Pose Sembah Silo
+              </button>
+              <button
+                type="button"
+                class="tombol"
+                data-testid="pose-dalang-menthang"
+                onclick={() => stagePanggung?.terapkanPoseSabetDalang('menthang-gendewa')}
+              >
+                Pose Menthang Gendewa
+              </button>
+              <button
+                type="button"
+                class="tombol"
+                data-testid="pose-dalang-tuding"
+                onclick={() => stagePanggung?.terapkanPoseSabetDalang('tuding-menunjuk')}
+              >
+                Pose Tuding Sabda
+              </button>
+              <button
+                type="button"
+                class="tombol"
+                data-testid="pose-dalang-kiprah"
+                onclick={() => stagePanggung?.terapkanPoseSabetDalang('kiprah-sabetan')}
+              >
+                Pose Kiprah Sabetan
+              </button>
             </div>
           </div>
         </div>
@@ -1973,7 +2014,7 @@
         <div class="kontrol-slider-wayang anim-masuk">
           <div>
             <label for="slider-kidang">
-              <strong>Tangan Kiri · {LAKON_KIJANG_KENCANA.tokohKiri}:</strong>
+              <strong>Tangan Kiri (Cempurit Kidang Kencana):</strong>
               posisi {sliderKidangX.toFixed(2)}
             </label>
             <input
@@ -1995,7 +2036,7 @@
 
           <div>
             <label for="slider-rama">
-              <strong>Tangan Kanan · {LAKON_KIJANG_KENCANA.tokohKanan}:</strong>
+              <strong>Tangan Kanan (Cempurit Sri Rama):</strong>
               posisi {sliderRamaX.toFixed(2)}
             </label>
             <input
@@ -2012,6 +2053,56 @@
                   parseFloat((e.currentTarget as HTMLInputElement).value),
                   sliderKidangX,
                 )}
+            />
+          </div>
+
+          <div>
+            <label for="slider-tuding-depan">
+              <strong>Tuding Lengan Depan (Busur &amp; Tangan Nyempurit):</strong>
+              sudut {sliderTudingDepan.toFixed(2)} rad
+            </label>
+            <input
+              id="slider-tuding-depan"
+              class="slider-input"
+              type="range"
+              min="-1.35"
+              max="0.35"
+              step="0.02"
+              data-testid="slider-tuding-depan"
+              value={sliderTudingDepan}
+              oninput={(e) => {
+                sliderTudingDepan = parseFloat((e.currentTarget as HTMLInputElement).value);
+                stagePanggung?.aturTudingDanCempuritRama({
+                  bahuDepan: sliderTudingDepan,
+                  sikuDepan: -0.65 + sliderTudingDepan * 0.45,
+                });
+              }}
+            />
+          </div>
+
+          <div>
+            <label for="slider-tuding-belakang">
+              <strong>Tuding Lengan Belakang &amp; Condhong Cempurit:</strong>
+              sudut {sliderTudingBelakang.toFixed(2)} rad
+            </label>
+            <input
+              id="slider-tuding-belakang"
+              class="slider-input"
+              type="range"
+              min="-0.35"
+              max="1.15"
+              step="0.02"
+              data-testid="slider-tuding-belakang"
+              value={sliderTudingBelakang}
+              oninput={(e) => {
+                sliderTudingBelakang = parseFloat((e.currentTarget as HTMLInputElement).value);
+                sliderCondhongRama = (sliderTudingBelakang - 0.35) * 0.32;
+                stagePanggung?.aturTudingDanCempuritRama({
+                  bahuBelakang: sliderTudingBelakang,
+                  sikuBelakang: -1.05 - sliderTudingBelakang * 0.42,
+                  condhongCempurit: sliderCondhongRama,
+                });
+              }}
             />
           </div>
         </div>

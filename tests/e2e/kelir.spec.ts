@@ -96,6 +96,10 @@ test.describe('Kelir E2E & Antislop R-35 Verification', () => {
     await page.getByTestId('panggung-panah-rama').click();
     await page.getByTestId('panggung-sabetan-kayon').click();
     await page.getByTestId('panggung-cempala-dalang').click();
+    await page.getByTestId('pose-dalang-sembah').click();
+    await page.getByTestId('pose-dalang-menthang').click();
+    await page.getByTestId('pose-dalang-tuding').click();
+    await page.getByTestId('pose-dalang-kiprah').click();
 
     // Navigasi 4 babak
     await page.getByTestId('tombol-babak-2').click();

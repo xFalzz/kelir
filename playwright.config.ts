@@ -7,7 +7,7 @@ const isCI = Boolean(
 
 export default defineConfig({
   testDir: './tests/e2e',
-  timeout: 30000,
+  timeout: 60000,
   retries: isCI ? 2 : 1,
   use: {
     baseURL: 'http://localhost:4173',

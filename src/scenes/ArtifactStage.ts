@@ -110,7 +110,14 @@ export class ArtifactStage {
   private wayangBahuDepan: THREE.Group | null = null;
   private wayangSikuDepan: THREE.Group | null = null;
   private wayangBahuBelakang: THREE.Group | null = null;
+  private wayangSikuBelakang: THREE.Group | null = null;
+  private wayangTudingDepan: THREE.Group | null = null;
+  private wayangTudingBelakang: THREE.Group | null = null;
   private wayangAnakPanahGroup: THREE.Group | null = null;
+  private gesturTudingDepan = 0;
+  private gesturSikuDepan = 0;
+  private gesturTudingBelakang = 0;
+  private gesturSikuBelakang = 0;
 
   private raycaster = new THREE.Raycaster();
   private pointerNdc = new THREE.Vector2();
@@ -487,6 +494,9 @@ export class ArtifactStage {
     this.wayangBahuDepan = null;
     this.wayangSikuDepan = null;
     this.wayangBahuBelakang = null;
+    this.wayangSikuBelakang = null;
+    this.wayangTudingDepan = null;
+    this.wayangTudingBelakang = null;
     this.wayangAnakPanahGroup = null;
   }
 
@@ -587,6 +597,10 @@ export class ArtifactStage {
 
     if (!frameLengkap) return;
     this.targetRotZ = Math.max(-0.38, Math.min(0.38, frameLengkap.kemiringanPergelangan));
+    this.gesturTudingDepan = frameLengkap.angkatTudingDepan;
+    this.gesturSikuDepan = frameLengkap.tekukSikuDepan;
+    this.gesturTudingBelakang = frameLengkap.angkatTudingBelakang;
+    this.gesturSikuBelakang = frameLengkap.tekukSikuBelakang;
 
     const sekarang = performance.now();
 
@@ -1524,6 +1538,9 @@ export class ArtifactStage {
     this.wayangBahuDepan = rigSatria.bahuDepan;
     this.wayangSikuDepan = rigSatria.sikuDepan;
     this.wayangBahuBelakang = rigSatria.bahuBelakang;
+    this.wayangSikuBelakang = rigSatria.sikuBelakang;
+    this.wayangTudingDepan = rigSatria.tudingDepanGroup ?? null;
+    this.wayangTudingBelakang = rigSatria.tudingBelakangGroup ?? null;
     g.add(rigSatria.group);
 
     // Anak Panah Guwawijaya 3D yang melesat saat picuEfekKhusus3D dipanggil
@@ -1738,9 +1755,26 @@ export class ArtifactStage {
       this.wayangGununganGroup.rotation.z = Math.sin(t * 2.0) * 0.12 * amp;
       this.wayangGununganGroup.rotation.y = 0.18 + Math.cos(t * 1.6) * 0.18 * amp;
 
-      this.wayangBahuDepan.rotation.z = -0.55 + Math.sin(t * 2.8) * 0.35 * amp;
-      this.wayangSikuDepan.rotation.z = -0.95 + Math.cos(t * 2.8) * 0.28 * amp;
-      this.wayangBahuBelakang.rotation.z = 0.42 - Math.sin(t * 2.8) * 0.25 * amp;
+      this.wayangBahuDepan.rotation.z =
+        -0.42 - this.gesturTudingDepan * 0.55 + Math.sin(t * 2.8) * 0.32 * amp;
+      this.wayangSikuDepan.rotation.z =
+        -0.82 - this.gesturSikuDepan * 0.45 + Math.cos(t * 2.8) * 0.26 * amp;
+      this.wayangBahuBelakang.rotation.z =
+        0.38 + this.gesturTudingBelakang * 0.5 - Math.sin(t * 2.8) * 0.24 * amp;
+      if (this.wayangSikuBelakang) {
+        this.wayangSikuBelakang.rotation.z =
+          -1.15 - this.gesturSikuBelakang * 0.4 + Math.sin(t * 2.5) * 0.2 * amp;
+      }
+      if (this.wayangTudingDepan) {
+        this.wayangTudingDepan.rotation.z = -(
+          this.wayangBahuDepan.rotation.z + this.wayangSikuDepan.rotation.z
+        );
+      }
+      if (this.wayangTudingBelakang && this.wayangSikuBelakang) {
+        this.wayangTudingBelakang.rotation.z = -(
+          this.wayangBahuBelakang.rotation.z + this.wayangSikuBelakang.rotation.z
+        );
+      }
       this.wayangSatriaGroup.position.y = 0.02 + Math.sin(t * 2.2) * 0.02 * amp;
 
       if (this.wayangAnakPanahGroup) {
