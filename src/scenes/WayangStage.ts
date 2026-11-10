@@ -1,8 +1,14 @@
 // Adegan 3D Panggung Kelir untuk memainkan Lakon Kijang Kencana.
-// Menampilkan dua wayang bayangan (Sri Rama di kanan & Kidang Kencana di kiri) di depan layar kelir.
+// Menampilkan dua wayang kulit museum asli (Sri Rama TMnr 3582-30 di kanan & Kidang Kencana TMnr 809-167o di kiri)
+// dengan tekstur PBR kulit kerbau, cempurit tanduk, gedebog batang pisang, dan bayangan tatahan nyata di kain kelir.
 
 import * as THREE from 'three';
 import { lerp } from '../lib/handTracker';
+import {
+  ambilKoleksiTeksturPBR,
+  pasangLingkunganPBR,
+  type KoleksiTeksturPBR,
+} from './pbrMaterials';
 
 export class WayangStage {
   private scene: THREE.Scene;
@@ -11,6 +17,7 @@ export class WayangStage {
   private ramaGroup: THREE.Group;
   private kidangGroup: THREE.Group;
   private blencongLight: THREE.SpotLight;
+  private teksturs: KoleksiTeksturPBR;
   private rafId: number | null = null;
   private reducedMotion = false;
 
@@ -23,47 +30,115 @@ export class WayangStage {
 
   constructor(container: HTMLElement) {
     this.scene = new THREE.Scene();
-    this.scene.background = new THREE.Color('#18130F');
+    this.scene.background = new THREE.Color('#120D09');
 
     const w = Math.max(280, container.clientWidth || 720);
-    const h = Math.max(220, container.clientHeight || 400);
-    this.camera = new THREE.PerspectiveCamera(38, w / h, 0.1, 30);
-    this.camera.position.set(0, 0.05, 3.35);
+    const h = Math.max(220, container.clientHeight || 420);
+    this.camera = new THREE.PerspectiveCamera(36, w / h, 0.1, 30);
+    this.camera.position.set(0, 0.06, 3.25);
 
-    // Kain kelir utama
+    this.teksturs = ambilKoleksiTeksturPBR();
+
+    // Kain kelir utama bertenun mori
     const kelirMesh = new THREE.Mesh(
-      new THREE.PlaneGeometry(5.6, 3.1),
-      new THREE.MeshStandardMaterial({ color: '#F3EBDC', roughness: 0.9, metalness: 0.02 }),
+      new THREE.PlaneGeometry(5.8, 3.15),
+      new THREE.MeshStandardMaterial({
+        map: this.teksturs.tenunKelirDiff,
+        bumpMap: this.teksturs.tenunKelirBump,
+        bumpScale: 0.008,
+        roughness: 0.88,
+        metalness: 0.02,
+      }),
     );
-    kelirMesh.position.set(0, 0.05, -0.35);
+    kelirMesh.position.set(0, 0.08, -0.32);
     kelirMesh.receiveShadow = true;
     this.scene.add(kelirMesh);
 
-    // Plangkan kayu & gedebog (batang pisang tempat menancapkan wayang)
-    const kayuMat = new THREE.MeshStandardMaterial({ color: '#2B1F16', roughness: 0.8 });
-    const gedebogMat = new THREE.MeshStandardMaterial({ color: '#3E2F1D', roughness: 0.85 });
+    // Pita plipit merah-emas di tepi atas dan bawah kelir
+    const plipitMat = new THREE.MeshStandardMaterial({
+      color: '#6E1D11',
+      bumpMap: this.teksturs.tenunKelirBump,
+      bumpScale: 0.005,
+      roughness: 0.72,
+    });
+    const plipitAtas = new THREE.Mesh(new THREE.BoxGeometry(5.8, 0.11, 0.02), plipitMat);
+    plipitAtas.position.set(0, 1.44, -0.3);
+    plipitAtas.receiveShadow = true;
+    this.scene.add(plipitAtas);
 
-    const bingkaiAtas = new THREE.Mesh(new THREE.BoxGeometry(5.8, 0.18, 0.16), kayuMat);
-    bingkaiAtas.position.set(0, 1.56, -0.3);
+    const plipitBawah = new THREE.Mesh(new THREE.BoxGeometry(5.8, 0.12, 0.02), plipitMat);
+    plipitBawah.position.set(0, -1.16, -0.3);
+    plipitBawah.receiveShadow = true;
+    this.scene.add(plipitBawah);
+
+    // Plangkan kayu jati PBR & gedebog (batang pisang tempat menancapkan wayang)
+    const kayuMat = new THREE.MeshPhysicalMaterial({
+      map: this.teksturs.kayuGelapDiff,
+      normalMap: this.teksturs.kayuGelapNor,
+      roughnessMap: this.teksturs.kayuGelapRough,
+      roughness: 0.58,
+      clearcoat: 0.3,
+    });
+
+    const bingkaiAtas = new THREE.Mesh(new THREE.BoxGeometry(6.1, 0.18, 0.18), kayuMat);
+    bingkaiAtas.position.set(0, 1.56, -0.26);
     this.scene.add(bingkaiAtas);
 
-    const gedebog = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.16, 5.8, 16), gedebogMat);
-    gedebog.rotation.z = Math.PI / 2;
-    gedebog.position.set(0, -1.38, -0.18);
-    this.scene.add(gedebog);
+    const tiangKiri = new THREE.Mesh(new THREE.BoxGeometry(0.18, 3.2, 0.18), kayuMat);
+    tiangKiri.position.set(-2.96, 0.05, -0.26);
+    this.scene.add(tiangKiri);
 
-    const ambient = new THREE.AmbientLight('#F3EBDC', 0.52);
-    this.scene.add(ambient);
+    const tiangKanan = tiangKiri.clone();
+    tiangKanan.position.set(2.96, 0.05, -0.26);
+    this.scene.add(tiangKanan);
 
-    this.blencongLight = new THREE.SpotLight('#FFD494', 8.5, 14, Math.PI / 2.6, 0.5, 1.2);
-    this.blencongLight.position.set(0, 0.65, 2.8);
+    const gedebogMat = new THREE.MeshStandardMaterial({
+      map: this.teksturs.gedebogDiff,
+      bumpMap: this.teksturs.gedebogBump,
+      bumpScale: 0.02,
+      roughness: 0.78,
+    });
+    const gedebogUtama = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.14, 0.16, 5.9, 28),
+      gedebogMat,
+    );
+    gedebogUtama.rotation.z = Math.PI / 2;
+    gedebogUtama.position.set(0, -1.32, -0.14);
+    gedebogUtama.receiveShadow = true;
+    this.scene.add(gedebogUtama);
+
+    // Gedebog kedua (pendamping bawah) khas panggung pedalangan Yogyakarta
+    const gedebogDepan = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.11, 0.12, 5.6, 24),
+      gedebogMat,
+    );
+    gedebogDepan.rotation.z = Math.PI / 2;
+    gedebogDepan.position.set(0, -1.42, 0.04);
+    gedebogDepan.receiveShadow = true;
+    this.scene.add(gedebogDepan);
+
+    const hemi = new THREE.HemisphereLight('#FFF0D4', '#24170E', 0.78);
+    this.scene.add(hemi);
+
+    this.blencongLight = new THREE.SpotLight('#FFD08E', 13.5, 16, Math.PI / 2.4, 0.45, 1.2);
+    this.blencongLight.position.set(0, 0.62, 2.75);
     this.blencongLight.castShadow = true;
-    this.blencongLight.shadow.mapSize.width = 1024;
-    this.blencongLight.shadow.mapSize.height = 1024;
+    this.blencongLight.shadow.mapSize.width = 2048;
+    this.blencongLight.shadow.mapSize.height = 2048;
+    this.blencongLight.shadow.bias = -0.00035;
     this.scene.add(this.blencongLight);
 
-    this.ramaGroup = this.bangunFigurRama();
-    this.kidangGroup = this.bangunFigurKidang();
+    const fillDepan = new THREE.DirectionalLight('#FFE2B5', 1.1);
+    fillDepan.position.set(0, 0.5, 3.2);
+    this.scene.add(fillDepan);
+
+    this.ramaGroup = this.bangunWayangTokoh(this.teksturs.wayangRamaMap, 1.12, 1.1, false);
+    this.ramaGroup.position.set(0.65, -0.04, 0.04);
+
+    // Kidang Kencana menghadap ke kanan (ke arah Sri Rama)
+    this.kidangGroup = this.bangunWayangTokoh(this.teksturs.wayangKidangMap, 0.96, 0.8, false);
+    this.kidangGroup.position.set(-0.65, -0.08, 0.08);
+
     this.scene.add(this.ramaGroup);
     this.scene.add(this.kidangGroup);
 
@@ -72,11 +147,17 @@ export class WayangStage {
     }
 
     try {
-      this.renderer = new THREE.WebGLRenderer({ antialias: true });
+      this.renderer = new THREE.WebGLRenderer({
+        antialias: true,
+        powerPreference: 'high-performance',
+      });
       this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
       this.renderer.setSize(w, h);
       this.renderer.shadowMap.enabled = true;
       this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+      this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
+      this.renderer.toneMappingExposure = 1.1;
+      pasangLingkunganPBR(this.renderer, this.scene);
       container.innerHTML = '';
       container.appendChild(this.renderer.domElement);
       this.webglTersedia = true;
@@ -88,90 +169,67 @@ export class WayangStage {
     this.mulaiLoop();
   }
 
-  private bangunFigurRama(): THREE.Group {
+  private bangunWayangTokoh(
+    petaTekstur: THREE.Texture,
+    lebar: number,
+    tinggi: number,
+    balikHorizontal: boolean,
+  ): THREE.Group {
     const g = new THREE.Group();
-    const siluetMat = new THREE.MeshStandardMaterial({
-      color: '#2A1E17',
-      roughness: 0.6,
-      metalness: 0.25,
-    });
-    const emasMat = new THREE.MeshStandardMaterial({
-      color: '#C79A45',
-      roughness: 0.4,
-      metalness: 0.55,
-    });
 
-    const badan = new THREE.Mesh(new THREE.BoxGeometry(0.32, 0.68, 0.025), siluetMat);
-    badan.position.set(0, 0.05, 0);
-    badan.castShadow = true;
-    g.add(badan);
-
-    const mahkota = new THREE.Mesh(new THREE.ConeGeometry(0.16, 0.38, 12), emasMat);
-    mahkota.position.set(0.02, 0.56, 0);
-    mahkota.rotation.z = -0.18;
-    mahkota.castShadow = true;
-    g.add(mahkota);
-
-    // Busur panah Sri Rama
-    const busur = new THREE.Mesh(
-      new THREE.TorusGeometry(0.34, 0.018, 8, 24, Math.PI * 1.15),
-      emasMat,
-    );
-    busur.rotation.z = Math.PI / 2;
-    busur.position.set(-0.22, 0.16, 0.02);
-    busur.castShadow = true;
-    g.add(busur);
-
-    const cempurit = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.015, 1.5, 8), siluetMat);
-    cempurit.position.set(0, -0.25, 0);
-    cempurit.castShadow = true;
-    g.add(cempurit);
-
-    g.position.set(0.65, -0.1, 0.05);
-    return g;
-  }
-
-  private bangunFigurKidang(): THREE.Group {
-    const g = new THREE.Group();
-    const emasKijangMat = new THREE.MeshStandardMaterial({
-      color: '#D4A23E',
-      roughness: 0.35,
-      metalness: 0.62,
-    });
-    const tandukMat = new THREE.MeshStandardMaterial({
-      color: '#9E2E17',
-      roughness: 0.5,
+    const kulitMat = new THREE.MeshPhysicalMaterial({
+      map: petaTekstur,
+      normalMap: this.teksturs.kulitNor,
+      normalScale: new THREE.Vector2(0.32, 0.32),
+      roughnessMap: this.teksturs.kulitRough,
+      roughness: 0.46,
       metalness: 0.2,
+      clearcoat: 0.2,
+      alphaTest: 0.32,
+      transparent: true,
+      side: THREE.DoubleSide,
     });
 
-    const badanKijang = new THREE.Mesh(new THREE.BoxGeometry(0.46, 0.26, 0.025), emasKijangMat);
-    badanKijang.position.set(0, 0, 0);
-    badanKijang.castShadow = true;
-    g.add(badanKijang);
+    const depthMat = new THREE.MeshDepthMaterial({
+      depthPacking: THREE.RGBADepthPacking,
+      map: petaTekstur,
+      alphaTest: 0.35,
+    });
 
-    const leher = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.32, 0.025), emasKijangMat);
-    leher.position.set(0.2, 0.22, 0);
-    leher.rotation.z = -0.28;
-    leher.castShadow = true;
-    g.add(leher);
+    const distMat = new THREE.MeshDistanceMaterial({
+      map: petaTekstur,
+      alphaTest: 0.35,
+    });
 
-    const kepala = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.12, 0.025), emasKijangMat);
-    kepala.position.set(0.3, 0.36, 0);
-    kepala.castShadow = true;
-    g.add(kepala);
+    // Dua lapis tipis agar wayang memiliki ketebalan pahatan kulit asli
+    for (const zOffset of [-0.003, 0.003]) {
+      const mesh = new THREE.Mesh(new THREE.PlaneGeometry(lebar, tinggi), kulitMat);
+      mesh.position.set(0, 0.14, zOffset);
+      if (balikHorizontal) {
+        mesh.scale.x = -1;
+      }
+      mesh.castShadow = true;
+      mesh.receiveShadow = true;
+      mesh.customDepthMaterial = depthMat;
+      mesh.customDistanceMaterial = distMat;
+      g.add(mesh);
+    }
 
-    const tanduk = new THREE.Mesh(new THREE.ConeGeometry(0.04, 0.24, 8), tandukMat);
-    tanduk.position.set(0.26, 0.52, 0);
-    tanduk.rotation.z = 0.25;
-    tanduk.castShadow = true;
-    g.add(tanduk);
-
-    const cempurit = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.015, 1.35, 8), tandukMat);
-    cempurit.position.set(0, -0.32, 0);
+    // Gapit / Cempurit tanduk kerbau yang menancap ke gedebog
+    const tandukMat = new THREE.MeshPhysicalMaterial({
+      color: '#DFD2B8',
+      roughness: 0.34,
+      metalness: 0.08,
+      clearcoat: 0.6,
+    });
+    const cempurit = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.011, 0.015, 1.42, 14),
+      tandukMat,
+    );
+    cempurit.position.set(0, -0.24, 0.012);
     cempurit.castShadow = true;
     g.add(cempurit);
 
-    g.position.set(-0.65, -0.1, 0.08);
     return g;
   }
 
@@ -194,8 +252,16 @@ export class WayangStage {
   private mulaiLoop = (): void => {
     const step = (time: number): void => {
       this.ramaGroup.position.x = lerp(this.ramaGroup.position.x, this.targetRamaX * 1.45, 0.14);
-      this.ramaGroup.position.y = lerp(this.ramaGroup.position.y, -0.08 + this.targetRamaY * 0.4, 0.14);
-      this.ramaGroup.rotation.z = (this.targetRamaX * 1.45 - this.ramaGroup.position.x) * -0.35;
+      this.ramaGroup.position.y = lerp(
+        this.ramaGroup.position.y,
+        -0.04 + this.targetRamaY * 0.4,
+        0.14,
+      );
+      this.ramaGroup.rotation.z = (this.targetRamaX * 1.45 - this.ramaGroup.position.x) * -0.32;
+
+      // Jarak wayang ke kelir sedikit berubah saat bergerak untuk efek bayangan blencong autentik
+      this.ramaGroup.position.z =
+        0.04 + Math.min(0.14, Math.abs(this.targetRamaX - this.ramaGroup.position.x / 1.45) * 0.25);
 
       this.kidangGroup.position.x = lerp(
         this.kidangGroup.position.x,
@@ -208,10 +274,10 @@ export class WayangStage {
         0.14,
       );
       this.kidangGroup.rotation.z =
-        (this.targetKidangX * 1.45 - this.kidangGroup.position.x) * -0.45;
+        (this.targetKidangX * 1.45 - this.kidangGroup.position.x) * -0.42;
 
       if (!this.reducedMotion) {
-        this.blencongLight.intensity = 8.2 + Math.sin(time * 0.004) * 0.4;
+        this.blencongLight.intensity = 13.2 + Math.sin(time * 0.0042) * 0.55;
       }
 
       if (this.renderer) {

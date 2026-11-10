@@ -160,6 +160,22 @@ export const DAFTAR_LISENSI: LisensiAset[] = [
     lisensi: 'Karya asli proyek ini (MIT License)',
   },
   {
+    id: 'P1',
+    nama: 'Tekstur PBR 1K Kayu Jati Gelap, Kulit Kerbau, & Studio HDRI (dark_wood, brown_leather, studio_small_08)',
+    dipakaiDi: 'Material 3D Hulu/Warangka Keris, Rancakan Saron, Plangkan, & Pencahayaan IBL',
+    pembuat: 'Poly Haven (Rob Tuytel, Amal Kumar, Sergej Majboroda)',
+    sumberUrl: 'https://polyhaven.com',
+    lisensi: 'CC0 1.0 Universal (Public Domain Dedication)',
+  },
+  {
+    id: 'W1',
+    nama: 'Fotografi Museum Wayang Kulit Sri Rama (TMnr 3582-30) & Kidang Kencana (TMnr 809-167o)',
+    dipakaiDi: 'Tekstur Albedo & Alpha-Cutout Bayangan Tatahan Wayang 3D',
+    pembuat: 'Collectie Tropenmuseum / Wereldmuseum Amsterdam via Wikimedia Commons',
+    sumberUrl: 'https://commons.wikimedia.org/wiki/File:COLLECTIE_TROPENMUSEUM_Wajangpop_voorstellende_Rama_TMnr_3582-30.jpg',
+    lisensi: 'CC BY-SA 3.0 Unported',
+  },
+  {
     id: 'F1',
     nama: 'Font Noto Sans Javanese',
     dipakaiDi: 'Render Aksara Jawa (U+A980–U+A9DF)',

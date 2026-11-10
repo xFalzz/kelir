@@ -44,6 +44,8 @@ test.describe('Kelir E2E & Antislop R-35 Verification', () => {
     // Pindah tab benda ke Saron & Wayang
     await page.getByTestId('tab-benda-saron').click();
     await expect(page.getByTestId('detail-titik-aktif')).toContainText('Wilah Gangsa');
+    await expect(page.getByTestId('tabuh-wilah-1')).toBeVisible();
+    await page.getByTestId('tabuh-wilah-1').click();
     await page.getByTestId('tab-benda-wayang').click();
     await expect(page.getByTestId('detail-titik-aktif')).toContainText('Awak Wayang');
 

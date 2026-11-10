@@ -1,32 +1,45 @@
-import { defineConfig, type Plugin } from 'vite';
+import { defineConfig, type Connect, type Plugin } from 'vite';
 import { svelte } from '@sveltejs/vite-plugin-svelte';
-import { jawabDariKurasiLokal } from './src/lib/tanya';
-import type { BendaPusaka } from './src/content/pusaka';
+import { jawabDariKurasiLokal } from './src/lib/tanya.ts';
+import type { BendaPusaka } from './src/content/pusaka.ts';
 
 function apiTanyaLocalPlugin(): Plugin {
-  const middleware = (
-    req: { url?: string; method?: string; on: (ev: string, cb: (chunk?: Buffer) => void) => void },
-    res: { statusCode: number; setHeader: (k: string, v: string) => void; end: (body: string) => void },
-    next: () => void,
-  ): void => {
-    if (!req.url?.startsWith('/api/tanya')) {
+  const middleware: Connect.NextHandleFunction = (req, res, next) => {
+    const httpReq = req as unknown as {
+      url?: string;
+      method?: string;
+      on: (ev: string, cb: (chunk?: Uint8Array | string) => void) => void;
+    };
+    const httpRes = res as unknown as {
+      statusCode: number;
+      setHeader: (k: string, v: string) => void;
+      end: (body: string) => void;
+    };
+
+    if (!httpReq.url?.startsWith('/api/tanya')) {
       next();
       return;
     }
-    if (req.method !== 'POST') {
-      res.statusCode = 405;
-      res.setHeader('Content-Type', 'application/json');
-      res.end(JSON.stringify({ error: 'Gunakan metode POST.' }));
+    if (httpReq.method !== 'POST') {
+      httpRes.statusCode = 405;
+      httpRes.setHeader('Content-Type', 'application/json');
+      httpRes.end(JSON.stringify({ error: 'Gunakan metode POST.' }));
       return;
     }
 
-    const chunks: Buffer[] = [];
-    req.on('data', (chunk?: Buffer) => {
-      if (chunk) chunks.push(chunk);
+    let rawBody = '';
+    const decoder = new TextDecoder();
+
+    httpReq.on('data', (chunk?: Uint8Array | string) => {
+      if (typeof chunk === 'string') {
+        rawBody += chunk;
+      } else if (chunk) {
+        rawBody += decoder.decode(chunk, { stream: true });
+      }
     });
-    req.on('end', () => {
+    httpReq.on('end', () => {
       try {
-        const body = JSON.parse(Buffer.concat(chunks).toString('utf8')) as {
+        const body = JSON.parse(rawBody || '{}') as {
           bendaId?: BendaPusaka['id'];
           pertanyaan?: string;
         };
@@ -35,13 +48,13 @@ function apiTanyaLocalPlugin(): Plugin {
             ? body.bendaId
             : 'keris';
         const hasil = jawabDariKurasiLokal(bendaId, body.pertanyaan ?? '');
-        res.statusCode = 200;
-        res.setHeader('Content-Type', 'application/json');
-        res.end(JSON.stringify(hasil));
+        httpRes.statusCode = 200;
+        httpRes.setHeader('Content-Type', 'application/json');
+        httpRes.end(JSON.stringify(hasil));
       } catch {
-        res.statusCode = 400;
-        res.setHeader('Content-Type', 'application/json');
-        res.end(JSON.stringify({ error: 'Format JSON tidak valid.' }));
+        httpRes.statusCode = 400;
+        httpRes.setHeader('Content-Type', 'application/json');
+        httpRes.end(JSON.stringify({ error: 'Format JSON tidak valid.' }));
       }
     });
   };
