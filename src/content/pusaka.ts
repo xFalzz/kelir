@@ -1,4 +1,4 @@
-import { latinToAksara } from '../lib/aksara';
+import { latinToAksara } from '../lib/aksara.ts';
 
 export type BahasaMode = 'id' | 'jv' | 'aksara';
 export type StatusTinjauan = 'ditinjau' | 'draf';

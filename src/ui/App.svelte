@@ -1736,12 +1736,17 @@
                 : 'pane-cerita-terpisah gsap-langkah-scrolly'}
               data-testid={`kartu-scrolly-${langkah.nomor}`}
             >
+              <div class="angka-bab-townhouse" data-testid="chapter-numeral">
+                {langkah.nomor}
+              </div>
               <div class="kepala-pane-townhouse">
                 <span>BAB SCROLL 3D {langkah.nomor} · {langkah.bab.toUpperCase()}</span>
                 <span>{langkah.tempat}</span>
               </div>
-              <h3 style="margin-top: 0;">{langkah.judul}</h3>
-              <p style="margin-bottom: 0.65rem;">{langkah.uraian}</p>
+              <h2 class="font-display" style="margin-top: 0; font-size: clamp(1.35rem, 2.2vw, 1.85rem);">
+                {langkah.judul}
+              </h2>
+              <p style="margin-bottom: 0.85rem; font-size: 0.94rem;">{langkah.uraian}</p>
               <div style="display: flex; flex-wrap: wrap; gap: 0.45rem; align-items: center;">
                 <button
                   type="button"

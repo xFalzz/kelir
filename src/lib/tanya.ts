@@ -3,7 +3,7 @@ import {
   DAFTAR_SUMBER,
   LAKON_KIJANG_KENCANA,
   type BendaPusaka,
-} from '../content/pusaka';
+} from '../content/pusaka.ts';
 
 export interface JawabanTanya {
   jawaban: string;
