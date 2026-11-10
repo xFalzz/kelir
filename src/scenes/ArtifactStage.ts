@@ -12,6 +12,10 @@ import {
   pasangLingkunganPBR,
   type KoleksiTeksturPBR,
 } from './pbrMaterials';
+import {
+  bangunGununganKayonRealistis3D,
+  bangunSriRamaRealistis3D,
+} from './wayang3DBuilder';
 
 export interface InfoNadaSaron {
   nomor: number;
@@ -1502,341 +1506,19 @@ export class ArtifactStage {
   private bangunWayangVolumetrikRealistis(): THREE.Group {
     const g = new THREE.Group();
 
-    const kulitPradaMat = new THREE.MeshPhysicalMaterial({
-      color: '#D49B38',
-      normalMap: this.teksturs.kulitNor,
-      normalScale: new THREE.Vector2(0.45, 0.45),
-      roughnessMap: this.teksturs.kulitRough,
-      roughness: 0.34,
-      metalness: 0.68,
-      clearcoat: 0.3,
-    });
-
-    const kulitSunggingMerahMat = new THREE.MeshPhysicalMaterial({
-      color: '#8E2316',
-      normalMap: this.teksturs.kulitNor,
-      normalScale: new THREE.Vector2(0.35, 0.35),
-      roughness: 0.48,
-      metalness: 0.15,
-      clearcoat: 0.22,
-    });
-
-    const kulitSunggingHijauMat = new THREE.MeshPhysicalMaterial({
-      color: '#1D5B3E',
-      normalMap: this.teksturs.kulitNor,
-      roughness: 0.46,
-      metalness: 0.2,
-    });
-
-    const kulitHitamAlusMat = new THREE.MeshPhysicalMaterial({
-      color: '#1C1612',
-      normalMap: this.teksturs.kulitNor,
-      roughness: 0.38,
-      metalness: 0.12,
-      clearcoat: 0.4,
-    });
-
-    const tandukKerbauMat = new THREE.MeshPhysicalMaterial({
-      color: '#E8DEC8',
-      roughnessMap: this.teksturs.kulitRough,
-      roughness: 0.3,
-      metalness: 0.06,
-      clearcoat: 0.65,
-    });
-
-    const gununganGroup = new THREE.Group();
+    const gununganGroup = bangunGununganKayonRealistis3D(this.teksturs, 1.02);
     gununganGroup.position.set(-0.34, 0.04, -0.04);
     gununganGroup.rotation.y = 0.18;
     this.wayangGununganGroup = gununganGroup;
-
-    const kayonShape = new THREE.Shape();
-    kayonShape.moveTo(0, -0.52);
-    kayonShape.lineTo(0.24, -0.48);
-    kayonShape.bezierCurveTo(0.38, -0.22, 0.36, 0.16, 0.18, 0.44);
-    kayonShape.quadraticCurveTo(0.06, 0.62, 0, 0.72);
-    kayonShape.quadraticCurveTo(-0.06, 0.62, -0.18, 0.44);
-    kayonShape.bezierCurveTo(-0.36, 0.16, -0.38, -0.22, -0.24, -0.48);
-    kayonShape.closePath();
-
-    const kayonDasarGeo = new THREE.ExtrudeGeometry(kayonShape, {
-      depth: 0.024,
-      bevelEnabled: true,
-      bevelThickness: 0.008,
-      bevelSize: 0.006,
-      bevelSegments: 3,
-    });
-    kayonDasarGeo.center();
-    const kayonDasarMesh = new THREE.Mesh(kayonDasarGeo, kulitPradaMat);
-    gununganGroup.add(kayonDasarMesh);
-
-    const apiShape = new THREE.Shape();
-    apiShape.moveTo(0, -0.44);
-    apiShape.lineTo(0.19, -0.41);
-    apiShape.bezierCurveTo(0.3, -0.18, 0.28, 0.14, 0.13, 0.38);
-    apiShape.lineTo(0, 0.58);
-    apiShape.lineTo(-0.13, 0.38);
-    apiShape.bezierCurveTo(-0.28, 0.14, -0.3, -0.18, -0.19, -0.41);
-    apiShape.closePath();
-
-    const apiGeo = new THREE.ExtrudeGeometry(apiShape, {
-      depth: 0.036,
-      bevelEnabled: true,
-      bevelThickness: 0.005,
-      bevelSize: 0.004,
-      bevelSegments: 2,
-    });
-    apiGeo.center();
-    const apiMesh = new THREE.Mesh(apiGeo, kulitSunggingMerahMat);
-    gununganGroup.add(apiMesh);
-
-    const atapGapura1 = new THREE.Mesh(
-      new THREE.BoxGeometry(0.28, 0.035, 0.056),
-      kulitPradaMat,
-    );
-    atapGapura1.position.set(0, -0.22, 0);
-    gununganGroup.add(atapGapura1);
-
-    const atapGapura2 = new THREE.Mesh(
-      new THREE.BoxGeometry(0.2, 0.032, 0.062),
-      kulitPradaMat,
-    );
-    atapGapura2.position.set(0, -0.17, 0);
-    gununganGroup.add(atapGapura2);
-
-    for (const xPilar of [-0.08, 0.08]) {
-      const pilarGapura = new THREE.Mesh(
-        new THREE.BoxGeometry(0.038, 0.22, 0.054),
-        kulitPradaMat,
-      );
-      pilarGapura.position.set(xPilar, -0.35, 0);
-      gununganGroup.add(pilarGapura);
-    }
-
-    const batangKalpataru = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.016, 0.024, 0.56, 12),
-      kulitPradaMat,
-    );
-    batangKalpataru.position.set(0, 0.14, 0.022);
-    gununganGroup.add(batangKalpataru);
-
-    for (let c = 0; c < 4; c++) {
-      const yCabang = 0.02 + c * 0.11;
-      const lebarCabang = 0.22 - c * 0.035;
-      const dahan = new THREE.Mesh(
-        new THREE.TorusGeometry(lebarCabang * 0.5, 0.009, 8, 18, Math.PI),
-        kulitSunggingHijauMat,
-      );
-      dahan.position.set(0, yCabang, 0.025);
-      dahan.rotation.z = Math.PI;
-      gununganGroup.add(dahan);
-    }
-
-    const cempuritGunungan = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.011, 0.015, 1.48, 14),
-      tandukKerbauMat,
-    );
-    cempuritGunungan.position.set(0, -0.12, 0);
-    gununganGroup.add(cempuritGunungan);
-
     g.add(gununganGroup);
 
-    const satriaGroup = new THREE.Group();
-    satriaGroup.position.set(0.24, 0.02, 0.04);
-    this.wayangSatriaGroup = satriaGroup;
-
-    const torsoShape = new THREE.Shape();
-    torsoShape.moveTo(-0.08, -0.14);
-    torsoShape.lineTo(0.08, -0.14);
-    torsoShape.lineTo(0.13, 0.18);
-    torsoShape.lineTo(-0.11, 0.18);
-    torsoShape.closePath();
-
-    const torsoGeo = new THREE.ExtrudeGeometry(torsoShape, {
-      depth: 0.034,
-      bevelEnabled: true,
-      bevelThickness: 0.009,
-      bevelSize: 0.007,
-      bevelSegments: 3,
-    });
-    torsoGeo.center();
-    const torsoMesh = new THREE.Mesh(torsoGeo, kulitPradaMat);
-    torsoMesh.position.set(0, 0.08, 0);
-    satriaGroup.add(torsoMesh);
-
-    const kepalaGroup = new THREE.Group();
-    kepalaGroup.position.set(-0.02, 0.31, 0);
-    kepalaGroup.rotation.z = 0.18;
-
-    const wajahShape = new THREE.Shape();
-    wajahShape.moveTo(-0.07, -0.06);
-    wajahShape.lineTo(0.05, -0.06);
-    wajahShape.lineTo(0.06, 0.06);
-    wajahShape.lineTo(-0.12, 0.03);
-    wajahShape.closePath();
-
-    const wajahGeo = new THREE.ExtrudeGeometry(wajahShape, {
-      depth: 0.028,
-      bevelEnabled: true,
-      bevelThickness: 0.006,
-      bevelSize: 0.005,
-      bevelSegments: 3,
-    });
-    wajahGeo.center();
-    const wajahMesh = new THREE.Mesh(wajahGeo, kulitHitamAlusMat);
-    kepalaGroup.add(wajahMesh);
-
-    const gelungCurve = new THREE.CatmullRomCurve3([
-      new THREE.Vector3(0.02, 0.04, 0),
-      new THREE.Vector3(0.11, 0.12, 0),
-      new THREE.Vector3(0.12, 0.24, 0),
-      new THREE.Vector3(0.03, 0.28, 0),
-    ]);
-    const gelungMesh = new THREE.Mesh(
-      new THREE.TubeGeometry(gelungCurve, 24, 0.024, 12, false),
-      kulitPradaMat,
-    );
-    kepalaGroup.add(gelungMesh);
-
-    const jamangMahkota = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.062, 0.055, 0.045, 16),
-      kulitPradaMat,
-    );
-    jamangMahkota.position.set(0, 0.055, 0);
-    kepalaGroup.add(jamangMahkota);
-
-    satriaGroup.add(kepalaGroup);
-
-    const prabaShape = new THREE.Shape();
-    prabaShape.moveTo(0, -0.08);
-    prabaShape.quadraticCurveTo(0.18, 0.05, 0.16, 0.26);
-    prabaShape.quadraticCurveTo(0.06, 0.18, 0, 0.08);
-    prabaShape.closePath();
-
-    const prabaGeo = new THREE.ExtrudeGeometry(prabaShape, {
-      depth: 0.02,
-      bevelEnabled: true,
-      bevelThickness: 0.005,
-      bevelSize: 0.004,
-      bevelSegments: 2,
-    });
-    const prabaMesh = new THREE.Mesh(prabaGeo, kulitSunggingMerahMat);
-    prabaMesh.position.set(0.06, 0.08, -0.01);
-    satriaGroup.add(prabaMesh);
-
-    const dodotShape = new THREE.Shape();
-    dodotShape.moveTo(-0.14, -0.38);
-    dodotShape.lineTo(0.16, -0.38);
-    dodotShape.quadraticCurveTo(0.22, -0.18, 0.1, 0.0);
-    dodotShape.lineTo(-0.1, 0.0);
-    dodotShape.closePath();
-
-    const dodotGeo = new THREE.ExtrudeGeometry(dodotShape, {
-      depth: 0.038,
-      bevelEnabled: true,
-      bevelThickness: 0.008,
-      bevelSize: 0.006,
-      bevelSegments: 3,
-    });
-    dodotGeo.center();
-    const dodotMesh = new THREE.Mesh(dodotGeo, kulitSunggingMerahMat);
-    dodotMesh.position.set(0.02, -0.22, 0);
-    satriaGroup.add(dodotMesh);
-
-    for (const [xKaki, rotKaki] of [
-      [-0.08, 0.16],
-      [0.08, -0.14],
-    ] as [number, number][]) {
-      const kaki = new THREE.Mesh(
-        new THREE.CylinderGeometry(0.022, 0.016, 0.34, 12),
-        kulitPradaMat,
-      );
-      kaki.position.set(xKaki, -0.46, 0);
-      kaki.rotation.z = rotKaki;
-      satriaGroup.add(kaki);
-    }
-
-    const bahuDepan = new THREE.Group();
-    bahuDepan.position.set(-0.1, 0.2, 0.026);
-    bahuDepan.rotation.z = -0.55;
-    this.wayangBahuDepan = bahuDepan;
-
-    const pinBahu = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.014, 0.014, 0.022, 12),
-      kulitPradaMat,
-    );
-    pinBahu.rotation.x = Math.PI / 2;
-    bahuDepan.add(pinBahu);
-
-    const lenganAtas = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.018, 0.015, 0.24, 12),
-      kulitPradaMat,
-    );
-    lenganAtas.position.set(0, -0.12, 0);
-    bahuDepan.add(lenganAtas);
-
-    const sikuDepan = new THREE.Group();
-    sikuDepan.position.set(0, -0.24, 0);
-    sikuDepan.rotation.z = -0.95;
-    this.wayangSikuDepan = sikuDepan;
-
-    const pinSiku = pinBahu.clone();
-    sikuDepan.add(pinSiku);
-
-    const lenganBawah = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.015, 0.012, 0.24, 12),
-      kulitPradaMat,
-    );
-    lenganBawah.position.set(0, -0.12, 0);
-    sikuDepan.add(lenganBawah);
-
-    const busurMesh = new THREE.Mesh(
-      new THREE.TorusGeometry(0.22, 0.011, 10, 28, Math.PI * 0.85),
-      kulitPradaMat,
-    );
-    busurMesh.position.set(-0.02, -0.24, 0.01);
-    busurMesh.rotation.z = Math.PI * 0.58;
-    sikuDepan.add(busurMesh);
-
-    const tudingDepan = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.005, 0.006, 0.62, 10),
-      tandukKerbauMat,
-    );
-    tudingDepan.position.set(0.08, -0.44, 0.01);
-    tudingDepan.rotation.z = 0.65;
-    sikuDepan.add(tudingDepan);
-
-    bahuDepan.add(sikuDepan);
-    satriaGroup.add(bahuDepan);
-
-    const bahuBelakang = new THREE.Group();
-    bahuBelakang.position.set(0.11, 0.19, -0.024);
-    bahuBelakang.rotation.z = 0.42;
-    this.wayangBahuBelakang = bahuBelakang;
-
-    const lenganBelakang = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.017, 0.013, 0.36, 12),
-      kulitPradaMat,
-    );
-    lenganBelakang.position.set(0, -0.18, 0);
-    bahuBelakang.add(lenganBelakang);
-
-    const tudingBelakang = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.005, 0.006, 0.56, 10),
-      tandukKerbauMat,
-    );
-    tudingBelakang.position.set(0, -0.52, 0);
-    bahuBelakang.add(tudingBelakang);
-
-    satriaGroup.add(bahuBelakang);
-
-    const cempuritSatria = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.011, 0.015, 1.44, 14),
-      tandukKerbauMat,
-    );
-    cempuritSatria.position.set(0, -0.16, 0);
-    satriaGroup.add(cempuritSatria);
-
-    g.add(satriaGroup);
+    const rigSatria = bangunSriRamaRealistis3D(this.teksturs);
+    rigSatria.group.position.set(0.24, 0.02, 0.04);
+    this.wayangSatriaGroup = rigSatria.group;
+    this.wayangBahuDepan = rigSatria.bahuDepan;
+    this.wayangSikuDepan = rigSatria.sikuDepan;
+    this.wayangBahuBelakang = rigSatria.bahuBelakang;
+    g.add(rigSatria.group);
 
     // Anak Panah Guwawijaya 3D yang melesat saat picuEfekKhusus3D dipanggil
     const panahGroup = new THREE.Group();
@@ -1846,7 +1528,11 @@ export class ArtifactStage {
 
     const batangPanah = new THREE.Mesh(
       new THREE.CylinderGeometry(0.006, 0.006, 0.42, 8),
-      kulitPradaMat,
+      new THREE.MeshPhysicalMaterial({
+        color: '#F2C65A',
+        metalness: 0.88,
+        roughness: 0.2,
+      }),
     );
     batangPanah.rotation.z = Math.PI / 2;
     panahGroup.add(batangPanah);

@@ -1,7 +1,9 @@
 // Adegan 3D Panggung Kelir untuk memainkan Lakon Kijang Kencana.
-// Menampilkan model 3D volumetrik berartikulasi penuh (tanpa gambar datar 2D):
-// Sri Rama dengan sendi lengan & busur Gendewa 3D di kanan, Kidang Kencana dengan kaki berartikulasi & tanduk emas 3D di kiri,
-// Gunungan (Kayon) 3D di tepi panggung, lampu minyak Blencong perunggu di atas, serta gedebog batang pisang.
+// Menampilkan model 3D volumetrik Tatah-Sungging berartikulasi penuh (tanpa gambar datar 2D):
+// Sri Rama dengan mahkota Gelung Supit Urang, Praba, Dodot Parang, Uncal Kencana berayun, & 2 lengan berartikulasi,
+// Kidang Kencana dengan 4 kaki berartikulasi, kepala menoleh, ekor hidup, & Ranggah Kencana bercabang,
+// Gunungan (Kayon) 3D berpahat krawangan (Gapura, Banaspati, Pohon Kalpataru) di tepi panggung,
+// lampu minyak Blencong perunggu di atas dengan partikel pijar cahaya, serta gedebog batang pisang.
 
 import * as THREE from 'three';
 import { audioBudaya } from '../lib/audioBudaya';
@@ -11,21 +13,27 @@ import {
   pasangLingkunganPBR,
   type KoleksiTeksturPBR,
 } from './pbrMaterials';
+import {
+  bangunGununganKayonRealistis3D,
+  bangunKidangKencanaRealistis3D,
+  bangunSriRamaRealistis3D,
+  type RigKidangKencana3D,
+  type RigSriRama3D,
+} from './wayang3DBuilder';
 
 export class WayangStage {
   private scene: THREE.Scene;
   private camera: THREE.PerspectiveCamera;
   private renderer: THREE.WebGLRenderer | null = null;
-  private ramaGroup: THREE.Group;
-  private ramaBahuDepan: THREE.Group | null = null;
-  private ramaSikuDepan: THREE.Group | null = null;
+  private rigRama: RigSriRama3D;
+  private rigKidang: RigKidangKencana3D;
+  private gununganKananGroup: THREE.Group;
+  private gununganKiriGroup: THREE.Group;
   private anakPanahGroup: THREE.Group | null = null;
+  private partikelBlencongPoints: THREE.Points | null = null;
+  private lidahApiMesh: THREE.Mesh | null = null;
   private panahMeluncur = false;
   private progresPanah = 0;
-  private kidangGroup: THREE.Group;
-  private kidangKakiDepan: THREE.Group | null = null;
-  private kidangKakiBelakang: THREE.Group | null = null;
-  private gununganTepiGroup: THREE.Group;
   private sabetanKayonAktif = false;
   private progresKayon = 0;
   private blencongLight: THREE.SpotLight;
@@ -52,14 +60,14 @@ export class WayangStage {
 
     this.teksturs = ambilKoleksiTeksturPBR();
 
-    // Kain kelir utama bertenun mori tempat bayangan 3D jatuh secara nyata
+    // Kain kelir utama bertenun mori tempat bayangan krawangan 3D jatuh secara nyata
     const kelirMesh = new THREE.Mesh(
       new THREE.PlaneGeometry(5.8, 3.15),
       new THREE.MeshStandardMaterial({
         map: this.teksturs.tenunKelirDiff,
         bumpMap: this.teksturs.tenunKelirBump,
-        bumpScale: 0.008,
-        roughness: 0.88,
+        bumpScale: 0.009,
+        roughness: 0.86,
         metalness: 0.02,
       }),
     );
@@ -84,13 +92,13 @@ export class WayangStage {
     plipitBawah.receiveShadow = true;
     this.scene.add(plipitBawah);
 
-    // Plangkan kayu jati PBR & gedebog (batang pisang tempat menancapkan wayang)
+    // Plangkan kayu jati PBR & gedebog (batang pisang tempat menancapkan cempurit wayang)
     const kayuMat = new THREE.MeshPhysicalMaterial({
       map: this.teksturs.kayuGelapDiff,
       normalMap: this.teksturs.kayuGelapNor,
       roughnessMap: this.teksturs.kayuGelapRough,
-      roughness: 0.58,
-      clearcoat: 0.3,
+      roughness: 0.56,
+      clearcoat: 0.32,
     });
 
     const bingkaiAtas = new THREE.Mesh(new THREE.BoxGeometry(6.1, 0.18, 0.18), kayuMat);
@@ -108,8 +116,8 @@ export class WayangStage {
     const gedebogMat = new THREE.MeshStandardMaterial({
       map: this.teksturs.gedebogDiff,
       bumpMap: this.teksturs.gedebogBump,
-      bumpScale: 0.02,
-      roughness: 0.78,
+      bumpScale: 0.022,
+      roughness: 0.76,
     });
     const gedebogUtama = new THREE.Mesh(
       new THREE.CylinderGeometry(0.14, 0.16, 5.9, 28),
@@ -129,20 +137,31 @@ export class WayangStage {
     gedebogDepan.receiveShadow = true;
     this.scene.add(gedebogDepan);
 
-    // Lampu Blencong Perunggu 3D menggantung di bagian atas tengah panggung
+    // Lampu Blencong Perunggu Bersayap Garuda menggantung di atas tengah panggung
     const perungguBlencongMat = new THREE.MeshPhysicalMaterial({
-      color: '#D4A042',
-      roughness: 0.28,
+      color: '#D8A444',
+      roughness: 0.26,
       metalness: 0.88,
+      clearcoat: 0.35,
     });
     const blencongGroup = new THREE.Group();
     blencongGroup.position.set(0, 1.18, 0.65);
     const badanBlencong = new THREE.Mesh(
-      new THREE.SphereGeometry(0.085, 16, 12),
+      new THREE.SphereGeometry(0.088, 18, 14),
       perungguBlencongMat,
     );
-    badanBlencong.scale.set(1.2, 0.65, 1.4);
+    badanBlencong.scale.set(1.3, 0.65, 1.45);
     blencongGroup.add(badanBlencong);
+
+    for (const sisiSayap of [-1, 1]) {
+      const sayapBlencong = new THREE.Mesh(
+        new THREE.ConeGeometry(0.045, 0.14, 8),
+        perungguBlencongMat,
+      );
+      sayapBlencong.rotation.z = sisiSayap * (Math.PI / 2 - 0.3);
+      sayapBlencong.position.set(sisiSayap * 0.12, 0.02, 0);
+      blencongGroup.add(sayapBlencong);
+    }
 
     const rantaiBlencong = new THREE.Mesh(
       new THREE.CylinderGeometry(0.008, 0.008, 0.45, 8),
@@ -152,71 +171,103 @@ export class WayangStage {
     blencongGroup.add(rantaiBlencong);
 
     const lidahApiBlencong = new THREE.Mesh(
-      new THREE.ConeGeometry(0.028, 0.075, 10),
-      new THREE.MeshBasicMaterial({ color: '#FFE082' }),
+      new THREE.ConeGeometry(0.032, 0.085, 12),
+      new THREE.MeshBasicMaterial({ color: '#FFE48F' }),
     );
-    lidahApiBlencong.position.set(0, 0.02, -0.11);
+    lidahApiBlencong.position.set(0, 0.025, -0.11);
+    this.lidahApiMesh = lidahApiBlencong;
     blencongGroup.add(lidahApiBlencong);
     this.scene.add(blencongGroup);
 
-    const hemi = new THREE.HemisphereLight('#FFF0D4', '#24170E', 0.82);
+    // Partikel pijar debu hangat di bawah sorot lampu Blencong
+    const jumlahPartikel = 42;
+    const posisiPartikel = new Float32Array(jumlahPartikel * 3);
+    for (let i = 0; i < jumlahPartikel; i++) {
+      posisiPartikel[i * 3] = (Math.random() - 0.5) * 3.6;
+      posisiPartikel[i * 3 + 1] = -0.8 + Math.random() * 1.9;
+      posisiPartikel[i * 3 + 2] = -0.15 + Math.random() * 0.45;
+    }
+    const partikelGeo = new THREE.BufferGeometry();
+    partikelGeo.setAttribute('position', new THREE.BufferAttribute(posisiPartikel, 3));
+    const partikelMat = new THREE.PointsMaterial({
+      color: '#FFD77A',
+      size: 0.024,
+      transparent: true,
+      opacity: 0.52,
+    });
+    this.partikelBlencongPoints = new THREE.Points(partikelGeo, partikelMat);
+    this.scene.add(this.partikelBlencongPoints);
+
+    const hemi = new THREE.HemisphereLight('#FFF0D4', '#24170E', 0.85);
     this.scene.add(hemi);
 
-    this.blencongLight = new THREE.SpotLight('#FFD08E', 13.5, 16, Math.PI / 2.4, 0.45, 1.2);
-    this.blencongLight.position.set(0, 0.62, 2.75);
+    this.blencongLight = new THREE.SpotLight('#FFD08E', 14.2, 16, Math.PI / 2.3, 0.42, 1.2);
+    this.blencongLight.position.set(0, 0.65, 2.75);
     this.blencongLight.castShadow = true;
     this.blencongLight.shadow.mapSize.width = 1024;
     this.blencongLight.shadow.mapSize.height = 1024;
     this.blencongLight.shadow.bias = -0.00035;
     this.scene.add(this.blencongLight);
 
-    const fillDepan = new THREE.DirectionalLight('#FFE2B5', 1.15);
-    fillDepan.position.set(0, 0.5, 3.2);
+    const fillDepan = new THREE.DirectionalLight('#FFE4B8', 1.22);
+    fillDepan.position.set(0.4, 0.6, 3.2);
     this.scene.add(fillDepan);
 
-    // Bangun tokoh 3D volumetrik Sri Rama, Kidang Kencana, dan Gunungan Tepi (Simpingan)
-    this.ramaGroup = this.bangunSriRama3D();
-    this.ramaGroup.position.set(0.65, -0.04, 0.05);
+    // Bangun tokoh 3D Tatah-Sungging Sri Rama, Kidang Kencana, dan Simpingan Gunungan Kiri-Kanan
+    this.rigRama = bangunSriRamaRealistis3D(this.teksturs);
+    this.rigRama.group.position.set(0.65, -0.04, 0.06);
 
-    this.kidangGroup = this.bangunKidangKencana3D();
-    this.kidangGroup.position.set(-0.65, -0.1, 0.08);
+    this.rigKidang = bangunKidangKencanaRealistis3D(this.teksturs);
+    this.rigKidang.group.position.set(-0.65, -0.08, 0.08);
 
-    this.gununganTepiGroup = this.bangunGununganSimpingan3D();
-    this.gununganTepiGroup.position.set(1.92, -0.05, -0.04);
-    this.gununganTepiGroup.rotation.z = -0.08;
+    this.gununganKananGroup = bangunGununganKayonRealistis3D(this.teksturs, 0.96);
+    this.gununganKananGroup.position.set(1.94, -0.04, -0.03);
+    this.gununganKananGroup.rotation.z = -0.07;
 
-    this.scene.add(this.ramaGroup);
-    this.scene.add(this.kidangGroup);
-    this.scene.add(this.gununganTepiGroup);
+    this.gununganKiriGroup = bangunGununganKayonRealistis3D(this.teksturs, 0.88);
+    this.gununganKiriGroup.position.set(-2.05, -0.08, -0.06);
+    this.gununganKiriGroup.rotation.z = 0.08;
 
-    // Anak Panah 3D Guwawijaya milik Sri Rama yang dapat dilesatkan ke arah Kidang Kencana
+    this.scene.add(this.rigRama.group);
+    this.scene.add(this.rigKidang.group);
+    this.scene.add(this.gununganKananGroup);
+    this.scene.add(this.gununganKiriGroup);
+
+    // Anak Panah 3D Guwawijaya Berbulu Bedher Emas milik Sri Rama
     const panahGroup = new THREE.Group();
     const batangPanah = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.006, 0.006, 0.42, 8),
+      new THREE.CylinderGeometry(0.006, 0.006, 0.46, 8),
       new THREE.MeshPhysicalMaterial({
-        color: '#E8BD52',
-        metalness: 0.85,
-        roughness: 0.22,
+        color: '#F2C65A',
+        metalness: 0.88,
+        roughness: 0.2,
         emissive: new THREE.Color('#CFA048'),
-        emissiveIntensity: 0.35,
+        emissiveIntensity: 0.4,
       }),
     );
     batangPanah.rotation.z = Math.PI / 2;
     panahGroup.add(batangPanah);
 
-    const mataPanah = new THREE.Mesh(
-      new THREE.ConeGeometry(0.022, 0.075, 8),
+    const mataPanahCakra = new THREE.Mesh(
+      new THREE.ConeGeometry(0.025, 0.085, 8),
       new THREE.MeshPhysicalMaterial({
-        color: '#FFF1B8',
-        metalness: 0.92,
-        roughness: 0.16,
+        color: '#FFF4C2',
+        metalness: 0.94,
+        roughness: 0.14,
       }),
     );
-    mataPanah.rotation.z = Math.PI / 2;
-    mataPanah.position.x = -0.23;
-    panahGroup.add(mataPanah);
+    mataPanahCakra.rotation.z = Math.PI / 2;
+    mataPanahCakra.position.x = -0.25;
+    panahGroup.add(mataPanahCakra);
 
-    panahGroup.position.set(0.35, 0.08, 0.08);
+    const buluPanah = new THREE.Mesh(
+      new THREE.BoxGeometry(0.07, 0.032, 0.008),
+      new THREE.MeshStandardMaterial({ color: '#B81D13', roughness: 0.35 }),
+    );
+    buluPanah.position.x = 0.19;
+    panahGroup.add(buluPanah);
+
+    panahGroup.position.set(0.35, 0.08, 0.09);
     panahGroup.visible = false;
     this.anakPanahGroup = panahGroup;
     this.scene.add(panahGroup);
@@ -235,7 +286,7 @@ export class WayangStage {
       this.renderer.shadowMap.enabled = true;
       this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
       this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
-      this.renderer.toneMappingExposure = 1.12;
+      this.renderer.toneMappingExposure = 1.14;
       pasangLingkunganPBR(this.renderer, this.scene);
       container.innerHTML = '';
       container.appendChild(this.renderer.domElement);
@@ -246,369 +297,6 @@ export class WayangStage {
     }
 
     this.mulaiLoop();
-  }
-
-  private bangunSriRama3D(): THREE.Group {
-    const g = new THREE.Group();
-
-    const emasPradaMat = new THREE.MeshPhysicalMaterial({
-      color: '#D8A23E',
-      normalMap: this.teksturs.kulitNor,
-      normalScale: new THREE.Vector2(0.4, 0.4),
-      roughnessMap: this.teksturs.kulitRough,
-      roughness: 0.32,
-      metalness: 0.72,
-      clearcoat: 0.3,
-    });
-
-    const merahSunggingMat = new THREE.MeshPhysicalMaterial({
-      color: '#8E2316',
-      normalMap: this.teksturs.kulitNor,
-      roughness: 0.45,
-      metalness: 0.16,
-    });
-
-    const hitamWajahMat = new THREE.MeshPhysicalMaterial({
-      color: '#1C1612',
-      roughness: 0.36,
-      clearcoat: 0.4,
-    });
-
-    const tandukMat = new THREE.MeshPhysicalMaterial({
-      color: '#E5D8BF',
-      roughness: 0.34,
-      clearcoat: 0.6,
-    });
-
-    // Torso 3D Sri Rama
-    const torsoShape = new THREE.Shape();
-    torsoShape.moveTo(-0.085, -0.14);
-    torsoShape.lineTo(0.085, -0.14);
-    torsoShape.lineTo(0.135, 0.18);
-    torsoShape.lineTo(-0.115, 0.18);
-    torsoShape.closePath();
-
-    const torsoGeo = new THREE.ExtrudeGeometry(torsoShape, {
-      depth: 0.032,
-      bevelEnabled: true,
-      bevelThickness: 0.008,
-      bevelSize: 0.006,
-      bevelSegments: 3,
-    });
-    torsoGeo.center();
-    const torso = new THREE.Mesh(torsoGeo, emasPradaMat);
-    torso.position.set(0, 0.12, 0);
-    g.add(torso);
-
-    // Kepala & Mahkota Gelung Supit Urang 3D menghadap ke kiri (ke arah Kidang Kencana)
-    const kepala = new THREE.Group();
-    kepala.position.set(-0.02, 0.35, 0);
-    kepala.rotation.z = 0.16;
-
-    const wajahShape = new THREE.Shape();
-    wajahShape.moveTo(-0.075, -0.06);
-    wajahShape.lineTo(0.055, -0.06);
-    wajahShape.lineTo(0.065, 0.06);
-    wajahShape.lineTo(-0.125, 0.03);
-    wajahShape.closePath();
-
-    const wajahGeo = new THREE.ExtrudeGeometry(wajahShape, {
-      depth: 0.028,
-      bevelEnabled: true,
-      bevelThickness: 0.006,
-      bevelSize: 0.005,
-      bevelSegments: 2,
-    });
-    wajahGeo.center();
-    kepala.add(new THREE.Mesh(wajahGeo, hitamWajahMat));
-
-    const gelungCurve = new THREE.CatmullRomCurve3([
-      new THREE.Vector3(0.02, 0.04, 0),
-      new THREE.Vector3(0.11, 0.12, 0),
-      new THREE.Vector3(0.12, 0.24, 0),
-      new THREE.Vector3(0.03, 0.28, 0),
-    ]);
-    kepala.add(
-      new THREE.Mesh(new THREE.TubeGeometry(gelungCurve, 20, 0.024, 10, false), emasPradaMat),
-    );
-    g.add(kepala);
-
-    // Kain Dodot 3D
-    const dodotShape = new THREE.Shape();
-    dodotShape.moveTo(-0.14, -0.36);
-    dodotShape.lineTo(0.16, -0.36);
-    dodotShape.quadraticCurveTo(0.22, -0.16, 0.1, 0.0);
-    dodotShape.lineTo(-0.1, 0.0);
-    dodotShape.closePath();
-
-    const dodotGeo = new THREE.ExtrudeGeometry(dodotShape, {
-      depth: 0.036,
-      bevelEnabled: true,
-      bevelThickness: 0.007,
-      bevelSize: 0.005,
-      bevelSegments: 2,
-    });
-    dodotGeo.center();
-    const dodot = new THREE.Mesh(dodotGeo, merahSunggingMat);
-    dodot.position.set(0.02, -0.18, 0);
-    g.add(dodot);
-
-    // Kaki 3D
-    for (const [xKaki, rot] of [
-      [-0.08, 0.16],
-      [0.08, -0.14],
-    ] as [number, number][]) {
-      const kaki = new THREE.Mesh(
-        new THREE.CylinderGeometry(0.02, 0.015, 0.34, 10),
-        emasPradaMat,
-      );
-      kaki.position.set(xKaki, -0.44, 0);
-      kaki.rotation.z = rot;
-      g.add(kaki);
-    }
-
-    // Lengan Depan Berartikulasi + Busur Gendewa & Anak Panah
-    const bahuDepan = new THREE.Group();
-    bahuDepan.position.set(-0.1, 0.24, 0.024);
-    bahuDepan.rotation.z = -0.62;
-    this.ramaBahuDepan = bahuDepan;
-
-    const lenganAtas = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.017, 0.014, 0.22, 10),
-      emasPradaMat,
-    );
-    lenganAtas.position.set(0, -0.11, 0);
-    bahuDepan.add(lenganAtas);
-
-    const sikuDepan = new THREE.Group();
-    sikuDepan.position.set(0, -0.22, 0);
-    sikuDepan.rotation.z = -0.9;
-    this.ramaSikuDepan = sikuDepan;
-
-    const lenganBawah = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.015, 0.012, 0.22, 10),
-      emasPradaMat,
-    );
-    lenganBawah.position.set(0, -0.11, 0);
-    sikuDepan.add(lenganBawah);
-
-    const busur = new THREE.Mesh(
-      new THREE.TorusGeometry(0.22, 0.011, 10, 24, Math.PI * 0.85),
-      emasPradaMat,
-    );
-    busur.position.set(-0.02, -0.22, 0.01);
-    busur.rotation.z = Math.PI * 0.58;
-    sikuDepan.add(busur);
-
-    const tuding = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.005, 0.006, 0.6, 8),
-      tandukMat,
-    );
-    tuding.position.set(0.08, -0.42, 0.01);
-    tuding.rotation.z = 0.65;
-    sikuDepan.add(tuding);
-
-    bahuDepan.add(sikuDepan);
-    g.add(bahuDepan);
-
-    // Cempurit utama
-    const cempurit = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.011, 0.015, 1.42, 12),
-      tandukMat,
-    );
-    cempurit.position.set(0, -0.18, 0);
-    g.add(cempurit);
-
-    g.traverse((obj) => {
-      if ((obj as THREE.Mesh).isMesh) {
-        obj.castShadow = true;
-        obj.receiveShadow = true;
-      }
-    });
-
-    return g;
-  }
-
-  private bangunKidangKencana3D(): THREE.Group {
-    const g = new THREE.Group();
-
-    const emasKidangMat = new THREE.MeshPhysicalMaterial({
-      color: '#E5AC3F',
-      normalMap: this.teksturs.kulitNor,
-      normalScale: new THREE.Vector2(0.38, 0.38),
-      roughnessMap: this.teksturs.kulitRough,
-      roughness: 0.26,
-      metalness: 0.82,
-      clearcoat: 0.35,
-    });
-
-    const merahPermataMat = new THREE.MeshPhysicalMaterial({
-      color: '#A52417',
-      roughness: 0.3,
-      metalness: 0.35,
-    });
-
-    const tandukMat = new THREE.MeshPhysicalMaterial({
-      color: '#E5D8BF',
-      roughness: 0.34,
-      clearcoat: 0.6,
-    });
-
-    // Badan 3D Kidang Kencana menghadap ke kanan (ke arah Sri Rama)
-    const badanShape = new THREE.Shape();
-    badanShape.moveTo(-0.22, -0.06);
-    badanShape.quadraticCurveTo(0, -0.1, 0.22, -0.04);
-    badanShape.quadraticCurveTo(0.28, 0.08, 0.16, 0.14);
-    badanShape.quadraticCurveTo(-0.04, 0.12, -0.22, 0.1);
-    badanShape.quadraticCurveTo(-0.28, 0.02, -0.22, -0.06);
-
-    const badanGeo = new THREE.ExtrudeGeometry(badanShape, {
-      depth: 0.036,
-      bevelEnabled: true,
-      bevelThickness: 0.01,
-      bevelSize: 0.008,
-      bevelSegments: 3,
-    });
-    badanGeo.center();
-    const badanMesh = new THREE.Mesh(badanGeo, emasKidangMat);
-    badanMesh.position.set(0, 0.08, 0);
-    g.add(badanMesh);
-
-    // Ornamen tutul permata timbul di punggung Kidang Kencana
-    for (const [xTutul, yTutul] of [
-      [-0.12, 0.1],
-      [-0.02, 0.12],
-      [0.08, 0.1],
-    ] as [number, number][]) {
-      const tutul = new THREE.Mesh(
-        new THREE.SphereGeometry(0.018, 12, 12),
-        merahPermataMat,
-      );
-      tutul.scale.set(1.2, 0.8, 1.4);
-      tutul.position.set(xTutul, yTutul, 0);
-      g.add(tutul);
-    }
-
-    // Leher & Kepala Kijang 3D menoleh anggun
-    const leherCurve = new THREE.CatmullRomCurve3([
-      new THREE.Vector3(0.16, 0.12, 0),
-      new THREE.Vector3(0.24, 0.24, 0),
-      new THREE.Vector3(0.26, 0.34, 0),
-    ]);
-    const leherMesh = new THREE.Mesh(
-      new THREE.TubeGeometry(leherCurve, 16, 0.038, 12, false),
-      emasKidangMat,
-    );
-    g.add(leherMesh);
-
-    const kepalaMesh = new THREE.Mesh(
-      new THREE.ConeGeometry(0.048, 0.16, 12),
-      emasKidangMat,
-    );
-    kepalaMesh.rotation.z = -Math.PI / 2 + 0.18;
-    kepalaMesh.position.set(0.32, 0.36, 0);
-    g.add(kepalaMesh);
-
-    // Tanduk bercabang emas (Ranggah Kencana)
-    const ranggahCurve = new THREE.CatmullRomCurve3([
-      new THREE.Vector3(0.26, 0.38, 0),
-      new THREE.Vector3(0.18, 0.5, 0.01),
-      new THREE.Vector3(0.08, 0.58, 0),
-      new THREE.Vector3(0.14, 0.64, 0),
-    ]);
-    const ranggahMesh = new THREE.Mesh(
-      new THREE.TubeGeometry(ranggahCurve, 18, 0.012, 10, false),
-      emasKidangMat,
-    );
-    g.add(ranggahMesh);
-
-    // Kaki Depan & Kaki Belakang Berartikulasi 3D (melompat saat digerakkan)
-    const kakiDepanGroup = new THREE.Group();
-    kakiDepanGroup.position.set(0.16, 0.02, 0);
-    this.kidangKakiDepan = kakiDepanGroup;
-    for (const zOff of [-0.016, 0.016]) {
-      const kaki = new THREE.Mesh(
-        new THREE.CylinderGeometry(0.016, 0.01, 0.32, 10),
-        emasKidangMat,
-      );
-      kaki.position.set(0.04, -0.14, zOff);
-      kaki.rotation.z = 0.28;
-      kakiDepanGroup.add(kaki);
-    }
-    g.add(kakiDepanGroup);
-
-    const kakiBelakangGroup = new THREE.Group();
-    kakiBelakangGroup.position.set(-0.16, 0.02, 0);
-    this.kidangKakiBelakang = kakiBelakangGroup;
-    for (const zOff of [-0.016, 0.016]) {
-      const kaki = new THREE.Mesh(
-        new THREE.CylinderGeometry(0.018, 0.01, 0.32, 10),
-        emasKidangMat,
-      );
-      kaki.position.set(-0.04, -0.14, zOff);
-      kaki.rotation.z = -0.28;
-      kakiBelakangGroup.add(kaki);
-    }
-    g.add(kakiBelakangGroup);
-
-    // Cempurit tanduk
-    const cempurit = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.01, 0.014, 1.28, 12),
-      tandukMat,
-    );
-    cempurit.position.set(0, -0.22, 0);
-    g.add(cempurit);
-
-    g.traverse((obj) => {
-      if ((obj as THREE.Mesh).isMesh) {
-        obj.castShadow = true;
-        obj.receiveShadow = true;
-      }
-    });
-
-    return g;
-  }
-
-  private bangunGununganSimpingan3D(): THREE.Group {
-    const g = new THREE.Group();
-
-    const kayonMat = new THREE.MeshPhysicalMaterial({
-      color: '#C89232',
-      normalMap: this.teksturs.kulitNor,
-      roughness: 0.38,
-      metalness: 0.65,
-    });
-
-    const kayonShape = new THREE.Shape();
-    kayonShape.moveTo(0, -0.48);
-    kayonShape.lineTo(0.22, -0.44);
-    kayonShape.bezierCurveTo(0.34, -0.18, 0.32, 0.16, 0.16, 0.42);
-    kayonShape.lineTo(0, 0.66);
-    kayonShape.lineTo(-0.16, 0.42);
-    kayonShape.bezierCurveTo(-0.32, 0.16, -0.34, -0.18, -0.22, -0.44);
-    kayonShape.closePath();
-
-    const kayonGeo = new THREE.ExtrudeGeometry(kayonShape, {
-      depth: 0.022,
-      bevelEnabled: true,
-      bevelThickness: 0.006,
-      bevelSize: 0.005,
-      bevelSegments: 2,
-    });
-    kayonGeo.center();
-    const kayonMesh = new THREE.Mesh(kayonGeo, kayonMat);
-    kayonMesh.castShadow = true;
-    kayonMesh.receiveShadow = true;
-    g.add(kayonMesh);
-
-    const cempurit = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.01, 0.014, 1.38, 10),
-      new THREE.MeshStandardMaterial({ color: '#DFD2B8', roughness: 0.4 }),
-    );
-    cempurit.position.set(0, -0.18, 0);
-    g.add(cempurit);
-
-    return g;
   }
 
   aturPosisiTokoh(ramaX: number, kidangX: number, ramaY = 0, kidangY = 0): void {
@@ -625,8 +313,8 @@ export class WayangStage {
     if (this.anakPanahGroup) {
       this.anakPanahGroup.visible = true;
       this.anakPanahGroup.position.set(
-        this.ramaGroup.position.x - 0.18,
-        this.ramaGroup.position.y + 0.08,
+        this.rigRama.group.position.x - 0.18,
+        this.rigRama.group.position.y + 0.08,
         0.1,
       );
     }
@@ -672,46 +360,46 @@ export class WayangStage {
   private mulaiLoop = (): void => {
     const step = (time: number): void => {
       const t = time * 0.001;
-      const prevKidangX = this.kidangGroup.position.x;
+      const ramaGroup = this.rigRama.group;
+      const kidangGroup = this.rigKidang.group;
+      const prevRamaX = ramaGroup.position.x;
+      const prevKidangX = kidangGroup.position.x;
 
-      this.ramaGroup.position.x = lerp(this.ramaGroup.position.x, this.targetRamaX * 1.45, 0.14);
-      this.ramaGroup.position.y = lerp(
-        this.ramaGroup.position.y,
-        -0.04 + this.targetRamaY * 0.4 + Math.sin(t * 2.2) * 0.015,
+      ramaGroup.position.x = lerp(ramaGroup.position.x, this.targetRamaX * 1.45, 0.14);
+      ramaGroup.position.y = lerp(
+        ramaGroup.position.y,
+        -0.04 + this.targetRamaY * 0.4 + Math.sin(t * 2.2) * 0.016,
         0.14,
       );
-      this.ramaGroup.rotation.z = (this.targetRamaX * 1.45 - this.ramaGroup.position.x) * -0.32;
+      const ayunRama = (this.targetRamaX * 1.45 - ramaGroup.position.x) * -0.32;
+      ramaGroup.rotation.z = ayunRama;
+      ramaGroup.rotation.y = Math.sin(t * 1.5) * 0.08 + ayunRama * 0.35;
 
-      this.ramaGroup.position.z =
-        0.05 + Math.min(0.14, Math.abs(this.targetRamaX - this.ramaGroup.position.x / 1.45) * 0.25);
+      ramaGroup.position.z =
+        0.06 + Math.min(0.14, Math.abs(this.targetRamaX - ramaGroup.position.x / 1.45) * 0.25);
 
-      this.kidangGroup.position.x = lerp(
-        this.kidangGroup.position.x,
-        this.targetKidangX * 1.45,
-        0.14,
-      );
+      kidangGroup.position.x = lerp(kidangGroup.position.x, this.targetKidangX * 1.45, 0.14);
       const lompatKejut =
         this.panahMeluncur && this.progresPanah > 0.45
           ? Math.sin((this.progresPanah - 0.45) * Math.PI * 1.8) * 0.28
           : 0;
-      this.kidangGroup.position.y = lerp(
-        this.kidangGroup.position.y,
-        -0.1 + this.targetKidangY * 0.4 + Math.abs(Math.sin(t * 3.8)) * 0.035 + Math.max(0, lompatKejut),
+      kidangGroup.position.y = lerp(
+        kidangGroup.position.y,
+        -0.08 + this.targetKidangY * 0.4 + Math.abs(Math.sin(t * 3.8)) * 0.038 + Math.max(0, lompatKejut),
         0.14,
       );
-      this.kidangGroup.rotation.z =
-        (this.targetKidangX * 1.45 - this.kidangGroup.position.x) * -0.42;
+      const ayunKidang = (this.targetKidangX * 1.45 - kidangGroup.position.x) * -0.42;
+      kidangGroup.rotation.z = ayunKidang;
+      kidangGroup.rotation.y = Math.cos(t * 1.9) * 0.1 - ayunKidang * 0.3;
 
       // Animasi Anak Panah 3D Guwawijaya melesat dari busur Sri Rama menuju Kidang Kencana
       if (this.panahMeluncur && this.anakPanahGroup) {
         this.progresPanah = Math.min(1, this.progresPanah + 0.036);
-        const startX = this.ramaGroup.position.x - 0.18;
-        const endX = this.kidangGroup.position.x + 0.12;
+        const startX = ramaGroup.position.x - 0.18;
+        const endX = kidangGroup.position.x + 0.12;
         this.anakPanahGroup.position.x = lerp(startX, endX, this.progresPanah);
-        this.anakPanahGroup.position.y =
-          0.08 + Math.sin(this.progresPanah * Math.PI) * 0.22;
-        this.anakPanahGroup.rotation.z =
-          -Math.cos(this.progresPanah * Math.PI) * 0.18;
+        this.anakPanahGroup.position.y = 0.08 + Math.sin(this.progresPanah * Math.PI) * 0.22;
+        this.anakPanahGroup.rotation.z = -Math.cos(this.progresPanah * Math.PI) * 0.18;
         if (this.progresPanah >= 1) {
           this.panahMeluncur = false;
           this.anakPanahGroup.visible = false;
@@ -722,34 +410,65 @@ export class WayangStage {
       if (this.sabetanKayonAktif) {
         this.progresKayon = Math.min(1, this.progresKayon + 0.025);
         const fase = Math.sin(this.progresKayon * Math.PI);
-        this.gununganTepiGroup.position.x = 1.92 - fase * 1.85;
-        this.gununganTepiGroup.position.z = -0.04 + fase * 0.26;
-        this.gununganTepiGroup.rotation.y = fase * Math.PI;
-        this.gununganTepiGroup.rotation.z = -0.08 + Math.sin(this.progresKayon * Math.PI * 2) * 0.24;
+        this.gununganKananGroup.position.x = 1.94 - fase * 1.85;
+        this.gununganKananGroup.position.z = -0.03 + fase * 0.26;
+        this.gununganKananGroup.rotation.y = fase * Math.PI;
+        this.gununganKananGroup.rotation.z =
+          -0.07 + Math.sin(this.progresKayon * Math.PI * 2) * 0.24;
         if (this.progresKayon >= 1) {
           this.sabetanKayonAktif = false;
-          this.gununganTepiGroup.position.set(1.92, -0.05, -0.04);
-          this.gununganTepiGroup.rotation.set(0, 0, -0.08);
+          this.gununganKananGroup.position.set(1.94, -0.04, -0.03);
+          this.gununganKananGroup.rotation.set(0, 0, -0.07);
         }
       }
 
-      // Artikulasi hidup lengan Sri Rama dan lompatan kaki Kidang Kencana
+      // Artikulasi hidup seluruh sendi Sri Rama, 4 kaki Kidang Kencana, & partikel lampu Blencong
       if (!this.reducedMotion) {
-        if (this.ramaBahuDepan && this.ramaSikuDepan) {
-          const tarikPanah = this.panahMeluncur ? -0.35 : 0;
-          this.ramaBahuDepan.rotation.z = -0.62 + tarikPanah + Math.sin(t * 2.6) * 0.18;
-          this.ramaSikuDepan.rotation.z = -0.9 + tarikPanah * 0.6 + Math.cos(t * 2.6) * 0.15;
+        const kecRama = (ramaGroup.position.x - prevRamaX) * 14;
+        const tarikPanah = this.panahMeluncur ? -0.34 : Math.sin(t * 2.4) * 0.14;
+
+        // Sendi 2 lengan Sri Rama, anggukan kepala, dan ayunan pita Uncal Kencana
+        this.rigRama.bahuDepan.rotation.z = -0.58 + tarikPanah * 0.85;
+        this.rigRama.sikuDepan.rotation.z = -0.92 + Math.cos(t * 2.4) * 0.14;
+        this.rigRama.bahuBelakang.rotation.z = 0.25 - tarikPanah * 1.1;
+        this.rigRama.sikuBelakang.rotation.z = -1.25 + Math.sin(t * 2.8) * 0.2;
+        this.rigRama.kepalaGroup.rotation.z = 0.12 + Math.sin(t * 1.8) * 0.04;
+        this.rigRama.uncalDepan.rotation.z = -kecRama * 0.45 + Math.sin(t * 3.1) * 0.12;
+        this.rigRama.uncalBelakang.rotation.z = -kecRama * 0.38 + Math.cos(t * 2.9) * 0.1;
+
+        // Rentangan tali busur Gendewa yang ikut memegas
+        const posTali = this.rigRama.taliBusurLine.geometry.getAttribute(
+          'position',
+        ) as THREE.BufferAttribute;
+        if (posTali) {
+          const tarikanTengah = 0.18 + Math.max(0, Math.sin(t * 2.4)) * 0.06;
+          posTali.setX(1, tarikanTengah);
+          posTali.needsUpdate = true;
         }
-        const kecepatanKidang = Math.abs(this.kidangGroup.position.x - prevKidangX) * 18 + 1;
-        if (this.kidangKakiDepan && this.kidangKakiBelakang) {
-          this.kidangKakiDepan.rotation.z = Math.sin(t * 4.5) * 0.28 * Math.min(2.2, kecepatanKidang);
-          this.kidangKakiBelakang.rotation.z =
-            -Math.sin(t * 4.5) * 0.28 * Math.min(2.2, kecepatanKidang);
-        }
+
+        // Sendi 4 kaki Kidang Kencana melompat bergantian, kepala menoleh, dan ekor mengibas
+        const kecKidang = Math.min(2.4, Math.abs(kidangGroup.position.x - prevKidangX) * 18 + 1);
+        this.rigKidang.kakiDepanKiri.rotation.z = Math.sin(t * 4.8) * 0.32 * kecKidang;
+        this.rigKidang.kakiDepanKanan.rotation.z = -Math.sin(t * 4.8) * 0.28 * kecKidang;
+        this.rigKidang.kakiBelakangKiri.rotation.z = -Math.sin(t * 4.8) * 0.32 * kecKidang;
+        this.rigKidang.kakiBelakangKanan.rotation.z = Math.sin(t * 4.8) * 0.28 * kecKidang;
+        this.rigKidang.leherKepalaGroup.rotation.z = Math.sin(t * 2.7) * 0.09;
+        this.rigKidang.ekorGroup.rotation.z = Math.sin(t * 6.2) * 0.22;
+
         if (!this.sabetanKayonAktif) {
-          this.gununganTepiGroup.rotation.z = -0.08 + Math.sin(t * 1.4) * 0.025;
+          this.gununganKananGroup.rotation.z = -0.07 + Math.sin(t * 1.4) * 0.025;
         }
-        this.blencongLight.intensity = 13.2 + Math.sin(time * 0.0042) * 0.55;
+        this.gununganKiriGroup.rotation.z = 0.08 + Math.cos(t * 1.3) * 0.02;
+
+        if (this.lidahApiMesh) {
+          this.lidahApiMesh.scale.y = 1 + Math.sin(t * 14) * 0.16;
+          this.lidahApiMesh.rotation.z = Math.sin(t * 9) * 0.1;
+        }
+        if (this.partikelBlencongPoints) {
+          this.partikelBlencongPoints.rotation.y = Math.sin(t * 0.3) * 0.08;
+          this.partikelBlencongPoints.position.y = Math.sin(t * 0.9) * 0.05;
+        }
+        this.blencongLight.intensity = 13.8 + Math.sin(time * 0.0045) * 0.65;
       }
 
       if (this.renderer) {
