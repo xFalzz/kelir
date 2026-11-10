@@ -42,8 +42,10 @@ export interface TitikInfoBenda {
   sumber: string[];
 }
 
+export type IdPusaka = 'keris' | 'saron' | 'batik' | 'joglo' | 'wayang';
+
 export interface BendaPusaka {
-  id: 'keris' | 'saron' | 'wayang';
+  id: IdPusaka;
   nama: TeksMultibahasa;
   subjudul: TeksMultibahasa;
   kategori: string;
@@ -51,6 +53,7 @@ export interface BendaPusaka {
   berkasUnesco: string;
   ringkasan: TeksMultibahasa;
   peranPanggung: string;
+  labelAksi3D: string;
   lisensiRef: string;
   sumber: string[];
   titikInfo: TitikInfoBenda[];
@@ -103,16 +106,16 @@ export const DAFTAR_SUMBER: SumberRujukan[] = [
     tahun: '2003 / 2008',
     url: 'https://ich.unesco.org/en/RL/wayang-puppet-theatre-00063',
     ringkasan:
-      'Teater boneka bayangan Jawa (wayang kulit) dan kayu (wayang golek) yang dimainkan oleh dalang di depan layar bercahaya dengan iringan gamelan, mengisahkan epos Ramayana, Mahabharata, dan cerita lokal.',
+      'Teater boneka Jawa dan Nusantara yang dimainkan oleh dalang dengan iringan gamelan, mengisahkan epos Ramayana, Mahabharata, dan filosofi sangkan paraning dumadi melalui simbol Gunungan (Kayon).',
   },
   {
     kode: 'S4',
-    judul: 'Koleksi Etnografi & Historika Museum Negeri Sonobudoyo',
+    judul: 'Koleksi Etnografi, Arsitektur Joglo, & Historika Museum Negeri Sonobudoyo',
     lembaga: 'Dinas Kebudayaan (Kundha Kabudayan) Daerah Istimewa Yogyakarta',
     tahun: '1935 / 2026',
     url: 'https://sonobudoyo.jogjaprov.go.id',
     ringkasan:
-      'Museum sejarah dan kebudayaan Jawa di Jl. Pangurakan No. 6 Yogyakarta (diresmikan 6 November 1935, dirancang Ir. Thomas Karsten) yang menyimpan dan mendokumentasikan koleksi keris, perangkat gamelan, dan wayang kulit purwa.',
+      'Museum sejarah dan kebudayaan Jawa di Jl. Pangurakan No. 6 Yogyakarta (diresmikan 6 November 1935, dirancang Ir. Thomas Karsten dengan konstruksi pendopo Joglo bertumpangsari) yang mendokumentasikan tosan aji, gamelan, batik klasik, arsitektur kayu Jawa, dan wayang.',
   },
   {
     kode: 'S5',
@@ -125,27 +128,36 @@ export const DAFTAR_SUMBER: SumberRujukan[] = [
   },
   {
     kode: 'S6',
-    judul: 'The Unicode Standard: Javanese Block (U+A980–U+A9DF)',
+    judul: 'The Unicode Standard: Javanese Block (U+A980..U+A9DF)',
     lembaga: 'The Unicode Consortium',
     tahun: '2023',
     url: 'https://www.unicode.org/charts/PDF/UA980.pdf',
     ringkasan:
       'Spesifikasi pengodean karakter Aksara Jawa yang mencakup 20 aksara nglegena, sandhangan swara, sandhangan panyigeg wanda, pangkon, dan tanda baca pada.',
   },
+  {
+    kode: 'S7',
+    judul: 'Indonesian Batik (Berkas 00170)',
+    lembaga: 'UNESCO Representative List of the Intangible Cultural Heritage of Humanity',
+    tahun: '2009',
+    url: 'https://ich.unesco.org/en/RL/indonesian-batik-00170',
+    ringkasan:
+      'Warisan budaya takbenda Indonesia yang ditetapkan UNESCO pada 2 Oktober 2009, mencakup teknik rintang warna menggunakan lilin malam panas dengan canting tulis maupun cap tembaga pada kain katun dan sutra beserta filosofi motif Parang dan Kawung.',
+  },
 ];
 
 export const DAFTAR_LISENSI: LisensiAset[] = [
   {
     id: 'G1',
-    nama: 'Geometri 3D Prosedural Keris Jawa (wilah, ganja, pamor, hulu, warangka)',
-    dipakaiDi: 'Ruang Pegang 3D',
+    nama: 'Model 3D Volumetrik Keris Jawa Luk 5 & Animasi Cabut Warangka',
+    dipakaiDi: 'Ruang Pegang 3D & Pratinjau Pintu',
     pembuat: 'Tim Pengembang Kelir (kode asli)',
     sumberUrl: 'src/scenes/ArtifactStage.ts',
     lisensi: 'Karya asli proyek ini (MIT License)',
   },
   {
     id: 'G2',
-    nama: 'Geometri 3D Prosedural Saron Gamelan (wilah perunggu, rancakan, tabuh)',
+    nama: 'Model 3D Volumetrik Saron Barung Gamelan & Sintesis Audio Laras Slendro',
     dipakaiDi: 'Ruang Pegang 3D',
     pembuat: 'Tim Pengembang Kelir (kode asli)',
     sumberUrl: 'src/scenes/ArtifactStage.ts',
@@ -153,41 +165,49 @@ export const DAFTAR_LISENSI: LisensiAset[] = [
   },
   {
     id: 'G3',
-    nama: 'Geometri 3D Prosedural Wayang Kulit Purwa & Panggung Kelir',
-    dipakaiDi: 'Ruang Pegang 3D & Panggung Kelir',
+    nama: 'Model 3D Volumetrik Canting Tulis, Gawangan, Anglo Malam, & Kain Batik Kawung-Parang',
+    dipakaiDi: 'Ruang Pegang 3D',
+    pembuat: 'Tim Pengembang Kelir (kode asli)',
+    sumberUrl: 'src/scenes/ArtifactStage.ts',
+    lisensi: 'Karya asli proyek ini (MIT License)',
+  },
+  {
+    id: 'G4',
+    nama: 'Model 3D Volumetrik Arsitektur Pendopo Joglo, Saka Guru, Tumpang Sari, & Umpak (Exploded View)',
+    dipakaiDi: 'Ruang Pegang 3D',
+    pembuat: 'Tim Pengembang Kelir (kode asli)',
+    sumberUrl: 'src/scenes/ArtifactStage.ts',
+    lisensi: 'Karya asli proyek ini (MIT License)',
+  },
+  {
+    id: 'G5',
+    nama: 'Model 3D Volumetrik Berartikulasi Wayang Satria, Kidang Kencana, & Gunungan (Kayon)',
+    dipakaiDi: 'Ruang Pegang 3D & Panggung Budaya',
     pembuat: 'Tim Pengembang Kelir (kode asli)',
     sumberUrl: 'src/scenes/WayangStage.ts',
     lisensi: 'Karya asli proyek ini (MIT License)',
   },
   {
     id: 'P1',
-    nama: 'Tekstur PBR 1K Kayu Jati Gelap, Kulit Kerbau, & Studio HDRI (dark_wood, brown_leather, studio_small_08)',
-    dipakaiDi: 'Material 3D Hulu/Warangka Keris, Rancakan Saron, Plangkan, & Pencahayaan IBL',
+    nama: 'Tekstur PBR 1K Kayu Jati Gelap, Kulit, & Studio HDRI (dark_wood, brown_leather, studio_small_08)',
+    dipakaiDi: 'Material 3D Hulu/Warangka, Rancakan, Gawangan, Saka Guru Joglo, & Pencahayaan IBL',
     pembuat: 'Poly Haven (Rob Tuytel, Amal Kumar, Sergej Majboroda)',
     sumberUrl: 'https://polyhaven.com',
     lisensi: 'CC0 1.0 Universal (Public Domain Dedication)',
   },
   {
-    id: 'W1',
-    nama: 'Fotografi Museum Wayang Kulit Sri Rama (TMnr 3582-30) & Kidang Kencana (TMnr 809-167o)',
-    dipakaiDi: 'Tekstur Albedo & Alpha-Cutout Bayangan Tatahan Wayang 3D',
-    pembuat: 'Collectie Tropenmuseum / Wereldmuseum Amsterdam via Wikimedia Commons',
-    sumberUrl: 'https://commons.wikimedia.org/wiki/File:COLLECTIE_TROPENMUSEUM_Wajangpop_voorstellende_Rama_TMnr_3582-30.jpg',
-    lisensi: 'CC BY-SA 3.0 Unported',
-  },
-  {
     id: 'F1',
     nama: 'Font Noto Sans Javanese',
-    dipakaiDi: 'Render Aksara Jawa (U+A980–U+A9DF)',
+    dipakaiDi: 'Render Aksara Jawa (U+A980..U+A9DF)',
     pembuat: 'Google & Monotype',
     sumberUrl: 'https://fontsource.org/fonts/noto-sans-javanese',
     lisensi: 'SIL Open Font License (OFL) 1.1',
   },
   {
     id: 'F2',
-    nama: 'Font Fraunces Variable & Atkinson Hyperlegible',
-    dipakaiDi: 'Tipografi Judul & Isi Antarmuka',
-    pembuat: 'Undercase Type & Braille Institute of America',
+    nama: 'Font Fraunces Variable, Atkinson Hyperlegible, & JetBrains Mono',
+    dipakaiDi: 'Tipografi Judul, Isi Antarmuka, & Telemetri Teknis',
+    pembuat: 'Undercase Type, Braille Institute of America, & JetBrains',
     sumberUrl: 'https://fontsource.org',
     lisensi: 'SIL Open Font License (OFL) 1.1',
   },
@@ -217,7 +237,7 @@ export const DAFTAR_BENDA: BendaPusaka[] = [
       },
     },
     subjudul: {
-      id: 'Belati asimetris berpamor dan bersarung kayu',
+      id: 'Tosan aji asimetris berpamor Wos Wutah dan bersarung kayu jati gayaman',
       jv: {
         teks: 'Pusaka wilah asimetris mawi pamor lan warangka kajeng',
         ejaanAksara: 'pusaka wilah mawi pamor lan warangka kajeng',
@@ -225,11 +245,11 @@ export const DAFTAR_BENDA: BendaPusaka[] = [
         catatanStatus: CATATAN_DRAF_JAWA,
       },
     },
-    kategori: 'Tosan Aji / Senjata Pusaka',
+    kategori: 'Tosan Aji / Metalurgi Nusantara',
     tahunUnesco: '2005 / 2008',
     berkasUnesco: '00112',
     ringkasan: {
-      id: 'Keris adalah belati asimetris khas Nusantara yang tercatat di UNESCO sejak 2005/2008. Sebuah keris terdiri atas tiga kesatuan utama: bilah logam (wilah) bersama ganja, gagang ukir (hulu/deder), dan sarung kayu (warangka). Penempaannya dilakukan oleh seorang empu dengan melipat lapisan besi dan logam nikel hingga melahirkan motif pamor.',
+      id: 'Keris adalah pusaka belati asimetris khas Nusantara yang tercatat di UNESCO sejak 2005/2008. Sebuah keris terdiri atas tiga kesatuan utama: bilah logam (wilah) bersama ganja, gagang ukir (hulu/deder), dan sarung kayu (warangka). Penempaannya dilakukan oleh seorang empu dengan melipat puluhan lapis besi dan logam nikel hingga melahirkan motif pamor.',
       jv: {
         teks: 'Dhuwung utawi keris punika pusaka khas Nusantara ingkang kaserat dening UNESCO wiwit warsa 2005 lan 2008. Wujudipun dumadi saking tigang perangan utama, inggih punika wilah kaliyan ganja, deder utawi ukiran, saha warangka kajeng ingkang katempa dening empu.',
         ejaanAksara: 'dhuwung utawi keris punika pusaka jawi ingkang katempa déning empu.',
@@ -238,14 +258,15 @@ export const DAFTAR_BENDA: BendaPusaka[] = [
       },
     },
     peranPanggung:
-      'Kelengkapan busana adat Jawa dan pusaka tokoh satria di dalam pertunjukan wayang.',
+      'Simbol keahlian metalurgi tempa lipat empu Jawa dan kelengkapan busana adat upacara.',
+    labelAksi3D: 'Cabut / Sarungkan Bilah Keris',
     lisensiRef: 'G1',
     sumber: ['S1', 'S4'],
     titikInfo: [
       {
         id: 'wilah',
         label: {
-          id: 'Wilah (Bilah Utama)',
+          id: 'Wilah (Bilah Utama Luk 5)',
           jv: {
             teks: 'Wilah (Awak Dhuwung)',
             ejaanAksara: 'wilah dhuwung',
@@ -254,12 +275,12 @@ export const DAFTAR_BENDA: BendaPusaka[] = [
           },
         },
         posisi3D: [0, 0.55, 0.04],
-        kameraTarget: [0, 0.5, 0],
+        kameraTarget: [0, 0.45, 0],
         uraian: {
-          id: 'Wilah adalah badan utama keris yang ditempa dari campuran besi, baja, dan bahan pamor. Bentuknya dapat lurus (kalis) atau berkelok (luk) dengan jumlah kelokan yang selalu ganjil.',
+          id: 'Wilah adalah badan utama keris yang ditempa dari campuran besi, baja, dan bahan pamor. Bentuknya dapat lurus (kalis) atau berkelok (luk) dengan jumlah kelokan yang selalu ganjil, seperti luk 5 yang melambangkan keteguhan bicara dan kepemimpinan.',
           jv: {
-            teks: 'Wilah punika perangan utama dhuwung ingkang katempa saking campuran wesi, waja, lan pamor. Wujudipun saged leres utawi mawi luk ingkang cacahipun tansah ganjil.',
-            ejaanAksara: 'wilah punika perangan utama dhuwung saking wesi lan pamor.',
+            teks: 'Wilah inggih punika perangan utami dhuwung ingkang katempa saking campuran wesi, waja, lan pamor. Wujudipun saged leres utawi mawi luk ingkang cacahipun tansah ganjil.',
+            ejaanAksara: 'wilah punika awak utami dhuwung saking wesi lan pamor.',
             status: 'draf',
             catatanStatus: CATATAN_DRAF_JAWA,
           },
@@ -269,21 +290,21 @@ export const DAFTAR_BENDA: BendaPusaka[] = [
       {
         id: 'ganja',
         label: {
-          id: 'Ganja (Pangkal Melintang)',
+          id: 'Ganja & Kembang Kacang',
           jv: {
-            teks: 'Ganja (Dasar Wilah)',
-            ejaanAksara: 'ganja wilah',
+            teks: 'Ganja (Perangan Ngandhap Wilah)',
+            ejaanAksara: 'ganja dhuwung',
             status: 'draf',
             catatanStatus: CATATAN_DRAF_JAWA,
           },
         },
-        posisi3D: [0.18, -0.22, 0.05],
-        kameraTarget: [0, -0.2, 0],
+        posisi3D: [0.16, -0.2, 0.05],
+        kameraTarget: [0.05, -0.18, 0],
         uraian: {
-          id: 'Ganja terletak melintang di pangkal bawah bilah sehingga membuat pangkal keris tampak melebar dan tidak simetris. Bagian ini ditempa terpisah lalu disatukan rapat pada ekor bilah (pesi).',
+          id: 'Ganja terletak melintang di pangkal bawah bilah menyerupai cicak (sirah cecak dan buntut urang) sehingga membuat pangkal keris tampak melebar asimetris, berdampingan dengan lengkungan kembang kacang di sisi depan.',
           jv: {
-            teks: 'Ganja mapan malang wonten ing sangandhapipun wilah pramila pangkal dhuwung katingal wiyar lan boten simetris.',
-            ejaanAksara: 'ganja mapan malang ing ngisor wilah.',
+            teks: 'Ganja mapan malang wonten ing ngandhap wilah satemah wujudipun dhuwung katon asimetris. Perangan punika katempa piyambak lajeng dipunrapetaken wonten ing pesi.',
+            ejaanAksara: 'ganja mapan malang ing ngandhap wilah dhuwung.',
             status: 'draf',
             catatanStatus: CATATAN_DRAF_JAWA,
           },
@@ -293,21 +314,21 @@ export const DAFTAR_BENDA: BendaPusaka[] = [
       {
         id: 'pamor',
         label: {
-          id: 'Pamor (Alur Logam Tempa)',
+          id: 'Pamor Wos Wutah (Alur Tempa)',
           jv: {
-            teks: 'Pamor (Corak Logam)',
-            ejaanAksara: 'pamor logam',
+            teks: 'Pamor (Serat Tempaan Logam)',
+            ejaanAksara: 'pamor wesi aji',
             status: 'draf',
             catatanStatus: CATATAN_DRAF_JAWA,
           },
         },
-        posisi3D: [-0.04, 0.18, 0.05],
+        posisi3D: [-0.03, 0.18, 0.05],
         kameraTarget: [0, 0.18, 0],
         uraian: {
-          id: 'Pamor adalah guratan keperakan pada permukaan bilah yang muncul dari teknik tempa lipat logam berbeda jenis oleh empu. Setiap pola pamor menyimpan ketelitian teknik metalurgi tradisional.',
+          id: 'Pamor adalah guratan keperakan pada permukaan bilah yang muncul dari teknik tempa lipat logam berbeda jenis oleh empu dan dipertegas melalui proses warangan. Motif Wos Wutah (beras tumpah) melambangkan harapan kesejahteraan.',
           jv: {
-            teks: 'Pamor inggih punika serat pethak ing lumahing wilah ingkang medal saking teknik tempa lipat logam dening empu.',
-            ejaanAksara: 'pamor medal saking tempa lipat logam déning empu.',
+            teks: 'Pamor inggih punika serat pethak ing lumahing wilah ingkang mijil saking teknik tempa lipat dening empu. Saben corak pamor nyimpen kawruh metalurgi tradisional.',
+            ejaanAksara: 'pamor mijil saking tempaan lipat logam déning empu.',
             status: 'draf',
             catatanStatus: CATATAN_DRAF_JAWA,
           },
@@ -317,21 +338,21 @@ export const DAFTAR_BENDA: BendaPusaka[] = [
       {
         id: 'warangka',
         label: {
-          id: 'Hulu & Warangka (Gagang dan Sarung)',
+          id: 'Hulu Nunggak Semi & Warangka Gayaman',
           jv: {
-            teks: 'Deder lan Warangka',
+            teks: 'Deder lan Warangka (Ukiran saha Sarung)',
             ejaanAksara: 'deder lan warangka',
             status: 'draf',
             catatanStatus: CATATAN_DRAF_JAWA,
           },
         },
-        posisi3D: [-0.32, -0.58, 0.06],
-        kameraTarget: [-0.15, -0.55, 0],
+        posisi3D: [-0.36, -0.48, 0.06],
+        kameraTarget: [-0.2, -0.45, 0],
         uraian: {
-          id: 'Hulu (deder) adalah pegangan berukir kayu, sedangkan warangka adalah sarung pelindung bilah yang umumnya bergaya gayaman atau ladrang serta kerap dilapisi selubung logam (pendok).',
+          id: 'Hulu (deder) gaya Yogyakarta berbentuk merunduk (nunggak semi) dengan cincin mendak berpermata, sedangkan warangka adalah sarung kayu pelindung bilah bergaya gayaman yang dilapisi selubung logam keemasan (pendok blewah).',
           jv: {
-            teks: 'Deder punika cepengan dhuwung ingkang kaukir, dene warangka punika wadah kajeng kangge nyimpen wilah supados aman.',
-            ejaanAksara: 'deder lan warangka kajeng kanggé nyimpen wilah.',
+            teks: 'Deder inggih punika cepengan kajeng ingkang dipunukir, dene warangka punika sarung pangreksa wilah ingkang limrahipun mawi gagrag gayaman utawi ladrang saha dipunlapisi pendok.',
+            ejaanAksara: 'deder lan warangka kajeng kagem nyarungaken wilah.',
             status: 'draf',
             catatanStatus: CATATAN_DRAF_JAWA,
           },
@@ -345,56 +366,57 @@ export const DAFTAR_BENDA: BendaPusaka[] = [
     nama: {
       id: 'Saron Gamelan',
       jv: {
-        teks: 'Saron Gamelan Jawi',
-        ejaanAksara: 'saron gamelan jawi',
+        teks: 'Saron Gangsa (Gamelan)',
+        ejaanAksara: 'saron gangsa',
         status: 'draf',
         catatanStatus: CATATAN_DRAF_JAWA,
       },
     },
     subjudul: {
-      id: 'Instrumen bilah perunggu pembawa kerangka melodi (balungan)',
+      id: 'Instrumen 7 bilah perunggu tempa pembawa kerangka melodi (balungan)',
       jv: {
-        teks: 'Ricikan wilah gangsa pamomot lagu balungan gendhing',
+        teks: 'Ricikan wilah gangsa ingkang nyepeng balungan gendhing',
         ejaanAksara: 'ricikan wilah gangsa balungan gendhing',
         status: 'draf',
         catatanStatus: CATATAN_DRAF_JAWA,
       },
     },
-    kategori: 'Karawitan / Ansambel Gamelan',
+    kategori: 'Karawitan / Musik Tradisional',
     tahunUnesco: '2021',
     berkasUnesco: '01760',
     ringkasan: {
-      id: 'Gamelan ditetapkan UNESCO pada Desember 2021 sebagai ansambel perkusi tradisional Indonesia. Saron termasuk kelompok ricikan bilah logam yang bertugas memainkan kerangka lagu (balungan) dalam mengiringi upacara maupun pertunjukan wayang kulit.',
+      id: 'Gamelan ditetapkan UNESCO pada Desember 2021 sebagai ansambel perkusi tradisional Indonesia. Saron barung termasuk kelompok ricikan bilah perunggu (gangsa) yang bertugas memainkan kerangka lagu (balungan) dalam laras slendro maupun pelog.',
       jv: {
-        teks: 'Gamelan katetepaken dening UNESCO ing wulan Desember 2021. Saron kalebet ricikan wilah gangsa ingkang nabuh balungan gendhing kangge ngiringi ringgit purwa.',
-        ejaanAksara: 'saron kalebet ricikan gamelan kanggé ngiringi wayang.',
+        teks: 'Gamelan katetepaken dening UNESCO ing wulan Desember 2021 minangka karawitan tradisional Indonesia. Saron kalebet ricikan wilah gangsa ingkang ngayahi jejibahan nabuh balungan gendhing.',
+        ejaanAksara: 'gamelan punika gangsa jawi ingkang katetepaken déning unesco.',
         status: 'draf',
         catatanStatus: CATATAN_DRAF_JAWA,
       },
     },
     peranPanggung:
-      'Penjaga kerangka melodi gendhing yang mengatur suasana tenang maupun tegang sepanjang pertunjukan wayang.',
+      'Penjaga alur melodi utama (balungan) dalam konser karawitan, upacara adat, dan pertunjukan.',
+    labelAksi3D: 'Mainkan / Hentikan Gending Lancaran',
     lisensiRef: 'G2',
     sumber: ['S2', 'S4'],
     titikInfo: [
       {
         id: 'wilah-saron',
         label: {
-          id: 'Wilah Gangsa (Bilah Perunggu)',
+          id: 'Wilah Gangsa (7 Bilah Perunggu)',
           jv: {
-            teks: 'Wilah Gangsa',
-            ejaanAksara: 'wilah gangsa',
+            teks: 'Wilah Gangsa (Wolu utawi Pitung Wilah)',
+            ejaanAksara: 'wilah gangsa saron',
             status: 'draf',
             catatanStatus: CATATAN_DRAF_JAWA,
           },
         },
-        posisi3D: [0, 0.22, 0.05],
-        kameraTarget: [0, 0.15, 0],
+        posisi3D: [0, 0.14, 0.05],
+        kameraTarget: [0, 0.08, 0],
         uraian: {
-          id: 'Deretan tujuh bilah logam tempa yang disusun dari ukuran besar (nada rendah) di kiri ke ukuran lebih kecil (nada tinggi) di kanan, ditala menurut laras slendro atau pelog.',
+          id: 'Deretan tujuh bilah logam perunggu tempa berprofil cembung (uger) yang disusun dari ukuran besar (nada rendah 6̣) di kiri ke ukuran lebih kecil (nada tinggi 1̇) di kanan menurut laras slendro.',
           jv: {
-            teks: 'Jeaturan pitung wilah logam tempa ingkang dipunlaras miturut laras slendro utawi pelog.',
-            ejaanAksara: 'pitung wilah gangsa laras sléndro utawi pélog.',
+            teks: ' Urutan pitung wilah gangsa ingkang katata saking ukuran ageng ing sisih kiwa dumugi ukuran alit ing sisih tengen miturut laras slendro utawi pelog.',
+            ejaanAksara: 'urutan wilah gangsa miturut laras sléndro lan pélog.',
             status: 'draf',
             catatanStatus: CATATAN_DRAF_JAWA,
           },
@@ -404,21 +426,21 @@ export const DAFTAR_BENDA: BendaPusaka[] = [
       {
         id: 'rancakan',
         label: {
-          id: 'Rancakan (Kotak Resonator Kayu)',
+          id: 'Rancakan (Kotak Resonator Ukir)',
           jv: {
-            teks: 'Rancakan Kajeng',
+            teks: 'Rancakan (Wadhah Kajeng)',
             ejaanAksara: 'rancakan kajeng',
             status: 'draf',
             catatanStatus: CATATAN_DRAF_JAWA,
           },
         },
-        posisi3D: [0, -0.18, 0.22],
+        posisi3D: [0, -0.18, 0.24],
         kameraTarget: [0, -0.15, 0],
         uraian: {
-          id: 'Wadah kayu berongga di bawah bilah yang berfungsi sebagai ruang gema suara ketika bilah ditabuh.',
+          id: 'Wadah kayu jati berongga di bawah bilah dengan ukiran sulur lung-lungan prada emas yang berfungsi sebagai ruang gema akustik bersama ketika bilah ditabuh.',
           jv: {
-            teks: 'Wadah kajeng ing sangandhapipun wilah ingkang dados papan kumandhanging swanten nalika wilah dipuntabuh.',
-            ejaanAksara: 'wadhah kajeng papan kumandhanging swanten.',
+            teks: 'Wadhah kajeng berongga ing ngandhap wilah ingkang gadhah guna minangka papan kumandhanging swanten nalika wilah dipuntabuh.',
+            ejaanAksara: 'rancakan kajeng papan kumandhanging swanten saron.',
             status: 'draf',
             catatanStatus: CATATAN_DRAF_JAWA,
           },
@@ -428,45 +450,45 @@ export const DAFTAR_BENDA: BendaPusaka[] = [
       {
         id: 'tabuh',
         label: {
-          id: 'Tabuh (Pemukul Kayu)',
+          id: 'Tabuh (Pemukul Kayu Miring)',
           jv: {
-            teks: 'Tabuh Saron',
-            ejaanAksara: 'tabuh saron',
+            teks: 'Tabuh Saron (Panabuh Kajeng)',
+            ejaanAksara: 'tabuh saron kajeng',
             status: 'draf',
             catatanStatus: CATATAN_DRAF_JAWA,
           },
         },
-        posisi3D: [0.55, 0.42, 0.25],
-        kameraTarget: [0.4, 0.35, 0.15],
+        posisi3D: [0.35, 0.36, 0.16],
+        kameraTarget: [0.25, 0.28, 0.08],
         uraian: {
-          id: 'Pemukul kayu berbentuk menyerupai palu miring yang dipegang tangan kanan, sementara tangan kiri memencet bilah sebelumnya (teknik pathetan) agar dengung tidak saling bertabrakan.',
+          id: 'Pemukul kayu bubut berbentuk menyerupai palu miring yang dipegang tangan kanan, sementara tangan kiri memencet bilah sebelumnya (teknik pathetan) agar dengung nada tidak saling bertabrakan.',
           jv: {
-            teks: 'Piranti panabuh saking kajeng ingkang kacepeng asta tengen, dene asta kiwa nyepeng wilah sadèrèngipun supados swantenipun resik.',
-            ejaanAksara: 'tabuh kajeng kacepeng asta tengen.',
+            teks: 'Panabuh kajeng awujud gandhen miring ingkang dipuncepeng asta tengen, dene asta kiwa dipunginakaken kagem mathet wilah supados swantenipun resik.',
+            ejaanAksara: 'tabuh saron dipuncepeng asta tengen kagem nabuh wilah.',
             status: 'draf',
             catatanStatus: CATATAN_DRAF_JAWA,
           },
         },
-        sumber: ['S2'],
+        sumber: ['S2', 'S4'],
       },
       {
         id: 'pencon-paku',
         label: {
-          id: 'Paku & Bantalan Penyangga',
+          id: 'Paku & Kasuran Penyangga',
           jv: {
-            teks: 'Paku lan Bantalan',
-            ejaanAksara: 'paku lan bantalan',
+            teks: 'Paku lan Bantalan Wilah',
+            ejaanAksara: 'paku lan bantalan wilah',
             status: 'draf',
             catatanStatus: CATATAN_DRAF_JAWA,
           },
         },
-        posisi3D: [-0.48, 0.24, 0.12],
-        kameraTarget: [-0.4, 0.2, 0],
+        posisi3D: [-0.48, 0.12, 0.14],
+        kameraTarget: [-0.4, 0.1, 0],
         uraian: {
-          id: 'Pasak logam kecil dan bantalan lunak di tepi rancakan yang menahan posisi tiap bilah tanpa mematikan getaran suaranya.',
+          id: 'Pasak logam kecil dan bantalan tali lunak (kasuran) di tepi rancakan yang menahan posisi tiap bilah melalui dua lubang ujungnya tanpa mematikan getaran akustik perunggu.',
           jv: {
-            teks: 'Pasak alit lan bantalan ing pinggir rancakan kangge njagi posisi wilah supados tetep saged geter kanthi bening.',
-            ejaanAksara: 'pasak alit njagi posisi wilah.',
+            teks: 'Paku logam alit saha bantalan ing pinggir rancakan ingkang nyangga saben wilah supados tetep saged kumandhang kanthi sae.',
+            ejaanAksara: 'paku alit nyangga wilah supados kumandhang saé.',
             status: 'draf',
             catatanStatus: CATATAN_DRAF_JAWA,
           },
@@ -476,60 +498,333 @@ export const DAFTAR_BENDA: BendaPusaka[] = [
     ],
   },
   {
-    id: 'wayang',
+    id: 'batik',
     nama: {
-      id: 'Wayang Kulit Purwa',
+      id: 'Batik Tulis & Canting',
       jv: {
-        teks: 'Ringgit Purwa (Wayang Kulit)',
-        ejaanAksara: 'ringgit purwa wayang kulit',
+        teks: 'Bathik Serat lan Canthing',
+        ejaanAksara: 'bathik serat lan canthing',
         status: 'draf',
         catatanStatus: CATATAN_DRAF_JAWA,
       },
     },
     subjudul: {
-      id: 'Boneka kulit berukir (tatahan) yang memproyeksikan bayangan di kelir',
+      id: 'Kriya tekstil rintang warna malam panas bermotif Kawung dan Parang',
       jv: {
-        teks: 'Ringgit cucal mawi tatahan ingkang menghasilkan ayang-ayang ing kelir',
-        ejaanAksara: 'ringgit cucal mawi tatahan ing kelir',
+        teks: 'Kriya wastra mawi malam benter corak kawung lan parang',
+        ejaanAksara: 'kriya wastra mawi malam corak kawung lan parang',
         status: 'draf',
         catatanStatus: CATATAN_DRAF_JAWA,
       },
     },
-    kategori: 'Seni Pertunjukan / Teater Bayangan',
-    tahunUnesco: '2003 / 2008',
-    berkasUnesco: '00063',
+    kategori: 'Wastra / Kriya Tekstil',
+    tahunUnesco: '2009',
+    berkasUnesco: '00170',
     ringkasan: {
-      id: 'Wayang kulit diproklamasikan UNESCO pada 2003 dan dicantumkan dalam Daftar Representatif pada 2008. Boneka pipih berlubang ukir halus ini digerakkan oleh dalang memakai tangkai utama (gapit/cempurit) dan tangkai tangan (tuding) di depan layar kain bercahaya blencong.',
+      id: 'Batik Indonesia ditetapkan UNESCO pada 2 Oktober 2009 (Berkas 00170). Pembatik menggunakan canting tulis bertangkai bambu dan berwadah tembaga untuk menorehkan lilin malam panas di atas kain mori yang tersampir pada gawangan kayu, membentuk ragam hias filosofis seperti Kawung dan Parang.',
       jv: {
-        teks: 'Ringgit kulit katetepaken dening UNESCO wiwit warsa 2003 lan 2008. Ringgit punika dipunobahaken dening dhalang mawi cempurit lan tuding ing sangajengipun kelir ingkang kasorot blencong.',
-        ejaanAksara: 'ringgit kulit dipunobahaken déning dhalang ing kelir.',
+        teks: 'Bathik Indonesia katetepaken dening UNESCO ing warsa 2009. Pambathik ngginakaken canthing tembaga kagem nyorekaken malam benter wonten ing mori ingkang kasampiraken ing gawangan kajeng.',
+        ejaanAksara: 'bathik jawi katetepaken déning unesco minangka warisan budaya.',
         status: 'draf',
         catatanStatus: CATATAN_DRAF_JAWA,
       },
     },
     peranPanggung:
-      'Pemeran utama di layar kelir yang menghidupkan lakon Ramayana dan Mahabharata melalui bayangan.',
+      'Busana tradisional sarat makna filosofis siklus kehidupan masyarakat Jawa dari lahir hingga dewasa.',
+    labelAksi3D: 'Gerakkan / Jeda Canting Membatik',
     lisensiRef: 'G3',
-    sumber: ['S3', 'S4'],
+    sumber: ['S7', 'S4'],
+    titikInfo: [
+      {
+        id: 'canting-tulis',
+        label: {
+          id: 'Canting Tulis (Nyamplungan & Cucuk)',
+          jv: {
+            teks: 'Canthing Serat (Nyamplungan lan Cucuk)',
+            ejaanAksara: 'canthing serat tembaga',
+            status: 'draf',
+            catatanStatus: CATATAN_DRAF_JAWA,
+          },
+        },
+        posisi3D: [0.18, 0.36, 0.22],
+        kameraTarget: [0.1, 0.25, 0.1],
+        uraian: {
+          id: 'Alat lukis khusus batik yang terdiri atas gagang bambu/kayu (gagang terong), mangkuk penampung malam cair dari tembaga (nyamplungan), dan pipa cerat halus (cucuk) tempat mengalirnya titik dan garis malam.',
+          jv: {
+            teks: 'Piranti mirunggan kagem mbathik ingkang dumadi saking gagang pring, wadhah malam tembaga ingkang winastan nyamplungan, saha cucuk alit.',
+            ejaanAksara: 'canthing dumadi saking gagang nyamplungan lan cucuk.',
+            status: 'draf',
+            catatanStatus: CATATAN_DRAF_JAWA,
+          },
+        },
+        sumber: ['S7', 'S4'],
+      },
+      {
+        id: 'kain-kawung-parang',
+        label: {
+          id: 'Motif Kawung & Parang Sogan',
+          jv: {
+            teks: 'Corak Kawung lan Parang Sogan',
+            ejaanAksara: 'corak kawung lan parang',
+            status: 'draf',
+            catatanStatus: CATATAN_DRAF_JAWA,
+          },
+        },
+        posisi3D: [0, 0.12, 0.05],
+        kameraTarget: [0, 0.1, 0],
+        uraian: {
+          id: 'Motif geometris empat bulatan Kawung melambangkan kesempurnaan dan pengendalian diri (kiblat papat lima pancer), sedangkan diagonal Parang melambangkan kesinambungan perjuangan bagai ombak samudra.',
+          jv: {
+            teks: 'Corak sekawan bunderan Kawung pralambang kasampurnan lan pangendhalian dhiri, dene garisan miring Parang pralambang semangat ingkang boten kendhat.',
+            ejaanAksara: 'corak kawung lan parang nyimpen piwulang luhur.',
+            status: 'draf',
+            catatanStatus: CATATAN_DRAF_JAWA,
+          },
+        },
+        sumber: ['S7', 'S4'],
+      },
+      {
+        id: 'gawangan-kayu',
+        label: {
+          id: 'Gawangan Kayu Ukir (Penyangga Mori)',
+          jv: {
+            teks: 'Gawangan Kajeng (Panyangga Mori)',
+            ejaanAksara: 'gawangan kajeng bathik',
+            status: 'draf',
+            catatanStatus: CATATAN_DRAF_JAWA,
+          },
+        },
+        posisi3D: [-0.45, 0.42, -0.05],
+        kameraTarget: [-0.25, 0.25, 0],
+        uraian: {
+          id: 'Palang penyangga dari kayu jati atau bambu berukir tempat membentangkan lembaran kain mori agar pembatik leluasa menggerakkan canting dari sisi atas dan menahan kain dengan tangan kiri.',
+          jv: {
+            teks: 'Palang panyangga saking kajeng jati kagem nyampiraken kain mori supados pambathik gampil anggenipun nyorekaken malam.',
+            ejaanAksara: 'gawangan kajeng kagem nyampiraken kain mori.',
+            status: 'draf',
+            catatanStatus: CATATAN_DRAF_JAWA,
+          },
+        },
+        sumber: ['S7', 'S4'],
+      },
+      {
+        id: 'wajan-malam',
+        label: {
+          id: 'Wajan & Anglo Malam Panas',
+          jv: {
+            teks: 'Wajan lan Anglo Malam Benter',
+            ejaanAksara: 'wajan lan anglo malam',
+            status: 'draf',
+            catatanStatus: CATATAN_DRAF_JAWA,
+          },
+        },
+        posisi3D: [0.52, -0.26, 0.24],
+        kameraTarget: [0.4, -0.22, 0.15],
+        uraian: {
+          id: 'Wajan kecil di atas tungku tanah liat (anglo) yang menjaga suhu lilin malam (campuran gondorukem, parafin, dan lilin lebah) agar tetap cair dan meresap sempurna ke serat kain.',
+          jv: {
+            teks: 'Wajan alit ing nginggil anglo siti ingkang njagi benteripun malam supados tetep cuwer lan saged rumesep ing serat mori.',
+            ejaanAksara: 'wajan alit njagi malam supados tetep cuwér.',
+            status: 'draf',
+            catatanStatus: CATATAN_DRAF_JAWA,
+          },
+        },
+        sumber: ['S7', 'S4'],
+      },
+    ],
+  },
+  {
+    id: 'joglo',
+    nama: {
+      id: 'Pendopo Joglo Jawa',
+      jv: {
+        teks: 'Pendhapi Joglo Jawi',
+        ejaanAksara: 'pendhapi joglo jawi',
+        status: 'draf',
+        catatanStatus: CATATAN_DRAF_JAWA,
+      },
+    },
+    subjudul: {
+      id: 'Arsitektur kayu tahan gempa bersistem Saka Guru, Tumpang Sari, dan Umpak',
+      jv: {
+        teks: 'Wewangunan kajeng mawi saka guru, tumpang sari, lan umpak sela',
+        ejaanAksara: 'wewangunan joglo mawi saka guru lan tumpang sari',
+        status: 'draf',
+        catatanStatus: CATATAN_DRAF_JAWA,
+      },
+    },
+    kategori: 'Arsitektur Tradisional / Konstruksi',
+    tahunUnesco: '1935 / Warisan DIY',
+    berkasUnesco: 'Sonobudoyo',
+    ringkasan: {
+      id: 'Rumah dan Pendopo Joglo merupakan puncak rekayasa arsitektur kayu tradisional Yogyakarta dan Jawa Tengah. Struktur intinya ditopang oleh empat tiang utama (Saka Guru) yang berdiri di atas batu sendi (Umpak) tanpa paku mati, mengunci balok bersusun (Tumpang Sari) dan atap tinggi (Brunjung) sehingga lentur meredam guncangan gempa bumi.',
+      jv: {
+        teks: 'Pendhapi Joglo punika wewangunan kajeng utami ing Ngayogyakarta lan Jawi Tengah. Adeganipun kasangga dening sekawan Saka Guru ing nginggil umpak sela saha balok tumpang sari ingkang kukuh.',
+        ejaanAksara: 'pendhapi joglo kasangga déning sekawan saka guru.',
+        status: 'draf',
+        catatanStatus: CATATAN_DRAF_JAWA,
+      },
+    },
+    peranPanggung:
+      'Ruang publik terbuka tempat musyawarah warga, latihan tari, karawitan gamelan, dan pergelaran budaya.',
+    labelAksi3D: 'Bedah Struktur 3D (Exploded View)',
+    lisensiRef: 'G4',
+    sumber: ['S4'],
+    titikInfo: [
+      {
+        id: 'atap-brunjung',
+        label: {
+          id: 'Atap Brunjung & Penanggap (Tajug Joglo)',
+          jv: {
+            teks: 'Payon Brunjung lan Pananggap',
+            ejaanAksara: 'payon brunjung joglo',
+            status: 'draf',
+            catatanStatus: CATATAN_DRAF_JAWA,
+          },
+        },
+        posisi3D: [0, 0.56, 0.08],
+        kameraTarget: [0, 0.42, 0],
+        uraian: {
+          id: 'Bagian atap tengah yang menjulang tinggi berbentuk trapesium curam menyerupai gunung (simbol Mahameru), dikelilingi atap penanggap yang lebih landai untuk mengalirkan air hujan tropis dan menciptakan sirkulasi udara sejuk.',
+          jv: {
+            teks: 'Perangan payon tengah ingkang inggil kados redi minangka pralambang Mahameru, dipunkupengi payon pananggap ingkang langkung landhai.',
+            ejaanAksara: 'payon brunjung inggil kados redi mahaméru.',
+            status: 'draf',
+            catatanStatus: CATATAN_DRAF_JAWA,
+          },
+        },
+        sumber: ['S4'],
+      },
+      {
+        id: 'tumpang-sari',
+        label: {
+          id: 'Tumpang Sari (Balok Susun Bersendi)',
+          jv: {
+            teks: 'Tumpang Sari (Balok Susun Ukir)',
+            ejaanAksara: 'tumpang sari kajeng',
+            status: 'draf',
+            catatanStatus: CATATAN_DRAF_JAWA,
+          },
+        },
+        posisi3D: [0, 0.24, 0.22],
+        kameraTarget: [0, 0.2, 0],
+        uraian: {
+          id: 'Susunan balok kayu jati bertingkat (tumpang sari jero dan tumpang sari jaba) di atas blandar-pengeret yang saling mengunci dengan pasak (purus) dan membentuk langit-langit piramida terbalik (uleng) berukir emas.',
+          jv: {
+            teks: 'Urutan balok kajeng jati matumpa-tumpa ing nginggil blandar lan pengeret ingkang sami ngunci mawi purus tanpa paku wesi.',
+            ejaanAksara: 'tumpang sari ngunci balok kajeng mawi purus.',
+            status: 'draf',
+            catatanStatus: CATATAN_DRAF_JAWA,
+          },
+        },
+        sumber: ['S4'],
+      },
+      {
+        id: 'saka-guru',
+        label: {
+          id: 'Empat Saka Guru (Tiang Utama Pusat)',
+          jv: {
+            teks: 'Sekawan Saka Guru (Saka Utami)',
+            ejaanAksara: 'sekawan saka guru',
+            status: 'draf',
+            catatanStatus: CATATAN_DRAF_JAWA,
+          },
+        },
+        posisi3D: [0.24, -0.05, 0.24],
+        kameraTarget: [0.12, -0.05, 0.12],
+        uraian: {
+          id: 'Empat tiang kayu jati utuh di pusat bangunan yang menopang beban atap brunjung dan melambangkan empat penjuru mata angin yang menyatu pada pusat keseimbangan.',
+          jv: {
+            teks: 'Sekawan saka kajeng jati ing tengahing wewangunan ingkang nyangga bobot payon brunjung saha pralambang kiblat papat.',
+            ejaanAksara: 'sekawan saka guru nyangga tengahing pendhapi.',
+            status: 'draf',
+            catatanStatus: CATATAN_DRAF_JAWA,
+          },
+        },
+        sumber: ['S4'],
+      },
+      {
+        id: 'umpak-batu',
+        label: {
+          id: 'Umpak Batu Andesit (Fondasi Peredam Gempa)',
+          jv: {
+            teks: 'Umpak Sela Andesit ( Dhasar Saka)',
+            ejaanAksara: 'umpak séla andésit',
+            status: 'draf',
+            catatanStatus: CATATAN_DRAF_JAWA,
+          },
+        },
+        posisi3D: [0.24, -0.34, 0.24],
+        kameraTarget: [0.15, -0.3, 0.15],
+        uraian: {
+          id: 'Landasan batu vulkanik berbentuk trapesium berukir padma (teratai) di bawah tiap tiang kayu. Umpak mencegah kelembapan tanah merusak kayu sekaligus bertindak sebagai isolator geser saat terjadi gempa bumi.',
+          jv: {
+            teks: 'Landhesan sela awujud trapesium ing ngandhap saka kajeng ingkang nyegah kayu saking telesing siti saha nahan lindhu.',
+            ejaanAksara: 'umpak séla nyangga saka kajeng supados kukuh.',
+            status: 'draf',
+            catatanStatus: CATATAN_DRAF_JAWA,
+          },
+        },
+        sumber: ['S4'],
+      },
+    ],
+  },
+  {
+    id: 'wayang',
+    nama: {
+      id: 'Wayang & Gunungan 3D',
+      jv: {
+        teks: 'Ringgit Purwa lan Kayon',
+        ejaanAksara: 'ringgit purwa lan kayon',
+        status: 'draf',
+        catatanStatus: CATATAN_DRAF_JAWA,
+      },
+    },
+    subjudul: {
+      id: 'Pahatan 3D tokoh satria bersendi tuding dan pohon hayat Gunungan (Kayon)',
+      jv: {
+        teks: 'Wangun 3D ringgit satriya mawi tuding lan gunungan kayon',
+        ejaanAksara: 'ringgit satriya mawi cempurit lan kayon',
+        status: 'draf',
+        catatanStatus: CATATAN_DRAF_JAWA,
+      },
+    },
+    kategori: 'Seni Pertunjukan & Tatah Sungging',
+    tahunUnesco: '2003 / 2008',
+    berkasUnesco: '00063',
+    ringkasan: {
+      id: 'Wayang ditetapkan UNESCO pada 2003 dan 2008 (Berkas 00063). Selain boneka tokoh satria yang memiliki sendi bahu-siku berpenggerak tuding dan gapit tanduk, pertunjukan wayang selalu dibuka dan ditutup dengan tancapan Gunungan (Kayon) yang melambangkan jagat raya beserta pohon kehidupan Kalpataru.',
+      jv: {
+        teks: 'Wayang katetepaken dening UNESCO ing warsa 2003 lan 2008. Kejawi paraga satriya ingkang dipunobahaken mawi gapit lan tuding, lampahan ringgit tansah kabikak mawi Gunungan utawi Kayon.',
+        ejaanAksara: 'wayang lan kayon punika warisan budaya jawi.',
+        status: 'draf',
+        catatanStatus: CATATAN_DRAF_JAWA,
+      },
+    },
+    peranPanggung:
+      'Pemeran utama lakon epos Ramayana dan simbol makrokosmos (Gunungan/Kayon) di atas panggung.',
+    labelAksi3D: 'Gerakkan Sendi Tuding & Busur Panah',
+    lisensiRef: 'G5',
+    sumber: ['S3', 'S4', 'S5'],
     titikInfo: [
       {
         id: 'awak-tatahan',
         label: {
-          id: 'Awak Wayang (Tatahan & Sunggingan)',
+          id: 'Awak Wayang & Gelung Supit Urang',
           jv: {
-            teks: 'Awak Ringgit (Tatahan)',
+            teks: 'Awak Ringgit (Tatahan lan Sunggingan)',
             ejaanAksara: 'awak ringgit tatahan',
             status: 'draf',
             catatanStatus: CATATAN_DRAF_JAWA,
           },
         },
-        posisi3D: [0, 0.35, 0.03],
-        kameraTarget: [0, 0.35, 0],
+        posisi3D: [0.12, 0.34, 0.06],
+        kameraTarget: [0.1, 0.28, 0],
         uraian: {
-          id: 'Lembaran kulit yang dipahat berlubang-lubang halus (tatahan) dan diwarnai (sunggingan). Lubang-lubang pahatan inilah yang membuat bayangan wayang di kain kelir tampak bertekstur renda dan tidak sekadar blok hitam.',
+          id: 'Pahatan mahkota gelung supit urang dan badan satria berhias praba serta kain dodot yang diukir berlapis (tatah sungging) dengan gradasi warna prada emas, merah sogan, dan hitam.',
           jv: {
-            teks: 'Lembaran cucal ingkang dipuntatah alus lan dipunsungging, satemah ayang-ayangipun ing kelir katingal ngrawit.',
-            ejaanAksara: 'lembaran cucal dipuntatah alus lan dipunsungging.',
+            teks: 'Pahatan gelung supit urang saha awak satriya ingkang dipuntatah alus lan dipunsungging mawi pulas prada emas.',
+            ejaanAksara: 'awak ringgit dipuntatah lan dipunsungging.',
             status: 'draf',
             catatanStatus: CATATAN_DRAF_JAWA,
           },
@@ -539,69 +834,69 @@ export const DAFTAR_BENDA: BendaPusaka[] = [
       {
         id: 'cempurit',
         label: {
-          id: 'Cempurit / Gapit (Tangkai Utama)',
+          id: 'Cempurit / Gapit (Tangkai Tanduk)',
           jv: {
-            teks: 'Cempurit utawi Gapit',
+            teks: 'Cempurit utawi Gapit (Cepengan Utami)',
             ejaanAksara: 'cempurit utawi gapit',
             status: 'draf',
             catatanStatus: CATATAN_DRAF_JAWA,
           },
         },
-        posisi3D: [0, -0.45, 0.04],
-        kameraTarget: [0, -0.4, 0],
+        posisi3D: [0.12, -0.42, 0.05],
+        kameraTarget: [0.1, -0.35, 0],
         uraian: {
-          id: 'Tangkai penyangga tegak dari tulang/tanduk atau kayu yang menjepit badan wayang dari atas hingga ke bawah kaki untuk dipegang dalang atau ditancapkan pada batang pisang (gedebog).',
+          id: 'Tangkai penyangga tegak dari tanduk kerbau yang menjepit poros tubuh wayang dari mahkota hingga ke bawah kaki untuk dipegang dalang atau ditancapkan pada gedebog.',
           jv: {
-            teks: 'Cepengan utama ingkang njepit awak ringgit saking nginggil dumugi ngandhap kangge dicepeng dhalang utawi katancepaken ing gedebog.',
-            ejaanAksara: 'cepengan utama ingkang njepit awak ringgit.',
+            teks: 'Tangkai panyangga saking sungu maesa ingkang njepit awak ringgit saking nginggil dumugi ngandhap kagem dipuncepeng dhalang.',
+            ejaanAksara: 'cempurit saking sungu kagem nyepeng ringgit.',
             status: 'draf',
             catatanStatus: CATATAN_DRAF_JAWA,
           },
         },
-        sumber: ['S3'],
+        sumber: ['S3', 'S4'],
       },
       {
         id: 'tuding',
         label: {
-          id: 'Tuding (Tangkai Penggerak Tangan)',
+          id: 'Sendi Lengan, Tuding, & Busur Gendewa',
           jv: {
-            teks: 'Tuding Asta Ringgit',
-            ejaanAksara: 'tuding asta ringgit',
+            teks: 'Tuding (Tangkai Pangobah Asta)',
+            ejaanAksara: 'tuding pangobah asta',
             status: 'draf',
             catatanStatus: CATATAN_DRAF_JAWA,
           },
         },
-        posisi3D: [0.38, -0.1, 0.05],
-        kameraTarget: [0.3, 0, 0],
+        posisi3D: [0.42, 0.08, 0.08],
+        kameraTarget: [0.3, 0.08, 0],
         uraian: {
-          id: 'Dua bilah tangkai ramping yang terhubung dengan sendi bahu dan siku wayang, memungkinkan dalang menggerakkan lengan boneka secara ekspresif saat berdialog atau bertarung.',
+          id: 'Lengan wayang memiliki dua engsel (bahu dan siku) yang dihubungkan tangkai tuding serta busur panah Gendewa, memungkinkan gerakan memanah dan sabetan yang hidup di tangan dalang.',
           jv: {
-            teks: 'Tangkai alit ingkang nggayutaken sendi asta ringgit supados saged kaobahaken nalika guneman.',
-            ejaanAksara: 'tangkai alit kanggé ngobahaken asta ringgit.',
+            teks: 'Asta ringgit gadhah sendhi pundhak lan sikut ingkang kasambung kaliyan tuding supados saged obah luwes nalika menthang gendhewa.',
+            ejaanAksara: 'tuding kagem ngobahaken asta ringgit.',
             status: 'draf',
             catatanStatus: CATATAN_DRAF_JAWA,
           },
         },
-        sumber: ['S3'],
+        sumber: ['S3', 'S4'],
       },
       {
         id: 'kelir-blencong',
         label: {
-          id: 'Kelir & Sorot Blencong',
+          id: 'Gunungan (Kayon) & Pohon Kalpataru',
           jv: {
-            teks: 'Kelir lan Sorot Blencong',
-            ejaanAksara: 'kelir lan sorot blencong',
+            teks: 'Gunungan utawi Kayon (Pohon Hayat)',
+            ejaanAksara: 'gunungan utawi kayon',
             status: 'draf',
             catatanStatus: CATATAN_DRAF_JAWA,
           },
         },
-        posisi3D: [-0.35, 0.25, -0.18],
-        kameraTarget: [0, 0.2, -0.15],
+        posisi3D: [-0.32, 0.18, -0.06],
+        kameraTarget: [-0.25, 0.15, -0.04],
         uraian: {
-          id: 'Kelir adalah bentangan kain putih berbingkai kayu tempat bayangan jatuh, sedangkan blencong adalah lampu penyinar dari arah dalang. Jarak wayang terhadap kelir menentukan tajam atau membesarnya bayangan.',
+          id: 'Pahatan 3D berbentuk pucuk gunung (meru) yang memuat gapura candi, penjaga raksasa, dan pohon kehidupan Kalpataru; digunakan dalang sebagai penanda pergantian babak, angin, api, atau hutan.',
           jv: {
-            teks: 'Kelir punika kain pethak papan tibaning ayang-ayang, dene blencong punika lampu panyorot saking arah dhalang.',
-            ejaanAksara: 'kelir punika kain papan tibaning ayang.',
+            teks: 'Wangun meru ingkang ngemot gapura candhi lan wit Kalpataru minangka pratandha gantosipun babak, wana, utawi dahana.',
+            ejaanAksara: 'kayon pratandha gantosipun babak ing pakeliran.',
             status: 'draf',
             catatanStatus: CATATAN_DRAF_JAWA,
           },
@@ -626,15 +921,15 @@ export const LAKON_KIJANG_KENCANA: LakonWayang = {
   subjudul: {
     id: 'Episode Ramayana (Aranya Kanda): Tipu daya Marica di Hutan Dandaka',
     jv: {
-      teks: 'Episode Ramayana: Paeka Kala Marica wonten ing Wana Dandaka',
-      ejaanAksara: 'paéka kala marica ing wana dandaka',
+      teks: 'Cariyos Ramayana (Aranya Kanda): Paekanipun Marica ing Wana Dandaka',
+      ejaanAksara: 'cariyos ramayana ing wana dandaka',
       status: 'draf',
       catatanStatus: CATATAN_DRAF_JAWA,
     },
   },
-  eposAsal: 'Ramayana (Valmiki / Repertoar Wayang Kulit Purwa Jawa)',
-  tokohKanan: 'Sri Rama (Satria Panah)',
-  tokohKiri: 'Kidang Kencana (Penjelmaan Marica)',
+  eposAsal: 'Ramayana · Kitab ke-3 (Aranya Kanda)',
+  tokohKanan: 'Sri Rama (Satria Pemanah 3D)',
+  tokohKiri: 'Kidang Kencana (Penjelmaan Marica 3D)',
   sumber: ['S3', 'S5'],
   babak: [
     {
@@ -651,17 +946,17 @@ export const LAKON_KIJANG_KENCANA: LakonWayang = {
       narasi: {
         id: 'Rama, Dewi Sinta, dan Laksmana hidup di pertapaan hutan Dandaka. Raja Alengka, Rahwana, menyusun siasat bersama raksasa Marica yang mampu berubah wujud untuk menjauhkan Rama dan Laksmana dari Sinta.',
         jv: {
-          teks: 'Sri Rama, Dewi Sinta, lan Laksmana mesanggrah wonten ing Wana Dandaka. Prabu Dasamuka ngrancang paeka kaliyan Kala Marica ingkang saged malih rupa kangge misahaken Rama saking Sinta.',
-          ejaanAksara: 'sri rama lan déwi sinta ing wana dandaka.',
+          teks: 'Sri Rama, Dewi Sinta, saha Laksmana dedunung ing pertapan Wana Dandaka. Prabu Dasamuka saking Ngalengka nyusun paeka kaliyan ditya Marica ingkang saged malih rupa supados misahaken Rama saking Sinta.',
+          ejaanAksara: 'sri rama lan dewi sinta ing wana dandaka.',
           status: 'draf',
           catatanStatus: CATATAN_DRAF_JAWA,
         },
       },
       petunjukDalang:
-        'Gerakkan tangan kanan (atau slider kanan) untuk menegakkan figur Sri Rama di sisi kanan kelir.',
-      posisiAwalRama: 0.48,
-      posisiAwalKidang: -0.62,
-      sumber: ['S5'],
+        'Tempatkan Sri Rama di sisi kanan panggung dan Kidang Kencana mulai tampak dari tepi kiri hutan.',
+      posisiAwalRama: 0.55,
+      posisiAwalKidang: -0.65,
+      sumber: ['S3', 'S5'],
     },
     {
       nomor: 2,
@@ -677,25 +972,25 @@ export const LAKON_KIJANG_KENCANA: LakonWayang = {
       narasi: {
         id: 'Marica menjelma menjadi seekor kijang emas berbintik perak yang melompat anggun di dekat pertapaan. Sinta terpikat dan meminta Rama menangkapnya, sementara Laksmana mengingatkan bahwa kijang itu patut dicurigai sebagai ilusi.',
         jv: {
-          teks: 'Marica malih rupa dados kidang kencana ingkang mlumpat ing sakiwa tengenipun pertapan. Dewi Sinta kepencut lan nyuwun Rama nyepeng kidang punika, sanadyan Laksmana sampun ngemutaken bilih punika saged dados paeka.',
-          ejaanAksara: 'marica malih rupa dados kidang kencana.',
+          teks: 'Marica malih wujud dados kidang kencana ingkang mlumpat endah ing celak pertapan. Dewi Sinta kapencut lajeng nyuwun Rama nyepeng kidang punika, nanging Laksmana ngemutaken bilih kidang punika patut dipunwaspaosaken.',
+          ejaanAksara: 'marica malih wujud dados kidang kencana.',
           status: 'draf',
           catatanStatus: CATATAN_DRAF_JAWA,
         },
       },
       petunjukDalang:
-        'Gerakkan tangan kiri (atau slider kiri) untuk membawa Kidang Kencana mendekat ke tengah kelir lalu menjauh.',
+        'Gerakkan tangan kiri (atau slider kiri) mendekat lalu menjauh untuk memperagakan lompatan kijang emas yang memancing perhatian.',
       posisiAwalRama: 0.35,
-      posisiAwalKidang: -0.18,
-      sumber: ['S5'],
+      posisiAwalKidang: -0.15,
+      sumber: ['S3', 'S5'],
     },
     {
       nomor: 3,
       judul: {
         id: 'Babak 3: Pengejaran dan Suara Palsu',
         jv: {
-          teks: 'Babak 3: Pambujengan lan Swanten Palsu',
-          ejaanAksara: 'babak telu swanten palsu',
+          teks: 'Babak 3: Pangoyak saha Swanten Palsu',
+          ejaanAksara: 'babak telu pangoyak kidang',
           status: 'draf',
           catatanStatus: CATATAN_DRAF_JAWA,
         },
@@ -703,17 +998,17 @@ export const LAKON_KIJANG_KENCANA: LakonWayang = {
       narasi: {
         id: 'Rama menitipkan penjagaan Sinta kepada Laksmana lalu mengejar kijang emas jauh ke dalam hutan. Ketika anak panah Rama mengenai sasaran, Marica kembali ke wujud raksasa dan berteriak menirukan suara Rama meminta pertolongan Sinta dan Laksmana.',
         jv: {
-          teks: 'Rama nitipaken Sinta dhateng Laksmana lajeng mbujeng kidang mlebet wana. Nalika jemparingipun Rama ngenani Marica, raseksa punika bali dhateng wujud aslinipun lan mbengok nirokaken swantenipun Rama nyuwun tulung.',
-          ejaanAksara: 'rama mbujeng kidang lan nglepas jemparing.',
+          teks: 'Rama masrahaken penjagaan Sinta dhumateng Laksmana lajeng ngoyak kidang kencana mlebet wana. Nalika jemparingipun Rama ngenani sasaran, Marica wangsul dhateng wujud aslinipun saha njerit niru swantenipun Rama nyuwun tulung.',
+          ejaanAksara: 'jemparing sri rama ngenani kidang kencana.',
           status: 'draf',
           catatanStatus: CATATAN_DRAF_JAWA,
         },
       },
       petunjukDalang:
-        'Pertemukan gerak tangan kanan dan kiri di tengah kelir untuk memperagakan saat panah Rama membuka penyamaran Marica.',
-      posisiAwalRama: 0.12,
-      posisiAwalKidang: -0.12,
-      sumber: ['S5'],
+        'Pertemukan Sri Rama ke arah Kidang Kencana di sisi kiri untuk menggambarkan saat panah dilepaskan.',
+      posisiAwalRama: -0.1,
+      posisiAwalKidang: -0.55,
+      sumber: ['S3', 'S5'],
     },
     {
       nomor: 4,
@@ -727,18 +1022,18 @@ export const LAKON_KIJANG_KENCANA: LakonWayang = {
         },
       },
       narasi: {
-        id: 'Teriakan palsu itu membuat Sinta cemas dan mendesak Laksmana menyusul Rama, sehingga pertapaan kehilangan penjaganya dan Rahwana datang menyamar sebagai pertapa. Dalam tradisi wayang Jawa, lakon ini menjadi pengingat agar manusia tidak tergesa-gesa tertipu oleh kemilau lahiriah.',
+        id: 'Teriakan palsu itu membuat Sinta cemas dan mendesak Laksmana menyusul Rama, sehingga pertapaan kehilangan penjaganya dan Rahwana datang menyamar sebagai pertapa. Dalam tradisi budaya Jawa, lakon ini menjadi pengingat agar manusia tidak tergesa-gesa tertipu oleh kemilau lahiriah.',
         jv: {
-          teks: 'Swanten palsu punika ndadosaken Sinta kuwatir lan ngutus Laksmana nyusul Rama, satemah pertapan suwung saking penjagaan. Ing tradhisi ringgit Jawi, lampahan punika paring piwulang supados manungsa tansah waspada lan boten gampil kabujuk gebyaring lair.',
-          ejaanAksara: 'lampahan punika paring piwulang supados tansah waspada.',
+          teks: 'Jeritan palsu punika ndadosaken Sinta kuwatos lan ngakon Laksmana nusul Rama, satemah pertapan suwung lan Dasamuka rawuh nyamar dados pandhita. Lampahan punika paring piwulang supados manungsa boten gampil kapusan dening gebyar lair.',
+          ejaanAksara: 'manungsa sampun ngantos kapusan gebyar lair.',
           status: 'draf',
           catatanStatus: CATATAN_DRAF_JAWA,
         },
       },
       petunjukDalang:
-        'Jauhkan kedua wayang ke tepi kelir untuk menutup adegan dan periksa sumber pustaka di layar Sumber.',
-      posisiAwalRama: 0.55,
-      posisiAwalKidang: -0.55,
+        'Kembalikan kedua tokoh ke tengah layar kelir sebagai penutup babak dan renungan cerita.',
+      posisiAwalRama: 0.25,
+      posisiAwalKidang: -0.25,
       sumber: ['S3', 'S5'],
     },
   ],

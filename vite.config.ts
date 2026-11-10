@@ -44,7 +44,11 @@ function apiTanyaLocalPlugin(): Plugin {
           pertanyaan?: string;
         };
         const bendaId: BendaPusaka['id'] =
-          body.bendaId === 'keris' || body.bendaId === 'saron' || body.bendaId === 'wayang'
+          body.bendaId === 'keris' ||
+          body.bendaId === 'saron' ||
+          body.bendaId === 'batik' ||
+          body.bendaId === 'joglo' ||
+          body.bendaId === 'wayang'
             ? body.bendaId
             : 'keris';
         const hasil = jawabDariKurasiLokal(bendaId, body.pertanyaan ?? '');

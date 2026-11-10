@@ -18,11 +18,13 @@ test.describe('Kelir E2E & Antislop R-35 Verification', () => {
     await expect(page).toHaveTitle(/Kelir/);
     await expect(page.getByTestId('layar-pintu')).toBeVisible();
 
-    // Klik masuk tanpa kamera -> menuju Rak Pusaka
+    // Klik masuk tanpa kamera -> menuju Rak Pusaka (5 ranah warisan budaya)
     await page.getByTestId('cta-masuk-manual').click();
     await expect(page.getByTestId('layar-rak')).toBeVisible();
     await expect(page.getByTestId('kartu-pusaka-keris')).toBeVisible();
     await expect(page.getByTestId('kartu-pusaka-saron')).toBeVisible();
+    await expect(page.getByTestId('kartu-pusaka-batik')).toBeVisible();
+    await expect(page.getByTestId('kartu-pusaka-joglo')).toBeVisible();
     await expect(page.getByTestId('kartu-pusaka-wayang')).toBeVisible();
 
     // Buka Ruang Pegang 3D Keris
@@ -30,7 +32,8 @@ test.describe('Kelir E2E & Antislop R-35 Verification', () => {
     await expect(page.getByTestId('layar-pegang')).toBeVisible();
     await expect(page.getByTestId('detail-titik-aktif')).toContainText('Wilah');
 
-    // Klik tiap titik anatomis & tombol kendali 3D
+    // Klik tiap titik anatomis & tombol kendali 3D + aksi hidup 3D
+    await page.getByTestId('tombol-aksi-3d').click();
     await page.getByTestId('titik-info-ganja').click();
     await expect(page.getByTestId('detail-titik-aktif')).toContainText('Ganja');
     await page.getByTestId('titik-info-pamor').click();
@@ -41,13 +44,24 @@ test.describe('Kelir E2E & Antislop R-35 Verification', () => {
     await page.getByTestId('zoom-jauh').click();
     await page.getByTestId('reset-pandangan').click();
 
-    // Pindah tab benda ke Saron & Wayang
+    // Pindah tab benda ke Saron, Batik, Joglo, & Wayang
     await page.getByTestId('tab-benda-saron').click();
     await expect(page.getByTestId('detail-titik-aktif')).toContainText('Wilah Gangsa');
     await expect(page.getByTestId('tabuh-wilah-1')).toBeVisible();
     await page.getByTestId('tabuh-wilah-1').click();
+
+    await page.getByTestId('tab-benda-batik').click();
+    await expect(page.getByTestId('detail-titik-aktif')).toContainText('Canting Tulis');
+    await page.getByTestId('tombol-aksi-3d').click();
+
+    await page.getByTestId('tab-benda-joglo').click();
+    await expect(page.getByTestId('detail-titik-aktif')).toContainText('Atap Brunjung');
+    await page.getByTestId('tombol-aksi-3d').click();
+
     await page.getByTestId('tab-benda-wayang').click();
     await expect(page.getByTestId('detail-titik-aktif')).toContainText('Awak Wayang');
+    await page.getByTestId('titik-info-kelir-blencong').click();
+    await expect(page.getByTestId('detail-titik-aktif')).toContainText('Gunungan');
 
     // Uji validasi form tanya jawab kosong (failure state)
     await page.getByTestId('kirim-tanya').click();

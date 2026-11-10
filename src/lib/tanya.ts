@@ -23,9 +23,19 @@ export const CONTOH_PERTANYAAN: Record<BendaPusaka['id'], string[]> = {
     'Bagaimana teknik menabuh saron agar dengung bilah tidak bertabrakan?',
     'Kapan gamelan Indonesia ditetapkan oleh UNESCO?',
   ],
+  batik: [
+    'Apa fungsi nyamplungan dan cucuk pada canting tulis tembaga?',
+    'Mengapa malam (lilin batik) dapat merintang warna pada kain mori?',
+    'Kapan Batik Indonesia ditetapkan oleh UNESCO?',
+  ],
+  joglo: [
+    'Apa fungsi empat tiang Saka Guru dan konstruksi Tumpang Sari pada Joglo?',
+    'Mengapa umpak batu andesit membuat bangunan Joglo tahan guncangan gempa?',
+    'Apa perbedaan atap Brunjung dan Penanggap pada arsitektur Joglo Jawa?',
+  ],
   wayang: [
-    'Apa perbedaan fungsi cempurit (gapit) dan tuding pada wayang kulit?',
-    'Mengapa pahatan berlubang (tatahan) penting bagi bayangan di kelir?',
+    'Apa fungsi Gunungan (Kayon) dalam pembabakan pertunjukan wayang?',
+    'Apa perbedaan fungsi cempurit (gapit) dan tuding pada wayang?',
     'Apa peran Marica sebagai Kijang Kencana dalam lakon Ramayana?',
   ],
 };
@@ -44,7 +54,7 @@ export function jawabDariKurasiLokal(
   if (topikDiluarCakupan) {
     return {
       jawaban:
-        'Informasi tersebut berada di luar cakupan teks kurasi Kelir. Asisten ini hanya menjawab pertanyaan mengenai struktur benda pusaka (Keris, Saron Gamelan, Wayang Kulit), lakon Kijang Kencana, dan sumber pustaka yang tercatat.',
+        'Informasi tersebut berada di luar cakupan teks kurasi Kelir. Asisten ini hanya menjawab pertanyaan mengenai struktur warisan budaya Jawa (Keris, Saron Gamelan, Batik Tulis, Arsitektur Joglo, Wayang & Gunungan), lakon Kijang Kencana, dan sumber pustaka yang tercatat.',
       sumberKode: benda.sumber,
       modePenyedia: 'kurasi-lokal',
       ditemukanDiKurasi: false,

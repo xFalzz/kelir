@@ -55,6 +55,8 @@
   let galatTanya = $state<string | null>(null);
 
   let inputUjiAksara = $state<string>('kelir pusaka jawi');
+  let aksi3DPintuAktif = $state<boolean>(false);
+  let aksi3DPegangAktif = $state<boolean>(false);
   let webglPintuTersedia = $state<boolean>(true);
   let webglPegangTersedia = $state<boolean>(true);
   let webglPanggungTersedia = $state<boolean>(true);
@@ -86,9 +88,11 @@
   const hasilUjiAksara = $derived(latinToAksara(inputUjiAksara));
 
   const SPEC_MATERIAL_PBR: Record<BendaPusaka['id'], string> = {
-    keris: 'Pamor Wos Wutah 1K + Kayu Jati Gelap (Poly Haven CC0) + HDRI Studio',
-    saron: 'Gangsa Perunggu Tempa + Ukiran Prada Emas + Sintesis Nada Slendro',
-    wayang: 'Kulit Kerbau Tropenmuseum (TMnr 3582-30) + Bayangan Alpha Tatahan',
+    keris: 'Bilah 3D 64 Irisan Berpamor + Kayu Jati 1K (Poly Haven CC0) + Animasi Sarungkan',
+    saron: '7 Wilah Perunggu Cembung 3D + Rancakan Ukir Emas + Gending Slendro Otomatis',
+    batik: 'Kain Mori 3D Bergelombang + Canting Tembaga Hidup + Anglo & Wajan Malam Panas',
+    joglo: '4 Saka Guru + Konstruksi Tumpang Sari 3D + Atap Brunjung (Exploded View)',
+    wayang: 'Gunungan Kayon 3D Berlapis + Wayang Satria Berartikulasi Sendi & Busur 3D',
   };
 
   function perbaruiJamWib(): void {
@@ -198,8 +202,19 @@
 
   function gantiBendaHero(id: BendaPusaka['id']): void {
     bendaHeroId = id;
+    aksi3DPintuAktif = false;
     const b = DAFTAR_BENDA.find((x) => x.id === id) ?? DAFTAR_BENDA[0];
     stagePintu?.muatBenda(b);
+  }
+
+  function toggleAksi3DPintu(): void {
+    if (!stagePintu) return;
+    aksi3DPintuAktif = stagePintu.toggleAksiHidup();
+  }
+
+  function toggleAksi3DPegang(): void {
+    if (!stagePegang) return;
+    aksi3DPegangAktif = stagePegang.toggleAksiHidup();
   }
 
   async function pilihBenda(
@@ -209,6 +224,7 @@
   ): Promise<void> {
     bendaIdAktif = id;
     indeksTitikAktif = indeksTitik;
+    aksi3DPegangAktif = false;
     statusTanya = 'kosong';
     hasilTanya = null;
     galatTanya = null;
@@ -371,9 +387,9 @@
       <span>YOGYAKARTA &amp; JAWA TENGAH</span>
     </div>
     <div class="item-telemetri">
-      <span>UNESCO ICH: 00063 · 00112 · 01760</span>
+      <span>UNESCO ICH: 00063 · 00112 · 00170 · 01760</span>
       <span>·</span>
-      <span>THREE.JS PBR 1K + MEDIAPIPE LOKAL</span>
+      <span>5 RANAH WARISAN 3D VOLUMETRIK + MEDIAPIPE LOKAL</span>
     </div>
   </div>
 </div>
@@ -513,7 +529,7 @@
           Teks Jawa: Draf (Aksara dihitung berbasis aturan)
         </span>
       {:else}
-        <span class="penanda-status">SUMBER TERKURASI S1..S6</span>
+        <span class="penanda-status">SUMBER TERKURASI S1..S7</span>
       {/if}
 
       {#if statusKamera === 'aktif'}
@@ -543,29 +559,31 @@
       <div class="grid-pintu">
         <div class="anim-masuk">
           <div class="lencana-hero-baris">
-            <span class="lencana-kapsul">● WARISAN 3D PBR + WAYANG TANGAN</span>
-            <span class="lencana-kapsul">YOGYAKARTA &amp; JAWA TENGAH</span>
+            <span class="lencana-kapsul">● 5 RANAH BUDAYA JAWA &amp; NUSANTARA 3D</span>
+            <span class="lencana-kapsul">TOSAN AJI · GAMELAN · BATIK · JOGLO · WAYANG</span>
             <span class="lencana-kapsul">UNICODE U+A980..U+A9DF</span>
           </div>
 
           <h1 id="judul-pintu">
             {#if bahasaAktif === 'aksara'}
               <span class="teks-aksara" lang="jv">
-                {latinToAksara('kelir pusaka lan wayang jawi')}
+                {latinToAksara('kelir warisan budaya jawi lan nusantara')}
               </span>
             {:else if bahasaAktif === 'jv'}
-              Kelir: Nyinau <span class="sorot-garis-bawah">Pusaka 3D</span> lan Lampahan Ringgit Purwa
+              Kelir: Ngasta <span class="sorot-garis-bawah">Warisan Budaya Jawi 3D</span> saking Keris, Gamelan, Batik, Joglo, dumugi Wayang
             {:else}
-              Pegang <span class="sorot-garis-bawah">Pusaka Jawa 3D</span> dan Mainkan Bayangannya di Atas Kelir
+              Pegang <span class="sorot-garis-bawah">Warisan Budaya Jawa 3D</span> dari Tosan Aji, Gamelan, Batik Tulis, Arsitektur Joglo, hingga Wayang
             {/if}
           </h1>
 
           <p>
-            Di museum fisik, keris berpamor, saron gamelan perunggu, dan wayang kulit tersimpan di
-            balik kaca. Di <strong>Kelir</strong>, Anda memutar model tiga dimensi bertekstur nyata
-            (pamor tempa lipat, kayu jati ukir 1K, dan kulit kerbau koleksi museum), mengetuk bilah
-            nada <em>slendro</em>, lalu memainkan lakon Ramayana <em>Kijang Kencana</em> dalam
-            Bahasa Indonesia, Bahasa Jawa, dan Aksara Jawa.
+            Di museum fisik, mahakarya budaya tersimpan kaku di balik kaca. Di
+            <strong>Kelir</strong>, Anda memegang model tiga dimensi volumetrik yang hidup (bukan
+            sekadar potongan gambar datar): mencabut bilah <strong>Keris Luk 5</strong> dari
+            warangka, menabuh gending <strong>Saron Gamelan</strong>, menggerakkan
+            <strong>Canting Batik Tulis</strong> di atas kain mori bergelombang, membedah struktur
+            tahan gempa <strong>Pendopo Joglo</strong>, hingga menggerakkan sendi
+            <strong>Wayang &amp; Gunungan 3D</strong>.
           </p>
 
           <p class="teks-redup-kelir">
@@ -637,7 +655,7 @@
                 aria-pressed={bendaHeroId === 'keris'}
                 onclick={() => gantiBendaHero('keris')}
               >
-                01 Keris Luk 5
+                01 Keris
               </button>
               <button
                 type="button"
@@ -645,7 +663,23 @@
                 aria-pressed={bendaHeroId === 'saron'}
                 onclick={() => gantiBendaHero('saron')}
               >
-                02 Saron Slendro
+                02 Saron
+              </button>
+              <button
+                type="button"
+                class="tombol-hud"
+                aria-pressed={bendaHeroId === 'batik'}
+                onclick={() => gantiBendaHero('batik')}
+              >
+                03 Batik
+              </button>
+              <button
+                type="button"
+                class="tombol-hud"
+                aria-pressed={bendaHeroId === 'joglo'}
+                onclick={() => gantiBendaHero('joglo')}
+              >
+                04 Joglo
               </button>
               <button
                 type="button"
@@ -653,17 +687,28 @@
                 aria-pressed={bendaHeroId === 'wayang'}
                 onclick={() => gantiBendaHero('wayang')}
               >
-                03 Wayang Kulit
+                05 Wayang
               </button>
             </div>
 
-            <button
-              type="button"
-              class="tombol-hud"
-              onclick={() => pilihBenda(bendaHeroId, true)}
-            >
-              Buka Ruang 3D →
-            </button>
+            <div style="display: flex; flex-wrap: wrap; gap: 0.35rem;">
+              <button
+                type="button"
+                class="tombol-hud"
+                data-testid="hero-aksi-3d"
+                aria-pressed={aksi3DPintuAktif}
+                onclick={toggleAksi3DPintu}
+              >
+                {bendaHeroAktif.labelAksi3D}
+              </button>
+              <button
+                type="button"
+                class="tombol-hud"
+                onclick={() => pilihBenda(bendaHeroId, true)}
+              >
+                Buka Ruang 3D →
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -671,20 +716,20 @@
       <!-- Bento 4 Pilar Keunggulan Teknis & Budaya -->
       <div class="bento-pintu-grid">
         <div class="kartu-bento-pintu anim-masuk">
-          <span class="mono-kecil">01 · MATERIAL &amp; TEKSTUR NYATA</span>
-          <div class="angka-bento">3 Pusaka PBR</div>
+          <span class="mono-kecil">01 · GEOMETRI 3D VOLUMETRIK HIDUP</span>
+          <div class="angka-bento">5 Ranah Budaya</div>
           <p style="margin: 0; font-size: 0.9rem;">
-            Pamor tempa lipat <em>Wos Wutah</em>, kayu jati 1K CC0, perunggu <em>gangsa</em>
-            bersuara <em>slendro</em>, dan kulit kerbau koleksi museum berbayangan tatahan asli.
+            Tosan Aji Keris, Karawitan Saron Gamelan, Wastra Batik Tulis &amp; Canting, Arsitektur
+            Pendopo Joglo, serta Wayang &amp; Gunungan 3D berartikulasi penuh.
           </p>
         </div>
 
         <div class="kartu-bento-pintu anim-masuk">
-          <span class="mono-kecil">02 · ANATOMI TERKURASI</span>
-          <div class="angka-bento">12 Titik Uji</div>
+          <span class="mono-kecil">02 · ANATOMI &amp; AKSI MEKANIS 3D</span>
+          <div class="angka-bento">20 Titik Uji</div>
           <p style="margin: 0; font-size: 0.9rem;">
-            Setiap bagian (<em>wilah</em>, <em>ganja</em>, <em>pamor</em>, <em>rancakan</em>,
-            <em>cempurit</em>, <em>tuding</em>) terhubung ke sorotan kamera 3D dan kode sumber S1..S6.
+            Dilengkapi simulasi 3D interaktif: cabut bilah keris, mainkan gending saron, gerakkan
+            canting membatik, bedah struktur <em>exploded view</em> Joglo, dan gerakkan tuding.
           </p>
         </div>
 
@@ -711,14 +756,16 @@
     <section aria-labelledby="judul-rak" data-testid="layar-rak">
       <div style="margin-bottom: 1.25rem;" class="anim-masuk">
         <p class="mono-kecil teks-redup" style="margin-bottom: 0.3rem;">
-          02 / KOLEKSI PUSAKA YOGYAKARTA &amp; JAWA TENGAH
+          02 / 5 RANAH WARISAN BUDAYA YOGYAKARTA, JAWA TENGAH, &amp; NUSANTARA
         </p>
-        <h1 id="judul-rak">Rak Pusaka Jawa</h1>
+        <h1 id="judul-rak">Rak Warisan Budaya Jawa &amp; Nusantara</h1>
         <p class="teks-redup">
-          Tiga pusaka yang saling terhubung di dalam satu pertunjukan wayang: <strong>Keris</strong>
-          sebagai kelengkapan satria, <strong>Saron Gamelan</strong> sebagai penjaga melodi
-          <em>balungan</em>, dan <strong>Wayang Kulit Purwa</strong> sebagai pemeran di layar kelir.
-          Pilih satu benda untuk memegang model 3D bertekstur nyata.
+          Lima ranah warisan budaya yang membentuk ekosistem peradaban Jawa di keraton maupun
+          masyarakat: <strong>Tosan Aji (Keris)</strong>, <strong>Karawitan (Saron Gamelan)</strong>,
+          <strong>Wastra (Batik Tulis &amp; Canting)</strong>,
+          <strong>Arsitektur Tradisional (Pendopo Joglo)</strong>, serta
+          <strong>Pakeliran (Wayang &amp; Gunungan 3D)</strong>. Pilih satu warisan untuk memegang
+          dan menggerakkan mekanisme 3D-nya.
         </p>
       </div>
 
@@ -876,8 +923,17 @@
             </div>
           {/if}
 
-          <div class="bilah-kendali-3d" role="group" aria-label="Kendali putar dan perbesar model 3D">
+          <div class="bilah-kendali-3d" role="group" aria-label="Kendali putar, perbesar, dan aksi mekanis model 3D">
             <div style="display: flex; flex-wrap: wrap; gap: 0.4rem;">
+              <button
+                type="button"
+                class={aksi3DPegangAktif ? 'tombol tombol-utama' : 'tombol'}
+                data-testid="tombol-aksi-3d"
+                aria-pressed={aksi3DPegangAktif}
+                onclick={toggleAksi3DPegang}
+              >
+                ✦ {bendaAktif.labelAksi3D}
+              </button>
               <button
                 type="button"
                 class="tombol"
@@ -979,7 +1035,7 @@
             {/if}
             <p class="teks-redup" style="font-size: 0.84rem; margin: 0;">
               Kode sumber: <strong>{titikAktif.sumber.join(', ')}</strong> · Lisensi geometri:
-              <strong>{bendaAktif.lisensiRef}, P1, W1</strong>
+              <strong>{bendaAktif.lisensiRef}, P1</strong>
             </p>
           </article>
 
@@ -1091,9 +1147,9 @@
       <div class="tata-panggung">
         <div class="bingkai-kanvas-3d anim-masuk">
           <div class="hud-atas-3d">
-            <span>KIRI: KIDANG KENCANA (TMnr 809-167o)</span>
-            <span>TENGAH: KAIN KELIR &amp; GEDEBOG</span>
-            <span>KANAN: SRI RAMA (TMnr 3582-30)</span>
+            <span>KIRI: KIDANG KENCANA 3D BERARTIKULASI</span>
+            <span>TENGAH: LAMPU BLENCONG &amp; GUNUNGAN 3D</span>
+            <span>KANAN: SRI RAMA &amp; BUSUR GENDEWA 3D</span>
           </div>
           <div
             class="kanvas-viewport"
@@ -1278,7 +1334,7 @@
 
         <!-- Tabel Sumber Rujukan -->
         <div class="anim-masuk">
-          <h2>Daftar Sumber Rujukan Terverifikasi (S1..S6)</h2>
+          <h2>Daftar Sumber Rujukan Terverifikasi (S1..S7)</h2>
           <div class="bungkus-tabel">
             <table class="tabel-data" data-testid="tabel-sumber">
               <thead>
@@ -1357,8 +1413,8 @@
       Kategori Software Development · Tema: <em>From Ideas to Innovation</em>.
     </div>
     <div>
-      Seluruh pemrosesan kamera berjalan lokal di perangkat · Sumber: UNESCO (00063, 00112, 01760),
-      Museum Sonobudoyo, Tropenmuseum, Poly Haven CC0, Britannica.
+      Seluruh pemrosesan kamera berjalan lokal di perangkat · Sumber: UNESCO (00063, 00112, 00170,
+      01760), Museum Sonobudoyo, Poly Haven CC0, Britannica.
     </div>
   </div>
 </footer>

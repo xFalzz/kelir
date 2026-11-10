@@ -1,6 +1,6 @@
 # Kelir (`ꦏꦼꦭꦶꦂ`)
 
-Aplikasi web interaktif untuk mempelajari struktur tiga dimensi benda pusaka Jawa (**Keris Jawa**, **Saron Gamelan**, dan **Wayang Kulit Purwa**) serta memainkan panggung wayang bayangan (*Lakon Ramayana: Kijang Kencana*) menggunakan gestur tangan di browser (*MediaPipe Hand Landmarker*) atau kendali manual penuh (mouse, layar sentuh, dan keyboard).
+Aplikasi web interaktif untuk mempelajari struktur tiga dimensi volumetrik dari **5 ranah warisan budaya Jawa & Nusantara** (**Keris Jawa Luk 5**, **Saron Gamelan Slendro**, **Batik Tulis & Canting Tembaga**, **Arsitektur Pendopo Joglo**, serta **Wayang & Gunungan 3D Berartikulasi**) dan memainkan panggung wayang 3D (*Lakon Ramayana: Kijang Kencana*) menggunakan gestur tangan di browser (*MediaPipe Hand Landmarker*) atau kendali manual penuh (mouse, layar sentuh, dan keyboard).
 
 Karya untuk **Innovation Competition 2026**, kategori **Software Development**, tema *"From Ideas to Innovation"*.
 
@@ -35,7 +35,7 @@ META_API_KEY=isi_kunci_meta_llama_api_jika_aktif
 | `docs/01-proposal-proyek.md` | Naskah proposal lengkap siap ekspor PDF (sumber UNESCO, Britannica, Sonobudoyo) |
 | `docs/02-spesifikasi-produk.md` | Cakupan MVP, 4 gestur tangan, keadaan layar, dan kriteria penerimaan |
 | `docs/03-arsitektur-teknis.md` | Arsitektur Vite + Svelte 5 + Three.js + MediaPipe + GSAP |
-| `docs/04-konten-dan-sumber.md` | Inventaris 3 benda, 12 titik info anatomis, lakon 4 babak, dan 6 sumber resmi (`S1`–`S6`) |
+| `docs/04-konten-dan-sumber.md` | Inventaris 5 warisan budaya, 20 titik info anatomis, lakon 4 babak, dan 7 sumber resmi (`S1`..`S7`) |
 | `docs/05-register-lisensi-aset.md` | Register lisensi geometri prosedural, font OFL, dan pustaka terbuka |
 | `docs/06-kebijakan-ai.md` | Kebijakan anti-halusinasi AI (Gemini utama, Meta cadangan, Kurasi lokal) |
 | `docs/07-bahasa-dan-aksara.md` | Dokumentasi transliterator Aksara Jawa berbasis aturan (`U+A980–U+A9DF`) |

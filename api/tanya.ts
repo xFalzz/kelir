@@ -45,7 +45,11 @@ export default async function handler(req: Request): Promise<Response> {
   }
 
   const bendaId: BendaPusaka['id'] =
-    body.bendaId === 'keris' || body.bendaId === 'saron' || body.bendaId === 'wayang'
+    body.bendaId === 'keris' ||
+    body.bendaId === 'saron' ||
+    body.bendaId === 'batik' ||
+    body.bendaId === 'joglo' ||
+    body.bendaId === 'wayang'
       ? body.bendaId
       : 'keris';
   const pertanyaan = (body.pertanyaan ?? '').trim().slice(0, 280);
