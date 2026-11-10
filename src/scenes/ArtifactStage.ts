@@ -624,7 +624,7 @@ export class ArtifactStage {
     this.renderer.setSize(w, h);
   }
 
-  // 1. KERIS JAWA LUK 5 BERPAMOR WOS WUTAH & WARANGKA GAYAMAN YOGYAKARTA
+  // 1. Keris Jawa Luk 5 berpamor Wos Wutah dan Warangka Gayaman Yogyakarta
   private bangunKerisRealistis(): THREE.Group {
     const g = new THREE.Group();
 
@@ -854,7 +854,7 @@ export class ArtifactStage {
     return g;
   }
 
-  // 2. SARON BARUNG GAMELAN DENGAN 7 WILAH GANGSA TEMPA & GELOMBANG AKUSTIK 3D
+  // 2. Saron Barung Gamelan dengan 7 wilah gangsa tempa dan gelombang akustik 3D
   private bangunSaronRealistis(): THREE.Group {
     const g = new THREE.Group();
 
@@ -1036,7 +1036,7 @@ export class ArtifactStage {
     return g;
   }
 
-  // 3. BATIK TULIS & CANTING TEMBAGA (DENGAN JEJAK MALAM EMAS 3D & UAP MALAM PANAS)
+  // 3. Batik Tulis dan Canting Tembaga dengan jejak malam emas 3D serta uap malam panas
   private bangunBatikRealistis(): THREE.Group {
     const g = new THREE.Group();
 
@@ -1293,7 +1293,7 @@ export class ArtifactStage {
     return g;
   }
 
-  // 4. PENDOPO JOGLO JAWA (DENGAN EXPLODED VIEW & SIMULASI UJI GEMPA 3D)
+  // 4. Pendopo Joglo Jawa dengan bedah struktur dan simulasi uji gempa 3D
   private bangunJogloRealistis(): THREE.Group {
     const g = new THREE.Group();
 
@@ -1502,7 +1502,7 @@ export class ArtifactStage {
     return g;
   }
 
-  // 5. WAYANG & GUNUNGAN (KAYON) 3D VOLUMETRIK BERARTIKULASI (DENGAN LESATAN PANAH GUWAWIJAYA 3D)
+  // 5. Wayang dan Gunungan (Kayon) 3D volumetrik berartikulasi dengan lesatan panah Guwawijaya 3D
   private bangunWayangVolumetrikRealistis(): THREE.Group {
     const g = new THREE.Group();
 

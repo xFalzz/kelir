@@ -79,43 +79,43 @@
 
   const DAFTAR_PANDUAN_GESTUR: {
     kode: JenisGesturTangan;
-    simbol: string;
+    nomor: string;
     judul: string;
     uraian: string;
   }[] = [
     {
       kode: 'telapak-putar',
-      simbol: '✋',
+      nomor: '01',
       judul: 'Telapak Terbuka & Miring',
       uraian: 'Putar orbit 3D, miringkan pergelangan (roll), dan arahkan sorot lampu blencong.',
     },
     {
       kode: 'cubit-zoom',
-      simbol: '🤏',
+      nomor: '02',
       judul: 'Cubit Ibu Jari & Telunjuk',
       uraian: 'Perbesar atau perkecil jarak kamera untuk mengamati detail tekstur pamor & serat.',
     },
     {
       kode: 'kepal-aksi',
-      simbol: '✊',
+      nomor: '03',
       judul: 'Kepalan Tangan (Aksi Utama)',
       uraian: 'Cabut Keris, putar Gending Saron, jalankan Canting, atau bedah atap Joglo 3D.',
     },
     {
       kode: 'dua-jari-sabetan',
-      simbol: '✌️',
+      nomor: '04',
       judul: 'Dua Jari (Simulasi Fisik 3D)',
       uraian: 'Pijar pamor Keris, glissando Saron, celup malam, uji gempa Joglo, atau panah 3D.',
     },
     {
       kode: 'tunjuk-ketuk',
-      simbol: '☝️',
+      nomor: '05',
       judul: 'Telunjuk Tunggal (Tabuh Saron)',
       uraian: 'Arahkan telunjuk dari kiri ke kanan untuk menabuh 7 wilah Saron di udara.',
     },
     {
       kode: 'dua-tangan-dalang',
-      simbol: '🙌',
+      nomor: '06',
       judul: 'Dua Tangan Dalang',
       uraian: 'Kemudikan Sri Rama (tangan kanan) dan Kidang Kencana (tangan kiri) bersamaan.',
     },
@@ -154,7 +154,6 @@
   let stagePegang: ArtifactStage | null = null;
   let stagePanggung: WayangStage | null = null;
   let timerJam: ReturnType<typeof setInterval> | null = null;
-  let tweenAksaraAir: gsap.core.Tween | null = null;
 
   const bendaAktif = $derived(
     DAFTAR_BENDA.find((b) => b.id === bendaIdAktif) ?? DAFTAR_BENDA[0],
@@ -277,15 +276,12 @@
 
     if (!wadahLayarEl || !bolehAnimasiGSAP()) return;
 
-    tweenAksaraAir?.kill();
-    tweenAksaraAir = null;
-
     const tl = gsap.timeline({ defaults: { ease: 'power3.out' } });
 
     tl.fromTo(
       wadahLayarEl,
-      { opacity: 0.2, y: 14 },
-      { opacity: 1, y: 0, duration: 0.38 },
+      { opacity: 0.2, y: 12 },
+      { opacity: 1, y: 0, duration: 0.34 },
       0,
     );
 
@@ -294,8 +290,8 @@
       tl.fromTo(
         jalurUkir,
         { strokeDasharray: 240, strokeDashoffset: 240 },
-        { strokeDashoffset: 0, duration: 0.75, stagger: 0.08, ease: 'power2.out' },
-        0.05,
+        { strokeDashoffset: 0, duration: 0.65, stagger: 0.06, ease: 'power2.out' },
+        0.04,
       );
     }
 
@@ -303,21 +299,10 @@
     if (kartuList.length > 0) {
       tl.fromTo(
         kartuList,
-        { opacity: 0, y: 18 },
-        { opacity: 1, y: 0, duration: 0.42, stagger: 0.06 },
-        0.06,
+        { opacity: 0, y: 14 },
+        { opacity: 1, y: 0, duration: 0.36, stagger: 0.05 },
+        0.05,
       );
-    }
-
-    const aksaraAir = wadahLayarEl.querySelector('.aksara-latar-air');
-    if (aksaraAir) {
-      tweenAksaraAir = gsap.to(aksaraAir, {
-        y: -10,
-        duration: 3.6,
-        repeat: -1,
-        yoyo: true,
-        ease: 'sine.inOut',
-      });
     }
   }
 
@@ -634,7 +619,6 @@
     if (timerJam) {
       clearInterval(timerJam);
     }
-    tweenAksaraAir?.kill();
     if (typeof window !== 'undefined') {
       window.removeEventListener('resize', tanganiResize);
     }
@@ -671,7 +655,6 @@
 <div class="strip-telemetri" role="region" aria-label="Informasi ensiklopedia budaya dan wilayah">
   <div class="strip-telemetri-dalam">
     <div class="item-telemetri">
-      <span class="titik-hidup" aria-hidden="true"></span>
       <span>ENSIKLOPEDIA PENDIDIKAN BUDAYA JAWA &amp; NUSANTARA</span>
       <span>·</span>
       <span>{waktuWib}</span>
@@ -894,10 +877,9 @@
 
       <div class="grid-pintu">
         <div class="anim-masuk">
-          <div class="lencana-hero-baris">
-            <span class="lencana-kapsul">BAB I · RUANG BELAJAR BUDAYA NUSANTARA</span>
-            <span class="lencana-kapsul">YOGYAKARTA &amp; JAWA TENGAH</span>
-          </div>
+          <p class="kicker-editorial">
+            Bab I · Ruang Belajar Budaya Nusantara · Yogyakarta &amp; Jawa Tengah
+          </p>
 
           <h1 id="judul-pintu">
             {#if bahasaAktif === 'aksara'}
@@ -1055,7 +1037,7 @@
                 aria-pressed={aksi3DPintuAktif}
                 onclick={toggleAksi3DPintu}
               >
-                ✦ {bendaHeroAktif.labelAksi3D}
+                {bendaHeroAktif.labelAksi3D}
               </button>
               <button
                 type="button"
@@ -1063,53 +1045,53 @@
                 data-testid="hero-efek-3d"
                 onclick={picuEfek3DPintu}
               >
-                ⚡ {LABEL_EFEK_KHUSUS_3D[bendaHeroAktif.id]}
+                {LABEL_EFEK_KHUSUS_3D[bendaHeroAktif.id]}
               </button>
               <button
                 type="button"
                 class="tombol-hud"
                 onclick={() => pilihBenda(bendaHeroId, true)}
               >
-                Pelajari Anatomi →
+                Pelajari Anatomi
               </button>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- 4 Tahap Kurikulum Pembelajaran Budaya -->
-      <div class="bento-pintu-grid">
-        <div class="kartu-bento-pintu anim-masuk">
+      <!-- Indeks 4 Tahap Kurikulum Pembelajaran Budaya -->
+      <div class="indeks-kurikulum-baris">
+        <div class="item-indeks-kurikulum anim-masuk">
           <span class="mono-kecil">TAHAP I · ENSIKLOPEDIA WARISAN</span>
-          <div class="angka-bento">5 Ranah Budaya</div>
-          <p style="margin: 0; font-size: 0.9rem;">
+          <div class="judul-indeks-kurikulum">5 Ranah Budaya</div>
+          <p style="margin: 0; font-size: 0.88rem;">
             Mempelajari keterkaitan antara metalurgi <em>Tosan Aji</em>, akustik <em>Karawitan</em>,
             kimia rintang warna <em>Batik Tulis</em>, struktur <em>Joglo</em>, dan <em>Wayang</em>.
           </p>
         </div>
 
-        <div class="kartu-bento-pintu anim-masuk">
+        <div class="item-indeks-kurikulum anim-masuk">
           <span class="mono-kecil">TAHAP II · BEDAH ANATOMI 3D</span>
-          <div class="angka-bento">20 Bagian Benda</div>
-          <p style="margin: 0; font-size: 0.9rem;">
+          <div class="judul-indeks-kurikulum">20 Bagian Benda</div>
+          <p style="margin: 0; font-size: 0.88rem;">
             Mengamati fungsi tiap bagian secara langsung: mencabut keris dari warangka, menggerakkan
             canting, hingga membedah konstruksi <em>Tumpang Sari</em> Joglo.
           </p>
         </div>
 
-        <div class="kartu-bento-pintu anim-masuk">
+        <div class="item-indeks-kurikulum anim-masuk">
           <span class="mono-kecil">TAHAP III · SENI PERTUNJUKAN</span>
-          <div class="angka-bento">4 Babak Epos</div>
-          <p style="margin: 0; font-size: 0.9rem;">
+          <div class="judul-indeks-kurikulum">4 Babak Epos</div>
+          <p style="margin: 0; font-size: 0.88rem;">
             Memahami struktur dramatik <em>Pakeliran</em> lewat episode Ramayana
             <em>Kijang Kencana</em> dengan gerak sendi Sri Rama dan Kidang Kencana 3D.
           </p>
         </div>
 
-        <div class="kartu-bento-pintu anim-masuk">
+        <div class="item-indeks-kurikulum anim-masuk">
           <span class="mono-kecil">TAHAP IV · LITERASI AKSARA JAWA</span>
-          <div class="angka-bento">20 Carakan Dasar</div>
-          <p style="margin: 0; font-size: 0.9rem;">
+          <div class="judul-indeks-kurikulum">20 Carakan Dasar</div>
+          <p style="margin: 0; font-size: 0.88rem;">
             Berlatih membaca dan mengalihaksarakan <em>Dentawyanjana (Ha-Na-Ca-Ra-Ka)</em> beserta
             filosofi hidup Jawa dan daftar pustaka UNESCO.
           </p>
@@ -1320,7 +1302,7 @@
                 aria-pressed={aksi3DPegangAktif}
                 onclick={toggleAksi3DPegang}
               >
-                ✦ {bendaAktif.labelAksi3D}
+                {bendaAktif.labelAksi3D}
               </button>
               <button
                 type="button"
@@ -1328,7 +1310,7 @@
                 data-testid="tombol-efek-3d"
                 onclick={picuEfek3DPegang}
               >
-                ⚡ {LABEL_EFEK_KHUSUS_3D[bendaAktif.id]}
+                {LABEL_EFEK_KHUSUS_3D[bendaAktif.id]}
               </button>
               <button
                 type="button"
@@ -1396,7 +1378,7 @@
                   style="padding: 0.5rem 0.65rem; border: 1px solid var(--garis-batas); border-radius: var(--radius-kotak); background: var(--bg-permukaan); font-size: 0.82rem;"
                 >
                   <div style="font-weight: 700; color: var(--teks-utama);">
-                    {g.simbol} {g.judul}
+                    {g.nomor}. {g.judul}
                   </div>
                   <div class="teks-redup" style="font-size: 0.78rem; margin-top: 0.15rem;">
                     {g.uraian}
@@ -1572,7 +1554,7 @@
         <div class="bingkai-kanvas-3d anim-masuk">
           <div class="hud-atas-3d">
             <span>KIRI: KIDANG KENCANA 3D BERARTIKULASI</span>
-            <span>TENGAH: LAMPU BLENCONG &amp; GUNUNGAN 3D</span>
+            <span>TENGAH: BLENCONG &amp; GUNUNGAN 3D (SERET KANVAS UNTUK SUDUT KAMERA 3D)</span>
             <span>KANAN: SRI RAMA &amp; BUSUR GENDEWA 3D</span>
           </div>
           <div
@@ -1603,7 +1585,7 @@
                 data-testid="panggung-panah-rama"
                 onclick={() => stagePanggung?.lepaskanPanahRama()}
               >
-                🏹 Lesatkan Panah Guwawijaya 3D
+                Lesatkan Panah Guwawijaya 3D
               </button>
               <button
                 type="button"
@@ -1611,7 +1593,7 @@
                 data-testid="panggung-sabetan-kayon"
                 onclick={() => stagePanggung?.sabetanKayon()}
               >
-                ✦ Sabetan Kayon &amp; Keprak Dalang
+                Sabetan Kayon &amp; Keprak Dalang
               </button>
               <button
                 type="button"
@@ -1619,7 +1601,7 @@
                 data-testid="panggung-cempala-dalang"
                 onclick={() => audioBudaya.bunyikanCempalaKeprak('cempala')}
               >
-                🔔 Dhodhogan Cempala Kotak
+                Dhodhogan Cempala Kotak
               </button>
             </div>
           </div>
