@@ -43,3 +43,6 @@ META_API_KEY=isi_kunci_meta_llama_api_jika_aktif
 | `docs/09-alur-kerja.md` | Standar Conventional Commits, debugging, pembersihan kode, dan pengujian E2E |
 | `docs/10-checklist-pengumpulan.md` | Daftar periksa berkas Google Drive `SD_NamaTim_NamaInstitusi` |
 | `docs/11-presentasi-demo-qa.md` | Kerangka slide, naskah live demo 3 menit, dan bank jawaban tanya jawab juri |
+| `docs/12-skema-erd-prd-uml-ddl-dml.md` | Skema alur lengkap PRD, ERD, UML/EML, DDL, dan DML |
+| `docs/sql/schema.sql` | Berkas SQL DDL pembuatan tabel & constraint |
+| `docs/sql/seed_and_queries.sql` | Berkas SQL DML pengisian data kurasi & query operasional |
