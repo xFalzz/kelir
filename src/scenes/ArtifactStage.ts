@@ -548,6 +548,12 @@ export class ArtifactStage {
     this.targetFocus.set(targetKamera[0], targetKamera[1], targetKamera[2]);
   }
 
+  aturPoseScrolly3D(rotY: number, rotX: number, zoom: number): void {
+    this.targetRotY = rotY;
+    this.targetRotX = Math.max(-0.85, Math.min(0.85, rotX));
+    this.targetZoom = Math.max(1.55, Math.min(4.1, zoom));
+  }
+
   putarManual(deltaY: number, deltaX = 0): void {
     this.targetRotY += deltaY;
     this.targetRotX = Math.max(-0.85, Math.min(0.85, this.targetRotX + deltaX));

@@ -30,7 +30,15 @@ test.describe('Kelir E2E & Antislop R-35 Verification', () => {
     // Buka Ruang Pegang 3D Keris
     await page.getByTestId('buka-pegang-keris').click();
     await expect(page.getByTestId('layar-pegang')).toBeVisible();
+    await expect(page.getByTestId('scene-rail')).toBeVisible();
+    await expect(page.getByTestId('story')).toBeVisible();
     await expect(page.getByTestId('detail-titik-aktif')).toContainText('Wilah');
+
+    // Uji navigasi Rel Bab 3D (gaya Townhouse) & kartu cerita terpisah
+    await page.getByTestId('langkah-rail-03').click();
+    await expect(page.getByTestId('detail-titik-aktif')).toContainText('Ganja');
+    await page.getByTestId('scene-next').click();
+    await expect(page.getByTestId('detail-titik-aktif')).toContainText('Pamor');
 
     // Klik tiap titik anatomis & tombol kendali 3D + aksi hidup 3D + simulasi fisik khusus 3D
     await page.getByTestId('tombol-aksi-3d').click();

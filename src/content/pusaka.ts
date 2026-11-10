@@ -1039,6 +1039,573 @@ export const LAKON_KIJANG_KENCANA: LakonWayang = {
   ],
 };
 
+export interface MetrikSpesifikasiBudaya {
+  label: string;
+  nilai: string;
+  keterangan: string;
+}
+
+export interface TahapSejarahBudaya {
+  periode: string;
+  judul: string;
+  uraian: string;
+}
+
+export interface LangkahScroll3D {
+  nomor: string;
+  bab: string;
+  tempat: string;
+  judul: string;
+  uraian: string;
+  rotasiY: number;
+  rotasiX: number;
+  zoom: number;
+  indeksTitik: number;
+}
+
+export interface KronikSejarahBenda {
+  nomorIndeks: string;
+  eraSejarah: string;
+  asalDaerah: string;
+  intisariSains: string;
+  metrik: MetrikSpesifikasiBudaya[];
+  linimasaSejarah: TahapSejarahBudaya[];
+  langkahScroll3D: LangkahScroll3D[];
+}
+
+export const KRONIK_SEJARAH_BUDAYA: Record<IdPusaka, KronikSejarahBenda> = {
+  keris: {
+    nomorIndeks: '01',
+    eraSejarah: 'Abad ke-9 M (Prasasti & Relief Candi) hingga Kasultanan Yogyakarta',
+    asalDaerah: 'Yogyakarta & Jawa Tengah · Koleksi Tosan Aji Sonobudoyo',
+    intisariSains:
+      'Metalurgi tempa lipat heterogen (besi, baja, dan batu meteorit/nikel) yang menghasilkan kontras lapisan kristal mikroskopis bernama pamor.',
+    metrik: [
+      {
+        label: 'Teknik Metalurgi',
+        nilai: 'Tempa Lipat 64+ Lapis',
+        keterangan: 'Penyatuan besi tempa ulet, baja keras (waja), dan nikel pamor melalui suhu tungku arang jati.',
+      },
+      {
+        label: 'Geometri Bilah',
+        nilai: 'Luk 5 Asimetris',
+        keterangan: 'Jumlah kelokan selalu ganjil; Luk 5 melambangkan kefasihan tutur dan keteguhan kepemimpinan.',
+      },
+      {
+        label: 'Pengakuan Dunia',
+        nilai: 'UNESCO 00112',
+        keterangan: 'Diproklamasikan tahun 2005 dan masuk Daftar Representatif Warisan Budaya Takbenda 2008.',
+      },
+    ],
+    linimasaSejarah: [
+      {
+        periode: 'Abad ke-9 .. ke-10 M',
+        judul: 'Prototipe Belati Asimetris pada Prasasti & Relief Candi Jawa Kuno',
+        uraian:
+          'Bukti arkeologis bentuk awal belati tikam berbilah lebar muncul pada prasasti perunggu dan relief candi-candi periode Mataram Kuno di Jawa Tengah.',
+      },
+      {
+        periode: 'Abad ke-14 .. ke-15 M',
+        judul: 'Pematangan Dhapur & Pamor pada Era Majapahit',
+        uraian:
+          'Para empu menyempurnakan proporsi condong leleh (kemiringan bilah terhadap ganja) dan teknik tempa lipat pamor meteorit hingga melahirkan pakem dhapur keris.',
+      },
+      {
+        periode: 'Abad ke-18 M .. Kini',
+        judul: 'Estetika Warangka Gayaman Yogyakarta & Pelestarian UNESCO',
+        uraian:
+          'Di lingkungan Kasultanan Yogyakarta, keris menjadi kelengkapan busana adat dengan sarung kayu gayaman/ladrang berpendok emas dan dirawat melalui tradisi jamasan.',
+      },
+    ],
+    langkahScroll3D: [
+      {
+        nomor: '01',
+        bab: 'Ikhtisar & Sejarah',
+        tempat: 'UNESCO 00112 · Tosan Aji',
+        judul: 'Mahakarya Metalurgi Tempa Lipat Empu Jawa',
+        uraian:
+          'Perhatikan proporsi utuh Keris Luk 5 beserta Warangka Gayaman kayu jati. Bilah ditempa miring (condong leleh) sebagai lambang sikap hormat dan kerendahan hati.',
+        rotasiY: 0.28,
+        rotasiX: 0.08,
+        zoom: 2.65,
+        indeksTitik: 0,
+      },
+      {
+        nomor: '02',
+        bab: 'Wilah Luk 5',
+        tempat: 'Titik Anatomi 01 · Bilah Utama',
+        judul: 'Kelokan Ganjil Luk 5 & Ketajaman Ilmu',
+        uraian:
+          'Kamera mendekat ke punggung bilah (wilah). Lima kelokan melambangkan kemampuan mengendalikan pancaindra dan keteguhan menjaga amanah.',
+        rotasiY: -0.15,
+        rotasiX: 0.18,
+        zoom: 2.05,
+        indeksTitik: 0,
+      },
+      {
+        nomor: '03',
+        bab: 'Ganja & Kembang Kacang',
+        tempat: 'Titik Anatomi 02 · Pangkal Asimetris',
+        judul: 'Penyatuan Wilah dan Ganja (Curiga Manjing Warangka)',
+        uraian:
+          'Di pangkal bilah terdapat ganja melintang menyerupai sirah cecak dan gelung kembang kacang di sisi depan yang melindungi jari pemegang.',
+        rotasiY: 0.52,
+        rotasiX: -0.08,
+        zoom: 1.95,
+        indeksTitik: 1,
+      },
+      {
+        nomor: '04',
+        bab: 'Pamor Wos Wutah',
+        tempat: 'Titik Anatomi 03 · Serat Logam',
+        judul: 'Guratan Keperakan Nikel dari Proses Warangan',
+        uraian:
+          'Alur putih keperakan pada permukaan bilah muncul saat larutan warangan menghitamkan besi namun membiarkan lapisan nikel tetap berkilau.',
+        rotasiY: -0.42,
+        rotasiX: 0.06,
+        zoom: 1.9,
+        indeksTitik: 2,
+      },
+      {
+        nomor: '05',
+        bab: 'Hulu & Warangka',
+        tempat: 'Titik Anatomi 04 · Kayu Jati & Pendok',
+        judul: 'Deder Nunggak Semi & Sarung Gayaman Berpendok Emas',
+        uraian:
+          'Gagang kayu jati berukir merunduk dipadukan cincin mendak berpermata dan warangka gayaman berlapis pendok emas.',
+        rotasiY: 0.68,
+        rotasiX: -0.16,
+        zoom: 2.25,
+        indeksTitik: 3,
+      },
+    ],
+  },
+  saron: {
+    nomorIndeks: '02',
+    eraSejarah: 'Abad ke-8 M (Relief Candi Borobudur) hingga Karawitan Keraton',
+    asalDaerah: 'Yogyakarta & Surakarta · Ansambel Gangsa Laras Slendro',
+    intisariSains:
+      'Akustik metalurgi paduan perunggu timah tinggi (gangsa: 10 bagian tembaga + 3 bagian timah putih) dengan ruang resonansi kolektif pada kotak kayu rancakan.',
+    metrik: [
+      {
+        label: 'Paduan Logam Gangsa',
+        nilai: 'Cu-Sn (Tiga-Sepuluh)',
+        keterangan: 'Perbandingan 10 tembaga dan 3 timah putih yang ditempa panas agar tidak pecah dan berdering jernih.',
+      },
+      {
+        label: 'Sistem Tangga Nada',
+        nilai: '7 Wilah Laras Slendro',
+        keterangan: 'Susunan bilah cembung dari nada rendah Nem Ageng (6̣) hingga Ji Alit (1̇) pembawa balungan gending.',
+      },
+      {
+        label: 'Pengakuan Dunia',
+        nilai: 'UNESCO 01760',
+        keterangan: 'Ditetapkan UNESCO pada Desember 2021 sebagai warisan budaya takbenda ansambel karawitan Indonesia.',
+      },
+    ],
+    linimasaSejarah: [
+      {
+        periode: 'Abad ke-8 .. ke-9 M',
+        judul: 'Relief Instrumen Bilah Logam pada Dinding Candi Borobudur',
+        uraian:
+          'Pahatan batu Candi Borobudur telah mendokumentasikan ansambel perkusi bilah logam dan gong yang dimainkan dalam upacara keagamaan dan istana.',
+      },
+      {
+        periode: 'Abad ke-15 .. ke-18 M',
+        judul: 'Pembakuan Ricikan Balungan dalam Gamelan Ageng Keraton',
+        uraian:
+          'Saron barung ditetapkan sebagai tulang punggung melodi pokok (balungan) yang memandu instrumen garap lainnya dalam laras slendro dan pelog.',
+      },
+      {
+        periode: 'Abad ke-20 .. 2021',
+        judul: 'Pedagogi Karawitan Dunia & Penetapan UNESCO 01760',
+        uraian:
+          'Gamelan dipelajari di ratusan universitas dunia sebagai model musik ansambel kolaboratif dan resmi diakui UNESCO pada tahun 2021.',
+      },
+    ],
+    langkahScroll3D: [
+      {
+        nomor: '01',
+        bab: 'Ikhtisar & Sejarah',
+        tempat: 'UNESCO 01760 · Karawitan',
+        judul: 'Penjaga Kerangka Melodi (Balungan) Gamelan Jawa',
+        uraian:
+          'Saron Barung menyatukan 7 bilah perunggu tempa di atas rancakan kayu jati berukir prada emas.',
+        rotasiY: 0.22,
+        rotasiX: 0.24,
+        zoom: 2.65,
+        indeksTitik: 0,
+      },
+      {
+        nomor: '02',
+        bab: '7 Wilah Gangsa',
+        tempat: 'Titik Anatomi 01 · Bilah Perunggu',
+        judul: 'Profil Cembung (Uger) & Penalaan Kikir Tangan',
+        uraian:
+          'Tiap bilah perunggu ditempa cembung di bagian tengah untuk memusatkan gelombang akustik dan ditala secara presisi oleh pande gamelan.',
+        rotasiY: 0.04,
+        rotasiX: 0.42,
+        zoom: 2.1,
+        indeksTitik: 0,
+      },
+      {
+        nomor: '03',
+        bab: 'Rancakan Resonator',
+        tempat: 'Titik Anatomi 02 · Kotak Gema',
+        judul: 'Rongga Akustik Kayu Jati Berukir Lung-lungan Emas',
+        uraian:
+          'Kotak kayu berongga di bawah bilah memperkuat frekuensi dasar perunggu sehingga denting saron terdengar bulat di seluruh ruang pendopo.',
+        rotasiY: -0.35,
+        rotasiX: 0.08,
+        zoom: 2.2,
+        indeksTitik: 1,
+      },
+      {
+        nomor: '04',
+        bab: 'Tabuh & Teknik Pithat',
+        tempat: 'Titik Anatomi 03 · Pemukul Kayu',
+        judul: 'Koordinasi Tangan Kanan Menabuh & Tangan Kiri Memencet',
+        uraian:
+          'Pemukul kayu miring diayunkan tangan kanan, sementara jari tangan kiri meredam bilah sebelumnya agar gema nada tetap bersih.',
+        rotasiY: 0.48,
+        rotasiX: 0.22,
+        zoom: 2.0,
+        indeksTitik: 2,
+      },
+      {
+        nomor: '05',
+        bab: 'Paku & Kasuran',
+        tempat: 'Titik Anatomi 04 · Suspensi Akustik',
+        judul: 'Bantalan Kasuran yang Menjaga Getaran Bebas Bilah',
+        uraian:
+          'Tali bantalan lunak dan paku penyangga di kedua ujung bilah ditempatkan tepat pada titik simpul gelombang (node) agar bilah berdering panjang.',
+        rotasiY: -0.52,
+        rotasiX: 0.28,
+        zoom: 2.05,
+        indeksTitik: 3,
+      },
+    ],
+  },
+  batik: {
+    nomorIndeks: '03',
+    eraSejarah: 'Abad ke-12 M hingga Tradisi Batik Tulis Pedalaman Keraton',
+    asalDaerah: 'Yogyakarta & Surakarta · Wastra Sogan Klasik',
+    intisariSains:
+      'Kimia rintang warna (wax-resist dyeing) menggunakan cairan lilin malam bersuhu 60..70 °C yang menahan penetrasi zat warna alam soga pada serat selulosa kain mori.',
+    metrik: [
+      {
+        label: 'Sains Rintang Warna',
+        nilai: 'Malam Panas 65 °C',
+        keterangan: 'Campuran gondorukem, damar, parafin, dan lilin lebah yang menutup pori serat kain mori.',
+      },
+      {
+        label: 'Instrumen Presisi',
+        nilai: 'Canting Cucuk Tembaga',
+        keterangan: 'Logam tembaga menyimpan panas merata sehingga cairan malam mengalir stabil membentuk titik (cecek) dan garis.',
+      },
+      {
+        label: 'Pengakuan Dunia',
+        nilai: 'UNESCO 00170',
+        keterangan: 'Ditetapkan UNESCO pada 2 Oktober 2009 sebagai Warisan Budaya Takbenda Kemanusiaan.',
+      },
+    ],
+    linimasaSejarah: [
+      {
+        periode: 'Abad ke-12 .. ke-16 M',
+        judul: 'Ragam Hias Geometris Kawung & Parang pada Arca dan Naskah Kuno',
+        uraian:
+          'Pola empat bulatan bersinggungan (Kawung) dan sulur miring (Parang) terpahat pada busana arca-arca batu periode Kediri hingga Majapahit.',
+      },
+      {
+        periode: 'Abad ke-18 .. ke-19 M',
+        judul: 'Aturan Awisan Dalem (Motif Larangan) & Pewarna Alam Sogan',
+        uraian:
+          'Di keraton Yogyakarta dan Surakarta, motif tertentu memiliki tata aturan filosofis khusus dan diwarnai dengan kulit kayu soga tingi, jambal, dan tegeran.',
+      },
+      {
+        periode: '2 Oktober 2009 .. Kini',
+        judul: 'Hari Batik Nasional & Pelestarian Kriya Canting Tulis',
+        uraian:
+          'Pengakuan UNESCO mengukuhkan batik tulis sebagai simbol identitas nasional yang memadukan sains kimia tekstil dan meditasi kesabaran.',
+      },
+    ],
+    langkahScroll3D: [
+      {
+        nomor: '01',
+        bab: 'Ikhtisar & Sejarah',
+        tempat: 'UNESCO 00170 · Wastra Nusantara',
+        judul: 'Sains Rintang Warna Malam & Filosofi Siklus Kehidupan',
+        uraian:
+          'Eksibisi 3D menampilkan kain mori pada gawangan kayu jati, canting tembaga yang menggoreskan jejak malam emas, serta anglo dan wajan pemanas.',
+        rotasiY: 0.32,
+        rotasiX: 0.16,
+        zoom: 2.65,
+        indeksTitik: 0,
+      },
+      {
+        nomor: '02',
+        bab: 'Canting Tulis',
+        tempat: 'Titik Anatomi 01 · Nyamplungan & Cucuk',
+        judul: 'Pena Tembaga Penyimpan Kalor Malam Cair',
+        uraian:
+          'Wadah nyamplungan tembaga menjaga viskositas malam cair agar keluar secara terukur melalui pipa cucuk ke permukaan kain.',
+        rotasiY: 0.18,
+        rotasiX: 0.22,
+        zoom: 1.95,
+        indeksTitik: 0,
+      },
+      {
+        nomor: '03',
+        bab: 'Motif Kawung & Parang',
+        tempat: 'Titik Anatomi 02 · Geometri Filosofis',
+        judul: 'Kiblat Papat Lima Pancer & Kesinambungan Perjuangan',
+        uraian:
+          'Empat bulatan Kawung melambangkan kemurnian hati dan keseimbangan kosmos, sementara lereng Parang melambangkan keteguhan yang tak pernah putus.',
+        rotasiY: -0.08,
+        rotasiX: 0.12,
+        zoom: 2.0,
+        indeksTitik: 1,
+      },
+      {
+        nomor: '04',
+        bab: 'Gawangan Kayu',
+        tempat: 'Titik Anatomi 03 · Penyangga Kain',
+        judul: 'Ergonomi Kerja Pembatik di Atas Palang Kayu Jati',
+        uraian:
+          'Gawangan kayu menahan bentangan kain mori agar tangan kiri pembatik dapat menyangga bagian bawah kain saat tangan kanan melukis.',
+        rotasiY: -0.45,
+        rotasiX: 0.18,
+        zoom: 2.25,
+        indeksTitik: 2,
+      },
+      {
+        nomor: '05',
+        bab: 'Wajan & Anglo',
+        tempat: 'Titik Anatomi 04 · Termodinamika Malam',
+        judul: 'Tungku Terakota & Kestabilan Suhu Malam Panas',
+        uraian:
+          'Bara arang di dalam anglo tanah liat menjaga malam di wajan besi tetap cair tanpa hangus, ditandai uap tipis yang membubung.',
+        rotasiY: 0.58,
+        rotasiX: -0.14,
+        zoom: 2.05,
+        indeksTitik: 3,
+      },
+    ],
+  },
+  joglo: {
+    nomorIndeks: '04',
+    eraSejarah: 'Warisan Arsitektur Jawa Kuno hingga Pendopo Agung Sonobudoyo (1935)',
+    asalDaerah: 'Daerah Istimewa Yogyakarta & Jawa Tengah',
+    intisariSains:
+      'Rekayasa struktur kayu tahan gempa berbasis sambungan takik-pasak (cathokan & purus) tanpa paku besi dan isolator geser batu andesit (umpak).',
+    metrik: [
+      {
+        label: 'Inti Struktur',
+        nilai: '4 Saka Guru & Umpak',
+        keterangan: 'Empat tiang kayu jati utama berdiri bebas di atas batu sendi andesit untuk meredam gaya geser gempa.',
+      },
+      {
+        label: 'Konstruksi Langit-langit',
+        nilai: 'Tumpang Sari 5 Tingkat',
+        keterangan: 'Susunan balok kayu mengunci secara cincin (ring beam) yang mendistribusikan beban atap secara merata.',
+      },
+      {
+        label: 'Rujukan Cagar Budaya',
+        nilai: 'Sonobudoyo 1935',
+        keterangan: 'Dirancang dengan prinsip konstruksi pendopo Joglo klasik di jantung kawasan budaya Yogyakarta.',
+      },
+    ],
+    linimasaSejarah: [
+      {
+        periode: 'Abad ke-9 .. ke-14 M',
+        judul: 'Evolusi Atap Tajug & Struktur Tiang Kayu di Tanah Vulkanik Jawa',
+        uraian:
+          'Masyarakat Jawa mengembangkan bangunan kayu bersendi batu umpak yang mampu bertahan menghadapi aktivitas seismik gunung berapi.',
+      },
+      {
+        periode: 'Abad ke-17 .. ke-19 M',
+        judul: 'Kanonisasi Pendopo Joglo dengan Atap Brunjung & Tumpang Sari',
+        uraian:
+          'Bentuk atap menjulang tinggi (brunjung) di atas empat Saka Guru menjadi ciri khas bangunan bangsal keraton dan pendopo kabupaten.',
+      },
+      {
+        periode: '1935 .. Kini',
+        judul: 'Pendopo Museum Sonobudoyo & Kajian Rekayasa Tahan Gempa Modern',
+        uraian:
+          'Arsitek modern dan peneliti struktur bangunan mengkaji sambungan purus-cathokan Joglo sebagai sistem peredam energi gempa pasif yang brilian.',
+      },
+    ],
+    langkahScroll3D: [
+      {
+        nomor: '01',
+        bab: 'Ikhtisar & Sejarah',
+        tempat: 'Cagar Budaya DIY · Rekayasa Kayu',
+        judul: 'Harmoni Kosmologi Gunung Mahameru & Ketahanan Gempa',
+        uraian:
+          'Model 3D Pendopo Joglo memperlihatkan kesatuan fondasi umpak, tiang Saka Guru, balok Tumpang Sari, dan atap Brunjung terakota.',
+        rotasiY: 0.42,
+        rotasiX: 0.18,
+        zoom: 2.65,
+        indeksTitik: 0,
+      },
+      {
+        nomor: '02',
+        bab: 'Atap Brunjung',
+        tempat: 'Titik Anatomi 01 · Tajug Puncak',
+        judul: 'Kemiringan Curam Pengalir Hujan Tropis & Sirkulasi Udara',
+        uraian:
+          'Atap tengah yang menjulang tinggi menciptakan ruang udara panas naik ke puncak, menjaga lantai pendopo tetap sejuk tanpa dinding penutup.',
+        rotasiY: 0.15,
+        rotasiX: 0.32,
+        zoom: 2.15,
+        indeksTitik: 0,
+      },
+      {
+        nomor: '03',
+        bab: 'Tumpang Sari',
+        tempat: 'Titik Anatomi 02 · Balok Bersusun',
+        judul: 'Kunci Cincin Kayu Jati Tanpa Paku Besi',
+        uraian:
+          'Lima lapis balok Tumpang Sari saling mengunci di atas Saka Guru; ketika diguncang gempa, gesekan antarkayu menyerap energi kinetik.',
+        rotasiY: -0.28,
+        rotasiX: 0.08,
+        zoom: 2.0,
+        indeksTitik: 1,
+      },
+      {
+        nomor: '04',
+        bab: 'Empat Saka Guru',
+        tempat: 'Titik Anatomi 03 · Tiang Inti',
+        judul: 'Poros Penyangga Pusat Empat Penjuru Mata Angin',
+        uraian:
+          'Empat tiang kayu jati utuh menyalurkan beban vertikal atap langsung ke batu umpak sembari menjaga kelenturan rangka tengah.',
+        rotasiY: 0.55,
+        rotasiX: -0.05,
+        zoom: 2.05,
+        indeksTitik: 2,
+      },
+      {
+        nomor: '05',
+        bab: 'Umpak Andesit',
+        tempat: 'Titik Anatomi 04 · Isolator Seismik',
+        judul: 'Sendi Batu Vulkanik Peredam Getaran Tanah',
+        uraian:
+          'Kaki tiang tidak ditanam mati ke tanah melainkan bertumpu di atas umpak batu andesit, mencegah pelapukan kayu dan memutus rambatan gempa.',
+        rotasiY: -0.48,
+        rotasiX: -0.18,
+        zoom: 2.1,
+        indeksTitik: 3,
+      },
+    ],
+  },
+  wayang: {
+    nomorIndeks: '05',
+    eraSejarah: 'Abad ke-10 M (Prasasti Balitung 907 M) hingga Pakeliran Klasik',
+    asalDaerah: 'Yogyakarta & Jawa Tengah · Seni Tatah Sungging & Pedalangan',
+    intisariSains:
+      'Optika proyeksi bayangan lampu minyak blencong di atas layar kain mori (kelir) melalui pahatan tembus berlubang (krawangan) dan artikulasi sendi mekanis.',
+    metrik: [
+      {
+        label: 'Teknik Kriya Pahat',
+        nilai: 'Tatah Krawangan 3D',
+        keterangan: 'Ratusan pahatan lubang halus (inten-intenan, sembuliyan) agar cahaya blencong menembus bayangan.',
+      },
+      {
+        label: 'Mekanisme Gerak',
+        nilai: 'Gapit Tanduk & Tuding',
+        keterangan: 'Poros utama tanduk kerbau (cempurit) dan engsel dua ruas lengan untuk olah sabetan dalang.',
+      },
+      {
+        label: 'Pengakuan Dunia',
+        nilai: 'UNESCO 00063',
+        keterangan: 'Diproklamasikan UNESCO pada 7 November 2003 sebagai Masterpiece of Oral and Intangible Heritage.',
+      },
+    ],
+    linimasaSejarah: [
+      {
+        periode: '907 M (Prasasti Balitung)',
+        judul: 'Catatan Tertua Pertunjukan Wayang ("Si Galigi Mawayang")',
+        uraian:
+          'Prasasti Tembaga Dyah Balitung tahun 907 M mencatat pertunjukan mawayang yang membawakan kisah kepahlawanan bagi para dewa dan masyarakat.',
+      },
+      {
+        periode: 'Abad ke-16 .. ke-18 M',
+        judul: 'Penyempurnaan Tatah-Sungging, Sendi Lengan, & Gunungan Kayon',
+        uraian:
+          'Para seniman dan wali menyempurnakan proporsi wayang purwa, artikulasi sendi bahu-siku bertuding, serta simbol pohon kehidupan Gunungan (Kayon).',
+      },
+      {
+        periode: '7 November 2003 .. Kini',
+        judul: 'Pengakuan UNESCO 00063 & Hari Wayang Nasional',
+        uraian:
+          'UNESCO mengukuhkan teater boneka wayang sebagai mahakarya sastra lisan, seni rupa tatah-sungging, dan filsafat etika Nusantara.',
+      },
+    ],
+    langkahScroll3D: [
+      {
+        nomor: '01',
+        bab: 'Ikhtisar & Sejarah',
+        tempat: 'UNESCO 00063 · Pakeliran',
+        judul: 'Perpaduan Sastra Epos, Kriya Tatah-Sungging, & Seni Bayangan',
+        uraian:
+          'Amati kedalaman relief 3D Sri Rama dan Gunungan Kayon lengkap dengan lubang pahatan krawangan yang ditembus cahaya lampu blencong.',
+        rotasiY: 0.22,
+        rotasiX: 0.08,
+        zoom: 2.65,
+        indeksTitik: 0,
+      },
+      {
+        nomor: '02',
+        bab: 'Awak & Gelung',
+        tempat: 'Titik Anatomi 01 · Tatah Sungging',
+        judul: 'Mahkota Gelung Supit Urang, Praba, & Dodot Parang Sogan',
+        uraian:
+          'Setiap bagian tubuh dipahat bertingkat dan disungging dengan gradasi warna prada emas, merah sogan, dan hitam.',
+        rotasiY: -0.22,
+        rotasiX: 0.16,
+        zoom: 2.0,
+        indeksTitik: 0,
+      },
+      {
+        nomor: '03',
+        bab: 'Cempurit Tanduk',
+        tempat: 'Titik Anatomi 02 · Gapit Utama',
+        judul: 'Tulang Punggung Tanduk Kerbau Penjepit Wayang',
+        uraian:
+          'Gapit tanduk kerbau menjepit wayang dari puncak mahkota hingga meruncing di bagian bawah untuk ditancapkan ke batang pisang (gedebog).',
+        rotasiY: 0.42,
+        rotasiX: -0.18,
+        zoom: 2.1,
+        indeksTitik: 1,
+      },
+      {
+        nomor: '04',
+        bab: 'Tuding & Gendewa',
+        tempat: 'Titik Anatomi 03 · Engsel Sendi',
+        judul: 'Artikulasi Dua Lengan & Busur Panah Ksatria',
+        uraian:
+          'Sendi bahu dan siku yang dihubungkan tangkai tuding memungkinkan Sri Rama merentangkan busur Gendewa dan melesatkan panah Guwawijaya.',
+        rotasiY: 0.52,
+        rotasiX: 0.06,
+        zoom: 1.95,
+        indeksTitik: 2,
+      },
+      {
+        nomor: '05',
+        bab: 'Gunungan Kayon',
+        tempat: 'Titik Anatomi 04 · Simbol Jagat Raya',
+        judul: 'Gapura Candi, Banaspati, & Pohon Kehidupan Kalpataru',
+        uraian:
+          'Gunungan 3D di sisi kiri menampilkan pahatan tembus gapura beratap bertingkat, penjaga kembar, dan sulur pohon hayat.',
+        rotasiY: -0.45,
+        rotasiX: 0.12,
+        zoom: 2.05,
+        indeksTitik: 3,
+      },
+    ],
+  },
+};
+
 export function ambilTeks(item: TeksMultibahasa, mode: BahasaMode): {
   utama: string;
   pendampingLatin: string | null;

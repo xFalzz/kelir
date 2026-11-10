@@ -3,6 +3,7 @@ import {
   DAFTAR_BENDA,
   DAFTAR_LISENSI,
   DAFTAR_SUMBER,
+  KRONIK_SEJARAH_BUDAYA,
   LAKON_KIJANG_KENCANA,
   ambilTeks,
 } from '../../src/content/pusaka';
@@ -61,5 +62,16 @@ describe('Validasi skema konten kurasi dan sumber (R-17, R-36, R-38)', () => {
     const jwbLuar = jawabDariKurasiLokal('keris', 'Berapa harga saham kripto hari ini?');
     expect(jwbLuar.ditemukanDiKurasi).toBe(false);
     expect(jwbLuar.jawaban).toContain('di luar cakupan');
+  });
+
+  it('setiap benda memiliki kronik sejarah ZEGGO (01..05) dan 5 bab scrollytelling 3D Townhouse', () => {
+    for (const benda of DAFTAR_BENDA) {
+      const kronik = KRONIK_SEJARAH_BUDAYA[benda.id];
+      expect(kronik).toBeDefined();
+      expect(kronik.nomorIndeks).toMatch(/^0[1-5]$/);
+      expect(kronik.metrik.length).toBe(3);
+      expect(kronik.linimasaSejarah.length).toBe(3);
+      expect(kronik.langkahScroll3D.length).toBe(5);
+    }
   });
 });
