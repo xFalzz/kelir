@@ -4,7 +4,8 @@
 // Gunungan (Kayon) 3D di tepi panggung, lampu minyak Blencong perunggu di atas, serta gedebog batang pisang.
 
 import * as THREE from 'three';
-import { lerp } from '../lib/handTracker';
+import { audioBudaya } from '../lib/audioBudaya';
+import { lerp, type FrameTangan } from '../lib/handTracker';
 import {
   ambilKoleksiTeksturPBR,
   pasangLingkunganPBR,
@@ -18,14 +19,20 @@ export class WayangStage {
   private ramaGroup: THREE.Group;
   private ramaBahuDepan: THREE.Group | null = null;
   private ramaSikuDepan: THREE.Group | null = null;
+  private anakPanahGroup: THREE.Group | null = null;
+  private panahMeluncur = false;
+  private progresPanah = 0;
   private kidangGroup: THREE.Group;
   private kidangKakiDepan: THREE.Group | null = null;
   private kidangKakiBelakang: THREE.Group | null = null;
   private gununganTepiGroup: THREE.Group;
+  private sabetanKayonAktif = false;
+  private progresKayon = 0;
   private blencongLight: THREE.SpotLight;
   private teksturs: KoleksiTeksturPBR;
   private rafId: number | null = null;
   private reducedMotion = false;
+  private waktuGesturTerakhir = 0;
 
   private targetRamaX = 0.45;
   private targetRamaY = 0;
@@ -181,6 +188,38 @@ export class WayangStage {
     this.scene.add(this.ramaGroup);
     this.scene.add(this.kidangGroup);
     this.scene.add(this.gununganTepiGroup);
+
+    // Anak Panah 3D Guwawijaya milik Sri Rama yang dapat dilesatkan ke arah Kidang Kencana
+    const panahGroup = new THREE.Group();
+    const batangPanah = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.006, 0.006, 0.42, 8),
+      new THREE.MeshPhysicalMaterial({
+        color: '#E8BD52',
+        metalness: 0.85,
+        roughness: 0.22,
+        emissive: new THREE.Color('#CFA048'),
+        emissiveIntensity: 0.35,
+      }),
+    );
+    batangPanah.rotation.z = Math.PI / 2;
+    panahGroup.add(batangPanah);
+
+    const mataPanah = new THREE.Mesh(
+      new THREE.ConeGeometry(0.022, 0.075, 8),
+      new THREE.MeshPhysicalMaterial({
+        color: '#FFF1B8',
+        metalness: 0.92,
+        roughness: 0.16,
+      }),
+    );
+    mataPanah.rotation.z = Math.PI / 2;
+    mataPanah.position.x = -0.23;
+    panahGroup.add(mataPanah);
+
+    panahGroup.position.set(0.35, 0.08, 0.08);
+    panahGroup.visible = false;
+    this.anakPanahGroup = panahGroup;
+    this.scene.add(panahGroup);
 
     if (typeof window !== 'undefined' && window.matchMedia) {
       this.reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -579,6 +618,48 @@ export class WayangStage {
     this.targetKidangY = Math.max(-0.35, Math.min(0.45, kidangY));
   }
 
+  // Aksi khusus panggung 1: Sri Rama melesatkan Anak Panah 3D Guwawijaya ke arah Kidang Kencana
+  lepaskanPanahRama(): void {
+    this.panahMeluncur = true;
+    this.progresPanah = 0;
+    if (this.anakPanahGroup) {
+      this.anakPanahGroup.visible = true;
+      this.anakPanahGroup.position.set(
+        this.ramaGroup.position.x - 0.18,
+        this.ramaGroup.position.y + 0.08,
+        0.1,
+      );
+    }
+    audioBudaya.bunyikanPanahWayang();
+  }
+
+  // Aksi khusus panggung 2: Sabetan Gunungan (Kayon) 3D melintasi kelir diiringi keprak & gong
+  sabetanKayon(): void {
+    this.sabetanKayonAktif = true;
+    this.progresKayon = 0;
+    audioBudaya.bunyikanCempalaKeprak('keprak');
+    audioBudaya.bunyikanGongAgeng(0.18);
+  }
+
+  terapkanGesturPanggung(frame: FrameTangan): void {
+    this.aturPosisiTokoh(
+      frame.kananX,
+      frame.kiriX,
+      frame.kananY * 0.4,
+      frame.kiriY * 0.4,
+    );
+    const kini = typeof performance !== 'undefined' ? performance.now() : Date.now();
+    if (kini - this.waktuGesturTerakhir > 1300) {
+      if (frame.gesturAktif === 'kepal-aksi') {
+        this.waktuGesturTerakhir = kini;
+        this.lepaskanPanahRama();
+      } else if (frame.gesturAktif === 'dua-jari-sabetan') {
+        this.waktuGesturTerakhir = kini;
+        this.sabetanKayon();
+      }
+    }
+  }
+
   ubahUkuran(width: number, height: number): void {
     if (!this.renderer) return;
     const w = Math.max(260, width);
@@ -609,19 +690,55 @@ export class WayangStage {
         this.targetKidangX * 1.45,
         0.14,
       );
+      const lompatKejut =
+        this.panahMeluncur && this.progresPanah > 0.45
+          ? Math.sin((this.progresPanah - 0.45) * Math.PI * 1.8) * 0.28
+          : 0;
       this.kidangGroup.position.y = lerp(
         this.kidangGroup.position.y,
-        -0.1 + this.targetKidangY * 0.4 + Math.abs(Math.sin(t * 3.8)) * 0.035,
+        -0.1 + this.targetKidangY * 0.4 + Math.abs(Math.sin(t * 3.8)) * 0.035 + Math.max(0, lompatKejut),
         0.14,
       );
       this.kidangGroup.rotation.z =
         (this.targetKidangX * 1.45 - this.kidangGroup.position.x) * -0.42;
 
+      // Animasi Anak Panah 3D Guwawijaya melesat dari busur Sri Rama menuju Kidang Kencana
+      if (this.panahMeluncur && this.anakPanahGroup) {
+        this.progresPanah = Math.min(1, this.progresPanah + 0.036);
+        const startX = this.ramaGroup.position.x - 0.18;
+        const endX = this.kidangGroup.position.x + 0.12;
+        this.anakPanahGroup.position.x = lerp(startX, endX, this.progresPanah);
+        this.anakPanahGroup.position.y =
+          0.08 + Math.sin(this.progresPanah * Math.PI) * 0.22;
+        this.anakPanahGroup.rotation.z =
+          -Math.cos(this.progresPanah * Math.PI) * 0.18;
+        if (this.progresPanah >= 1) {
+          this.panahMeluncur = false;
+          this.anakPanahGroup.visible = false;
+        }
+      }
+
+      // Animasi Sabetan Kayon (Gunungan 3D) berayun melintasi panggung
+      if (this.sabetanKayonAktif) {
+        this.progresKayon = Math.min(1, this.progresKayon + 0.025);
+        const fase = Math.sin(this.progresKayon * Math.PI);
+        this.gununganTepiGroup.position.x = 1.92 - fase * 1.85;
+        this.gununganTepiGroup.position.z = -0.04 + fase * 0.26;
+        this.gununganTepiGroup.rotation.y = fase * Math.PI;
+        this.gununganTepiGroup.rotation.z = -0.08 + Math.sin(this.progresKayon * Math.PI * 2) * 0.24;
+        if (this.progresKayon >= 1) {
+          this.sabetanKayonAktif = false;
+          this.gununganTepiGroup.position.set(1.92, -0.05, -0.04);
+          this.gununganTepiGroup.rotation.set(0, 0, -0.08);
+        }
+      }
+
       // Artikulasi hidup lengan Sri Rama dan lompatan kaki Kidang Kencana
       if (!this.reducedMotion) {
         if (this.ramaBahuDepan && this.ramaSikuDepan) {
-          this.ramaBahuDepan.rotation.z = -0.62 + Math.sin(t * 2.6) * 0.18;
-          this.ramaSikuDepan.rotation.z = -0.9 + Math.cos(t * 2.6) * 0.15;
+          const tarikPanah = this.panahMeluncur ? -0.35 : 0;
+          this.ramaBahuDepan.rotation.z = -0.62 + tarikPanah + Math.sin(t * 2.6) * 0.18;
+          this.ramaSikuDepan.rotation.z = -0.9 + tarikPanah * 0.6 + Math.cos(t * 2.6) * 0.15;
         }
         const kecepatanKidang = Math.abs(this.kidangGroup.position.x - prevKidangX) * 18 + 1;
         if (this.kidangKakiDepan && this.kidangKakiBelakang) {
@@ -629,7 +746,9 @@ export class WayangStage {
           this.kidangKakiBelakang.rotation.z =
             -Math.sin(t * 4.5) * 0.28 * Math.min(2.2, kecepatanKidang);
         }
-        this.gununganTepiGroup.rotation.z = -0.08 + Math.sin(t * 1.4) * 0.025;
+        if (!this.sabetanKayonAktif) {
+          this.gununganTepiGroup.rotation.z = -0.08 + Math.sin(t * 1.4) * 0.025;
+        }
         this.blencongLight.intensity = 13.2 + Math.sin(time * 0.0042) * 0.55;
       }
 

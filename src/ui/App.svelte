@@ -18,13 +18,24 @@
     latinToAksara,
     type KartuCarakan,
   } from '../lib/aksara';
-  import { PengelolaTangan, type FrameTangan, type StatusKamera } from '../lib/handTracker';
+  import { audioBudaya } from '../lib/audioBudaya';
+  import {
+    DESKRIPSI_GESTUR,
+    PengelolaTangan,
+    type FrameTangan,
+    type JenisGesturTangan,
+    type StatusKamera,
+  } from '../lib/handTracker';
   import {
     CONTOH_PERTANYAAN,
     tanyakanKeAsisten,
     type JawabanTanya,
   } from '../lib/tanya';
-  import { ArtifactStage, NADA_SARON_SLENDRO } from '../scenes/ArtifactStage';
+  import {
+    ArtifactStage,
+    LABEL_EFEK_KHUSUS_3D,
+    NADA_SARON_SLENDRO,
+  } from '../scenes/ArtifactStage';
   import { WayangStage } from '../scenes/WayangStage';
 
   if (typeof window !== 'undefined') {
@@ -58,7 +69,57 @@
     kiriY: 0,
     jarakCubit: 1,
     gesturAktif: 'diam',
+    kemiringanPergelangan: 0,
+    kecepatanGerak: 0,
+    jumlahJariTerbuka: 0,
   });
+
+  let suaraBudayaAktif = $state<boolean>(true);
+  let gendingPendopoAktif = $state<boolean>(false);
+
+  const DAFTAR_PANDUAN_GESTUR: {
+    kode: JenisGesturTangan;
+    simbol: string;
+    judul: string;
+    uraian: string;
+  }[] = [
+    {
+      kode: 'telapak-putar',
+      simbol: '✋',
+      judul: 'Telapak Terbuka & Miring',
+      uraian: 'Putar orbit 3D, miringkan pergelangan (roll), dan arahkan sorot lampu blencong.',
+    },
+    {
+      kode: 'cubit-zoom',
+      simbol: '🤏',
+      judul: 'Cubit Ibu Jari & Telunjuk',
+      uraian: 'Perbesar atau perkecil jarak kamera untuk mengamati detail tekstur pamor & serat.',
+    },
+    {
+      kode: 'kepal-aksi',
+      simbol: '✊',
+      judul: 'Kepalan Tangan (Aksi Utama)',
+      uraian: 'Cabut Keris, putar Gending Saron, jalankan Canting, atau bedah atap Joglo 3D.',
+    },
+    {
+      kode: 'dua-jari-sabetan',
+      simbol: '✌️',
+      judul: 'Dua Jari (Simulasi Fisik 3D)',
+      uraian: 'Pijar pamor Keris, glissando Saron, celup malam, uji gempa Joglo, atau panah 3D.',
+    },
+    {
+      kode: 'tunjuk-ketuk',
+      simbol: '☝️',
+      judul: 'Telunjuk Tunggal (Tabuh Saron)',
+      uraian: 'Arahkan telunjuk dari kiri ke kanan untuk menabuh 7 wilah Saron di udara.',
+    },
+    {
+      kode: 'dua-tangan-dalang',
+      simbol: '🙌',
+      judul: 'Dua Tangan Dalang',
+      uraian: 'Kemudikan Sri Rama (tangan kanan) dan Kidang Kencana (tangan kiri) bersamaan.',
+    },
+  ];
 
   let sliderRamaX = $state<number>(LAKON_KIJANG_KENCANA.babak[0].posisiAwalRama);
   let sliderKidangX = $state<number>(LAKON_KIJANG_KENCANA.babak[0].posisiAwalKidang);
@@ -301,8 +362,23 @@
       );
   }
 
+  function toggleSuaraBudaya(): void {
+    suaraBudayaAktif = audioBudaya.aturAktif(!suaraBudayaAktif);
+    if (!suaraBudayaAktif) {
+      gendingPendopoAktif = false;
+    }
+  }
+
+  function toggleGendingPendopo(): void {
+    gendingPendopoAktif = audioBudaya.toggleSuasanaPendopo();
+    if (gendingPendopoAktif) {
+      suaraBudayaAktif = true;
+    }
+  }
+
   async function pindahLayar(target: LayarId): Promise<void> {
     if (layarAktif === target) return;
+    audioBudaya.bunyikanGongAgeng(0.14);
     animasiTiraiGunungan(NAMA_BAB[target]);
     layarAktif = target;
     await tick();
@@ -362,6 +438,7 @@
   function gantiBendaHero(id: BendaPusaka['id']): void {
     bendaHeroId = id;
     aksi3DPintuAktif = false;
+    audioBudaya.bunyikanCempalaKeprak('cempala');
     const b = DAFTAR_BENDA.find((x) => x.id === id) ?? DAFTAR_BENDA[0];
     stagePintu?.muatBenda(b);
   }
@@ -371,9 +448,17 @@
     aksi3DPintuAktif = stagePintu.toggleAksiHidup();
   }
 
+  function picuEfek3DPintu(): void {
+    stagePintu?.picuEfekKhusus3D();
+  }
+
   function toggleAksi3DPegang(): void {
     if (!stagePegang) return;
     aksi3DPegangAktif = stagePegang.toggleAksiHidup();
+  }
+
+  function picuEfek3DPegang(): void {
+    stagePegang?.picuEfekKhusus3D();
   }
 
   async function pilihBenda(
@@ -390,6 +475,7 @@
     if (langsungBuka) {
       await pindahLayar('pegang');
     } else if (stagePegang) {
+      audioBudaya.bunyikanCempalaKeprak('cempala');
       const b = DAFTAR_BENDA.find((x) => x.id === id) ?? DAFTAR_BENDA[0];
       stagePegang.muatBenda(b);
       const t = b.titikInfo[indeksTitik] ?? b.titikInfo[0];
@@ -408,6 +494,7 @@
 
   function pilihTitikInfo(idx: number): void {
     indeksTitikAktif = idx;
+    audioBudaya.bunyikanCempalaKeprak('cempala');
     const t = bendaAktif.titikInfo[idx];
     if (t && stagePegang) {
       stagePegang.fokusKeTitik(t.posisi3D, t.kameraTarget);
@@ -423,6 +510,7 @@
 
   function pilihBabak(idx: number): void {
     indeksBabakAktif = idx;
+    audioBudaya.bunyikanCempalaKeprak('keprak');
     const b = LAKON_KIJANG_KENCANA.babak[idx];
     if (b) {
       sliderRamaX = b.posisiAwalRama;
@@ -441,6 +529,7 @@
   function pilihKartuCarakan(item: KartuCarakan, tombolEl?: HTMLElement): void {
     carakanTerpilih = item;
     inputUjiAksara = item.contohKata;
+    audioBudaya.bunyikanCempalaKeprak('cempala');
     if (tombolEl && bolehAnimasiGSAP()) {
       gsap.fromTo(
         tombolEl,
@@ -464,18 +553,13 @@
           infoTangan = frame;
           if (!frame.terdeteksi) return;
           if (layarAktif === 'pintu' && stagePintu) {
-            stagePintu.terapkanInputTangan(frame.kananX, frame.kananY, frame.jarakCubit);
+            stagePintu.terapkanInputTangan(frame.kananX, frame.kananY, frame.jarakCubit, frame);
           } else if (layarAktif === 'pegang' && stagePegang) {
-            stagePegang.terapkanInputTangan(frame.kananX, frame.kananY, frame.jarakCubit);
+            stagePegang.terapkanInputTangan(frame.kananX, frame.kananY, frame.jarakCubit, frame);
           } else if (layarAktif === 'panggung' && stagePanggung) {
             sliderRamaX = Number(frame.kananX.toFixed(2));
             sliderKidangX = Number(frame.kiriX.toFixed(2));
-            stagePanggung.aturPosisiTokoh(
-              frame.kananX,
-              frame.kiriX,
-              frame.kananY * 0.4,
-              frame.kiriY * 0.4,
-            );
+            stagePanggung.terapkanGesturPanggung(frame);
           }
         },
         (st, psn) => {
@@ -717,12 +801,14 @@
 </header>
 
 <main id="konten-utama" class="wadah-utama" bind:this={wadahLayarEl}>
-  <section class="pita-status" aria-label="Status kendali belajar dan rujukan">
+  <section class="pita-status" aria-label="Status kendali belajar, efek suara budaya, dan rujukan">
     <div class="label-status" data-testid="status-kendali">
       {#if statusKamera === 'aktif'}
         <span class="penanda-status">KAMERA TANGAN AKTIF</span>
         <span>
-          Tangan terdeteksi: {infoTangan.jumlahTangan} · Gestur: {infoTangan.gesturAktif}
+          Tangan: {infoTangan.jumlahTangan} · Gestur: {infoTangan.gesturAktif} ({DESKRIPSI_GESTUR[
+            infoTangan.gesturAktif
+          ]})
         </span>
       {:else if statusKamera === 'meminta-izin'}
         <span class="penanda-draf">MEMUAT KAMERA</span>
@@ -731,10 +817,10 @@
         <span class="penanda-draf" data-testid="badge-fallback-kamera">MODE MANUAL AKTIF</span>
         <span>{pesanKamera}</span>
       {:else}
-        <span class="penanda-status">PANDUAN BELAJAR INTERAKTIF</span>
+        <span class="penanda-status">PANDUAN BELAJAR &amp; AUDIO BUDAYA</span>
         <span>
           {pesanKamera ??
-            'Putar objek 3D, ketuk bilah gamelan, dan pelajari aksara dengan mouse, sentuh, atau keyboard.'}
+            'Putar objek 3D, jalankan simulasi fisik 3D, ketuk bilah gamelan, dan dengarkan akustik budaya Jawa.'}
         </span>
       {/if}
     </div>
@@ -747,6 +833,35 @@
       {:else}
         <span class="penanda-status">TERVERIFIKASI S1..S7</span>
       {/if}
+
+      <button
+        type="button"
+        class={suaraBudayaAktif ? 'tombol tombol-utama' : 'tombol'}
+        data-testid="toggle-suara-budaya"
+        aria-pressed={suaraBudayaAktif}
+        onclick={toggleSuaraBudaya}
+      >
+        Suara Budaya: {suaraBudayaAktif ? 'Aktif' : 'Senyap'}
+      </button>
+
+      <button
+        type="button"
+        class={gendingPendopoAktif ? 'tombol tombol-utama' : 'tombol'}
+        data-testid="toggle-gending-pendopo"
+        aria-pressed={gendingPendopoAktif}
+        onclick={toggleGendingPendopo}
+      >
+        Gending Pendopo: {gendingPendopoAktif ? 'Hidup' : 'Mati'}
+      </button>
+
+      <button
+        type="button"
+        class="tombol"
+        data-testid="tombol-gong-ageng"
+        onclick={() => audioBudaya.bunyikanGongAgeng(0.32)}
+      >
+        Bunyikan Gong Ageng
+      </button>
 
       {#if statusKamera === 'aktif'}
         <button
@@ -941,6 +1056,14 @@
                 onclick={toggleAksi3DPintu}
               >
                 ✦ {bendaHeroAktif.labelAksi3D}
+              </button>
+              <button
+                type="button"
+                class="tombol-hud"
+                data-testid="hero-efek-3d"
+                onclick={picuEfek3DPintu}
+              >
+                ⚡ {LABEL_EFEK_KHUSUS_3D[bendaHeroAktif.id]}
               </button>
               <button
                 type="button"
@@ -1202,6 +1325,14 @@
               <button
                 type="button"
                 class="tombol"
+                data-testid="tombol-efek-3d"
+                onclick={picuEfek3DPegang}
+              >
+                ⚡ {LABEL_EFEK_KHUSUS_3D[bendaAktif.id]}
+              </button>
+              <button
+                type="button"
+                class="tombol"
                 data-testid="putar-kiri"
                 onclick={() => stagePegang?.putarManual(-0.35, 0)}
               >
@@ -1249,6 +1380,30 @@
             >
               Lanjut ke Kisah Pakeliran →
             </button>
+          </div>
+
+          <!-- Panel 6 Variasi Gestur Tangan & Simulasi Fisik 3D -->
+          <div
+            style="padding: 0.85rem 1.05rem; border-top: 1px solid var(--garis-batas); background: var(--bg-kartu);"
+            data-testid="panel-panduan-gestur"
+          >
+            <div class="mono-kecil teks-redup" style="margin-bottom: 0.45rem;">
+              6 VARIASI GESTUR TANGAN &amp; EFEK AKUSTIK BUDAYA (DAPAT DIKLIK ATAU PAKAI KAMERA):
+            </div>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 0.45rem;">
+              {#each DAFTAR_PANDUAN_GESTUR as g (g.kode)}
+                <div
+                  style="padding: 0.5rem 0.65rem; border: 1px solid var(--garis-batas); border-radius: var(--radius-kotak); background: var(--bg-permukaan); font-size: 0.82rem;"
+                >
+                  <div style="font-weight: 700; color: var(--teks-utama);">
+                    {g.simbol} {g.judul}
+                  </div>
+                  <div class="teks-redup" style="font-size: 0.78rem; margin-top: 0.15rem;">
+                    {g.uraian}
+                  </div>
+                </div>
+              {/each}
+            </div>
           </div>
         </div>
 
@@ -1435,6 +1590,39 @@
               </p>
             </div>
           {/if}
+
+          <div
+            class="bilah-kendali-3d"
+            role="group"
+            aria-label="Aksi sabetan dalang, panah Sri Rama, dan ketukan cempala keprak"
+          >
+            <div style="display: flex; flex-wrap: wrap; gap: 0.45rem;">
+              <button
+                type="button"
+                class="tombol tombol-utama"
+                data-testid="panggung-panah-rama"
+                onclick={() => stagePanggung?.lepaskanPanahRama()}
+              >
+                🏹 Lesatkan Panah Guwawijaya 3D
+              </button>
+              <button
+                type="button"
+                class="tombol"
+                data-testid="panggung-sabetan-kayon"
+                onclick={() => stagePanggung?.sabetanKayon()}
+              >
+                ✦ Sabetan Kayon &amp; Keprak Dalang
+              </button>
+              <button
+                type="button"
+                class="tombol"
+                data-testid="panggung-cempala-dalang"
+                onclick={() => audioBudaya.bunyikanCempalaKeprak('cempala')}
+              >
+                🔔 Dhodhogan Cempala Kotak
+              </button>
+            </div>
+          </div>
         </div>
 
         <div class="kontrol-slider-wayang anim-masuk">

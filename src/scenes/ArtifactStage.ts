@@ -1,10 +1,12 @@
-// Adegan 3D Ruang Pegang menggunakan Three.js dengan geometri 3D volumetrik penuh (tanpa gambar datar 2D),
-// tekstur PBR nyata (Poly Haven CC0 1K + prosedural kriya Nusantara), mekanisme artikulasi 3D hidup,
-// serta sintesis suara Saron Laras Slendro (Web Audio API).
+// Adegan 3D Studio Anatomi Budaya menggunakan Three.js dengan geometri 3D volumetrik penuh,
+// tekstur PBR nyata (Poly Haven CC0 1K + prosedural kriya Nusantara),
+// dua mode simulasi/efek fisik 3D per pusaka, respons 6 variasi gestur tangan,
+// serta integrasi mesin suara budaya Nusantara (Web Audio API physical modeling).
 
 import * as THREE from 'three';
 import type { BendaPusaka, IdPusaka } from '../content/pusaka';
-import { lerp } from '../lib/handTracker';
+import { audioBudaya } from '../lib/audioBudaya';
+import { lerp, type FrameTangan } from '../lib/handTracker';
 import {
   ambilKoleksiTeksturPBR,
   pasangLingkunganPBR,
@@ -28,7 +30,14 @@ export const NADA_SARON_SLENDRO: InfoNadaSaron[] = [
   { nomor: 7, notasi: '1̇', nama: 'Ji Alit', frekuensi: 564.0 },
 ];
 
-// Pola balungan tradisional Lancaran Ricik-Ricik (indeks wilah 0..6)
+export const LABEL_EFEK_KHUSUS_3D: Record<IdPusaka, string> = {
+  keris: 'Pijar Pamor & Tayuh Wesi Aji',
+  saron: 'Sapuan Glissando & Gelombang Suara 3D',
+  batik: 'Celup Malam Wajan & Lukis Jejak Emas',
+  joglo: 'Simulasi Uji Guncangan Gempa 3D',
+  wayang: 'Lesatkan Panah Guwawijaya 3D',
+};
+
 const POLA_GENDING_LANCARAN = [2, 3, 2, 1, 2, 3, 4, 3, 4, 5, 4, 3, 2, 1, 2, 0];
 
 export class ArtifactStage {
@@ -47,9 +56,12 @@ export class ArtifactStage {
 
   private bendaAktifId: IdPusaka = 'keris';
   private aksiHidupAktif = false;
+  private efekKhususWaktu = 0;
+  private simulasiGempaAktif = false;
 
   private targetRotY = 0.28;
   private targetRotX = 0.12;
+  private targetRotZ = 0;
   private targetZoom = 2.65;
   private targetFocus = new THREE.Vector3(0, 0, 0);
   private currentFocus = new THREE.Vector3(0, 0, 0);
@@ -60,11 +72,17 @@ export class ArtifactStage {
   private lastX = 0;
   private lastY = 0;
 
-  // Referensi bagian model 3D untuk animasi hidup interaktif
+  private waktuGesturAksiTerakhir = 0;
+  private wilahTerakhirTunjuk = -1;
+
+  // Referensi bagian model 3D untuk animasi & efek fisik
   private kerisBilahGroup: THREE.Group | null = null;
   private kerisWarangkaGroup: THREE.Group | null = null;
+  private kerisCincinPijar: THREE.Mesh | null = null;
 
   private wilahMeshes: THREE.Mesh[] = [];
+  private cincinAkustikMeshes: THREE.Mesh[] = [];
+  private cincinAkustikSkala: number[] = [];
   private tabuhGroup: THREE.Group | null = null;
   private animasiTabuhWaktu = 0;
   private animasiTabuhTargetX = 0.35;
@@ -75,6 +93,8 @@ export class ArtifactStage {
   private kainBatikGeo: THREE.BufferGeometry | null = null;
   private kainBatikPosAwal: Float32Array | null = null;
   private baraAngloMat: THREE.MeshStandardMaterial | null = null;
+  private uapMalamPoints: THREE.Points | null = null;
+  private jejakMalamMesh: THREE.Mesh | null = null;
 
   private jogloUmpakGroup: THREE.Group | null = null;
   private jogloSakaGroup: THREE.Group | null = null;
@@ -86,8 +106,8 @@ export class ArtifactStage {
   private wayangBahuDepan: THREE.Group | null = null;
   private wayangSikuDepan: THREE.Group | null = null;
   private wayangBahuBelakang: THREE.Group | null = null;
+  private wayangAnakPanahGroup: THREE.Group | null = null;
 
-  private audioCtx: AudioContext | null = null;
   private raycaster = new THREE.Raycaster();
   private pointerNdc = new THREE.Vector2();
 
@@ -110,7 +130,6 @@ export class ArtifactStage {
 
     this.bangunPanggungMuseum3D();
 
-    // Pencahayaan tiga titik + lampu minyak blencong hangat
     const hemi = new THREE.HemisphereLight('#FFF3DC', '#261A12', 0.92);
     this.scene.add(hemi);
 
@@ -183,8 +202,6 @@ export class ArtifactStage {
     this.mulaiLoop();
   }
 
-  // Membangun ruang pamer 3D volumetrik dengan pedestal batu andesit, meja jati ukir,
-  // tiang pendopo di latar jauh, dan partikel debu cahaya blencong.
   private bangunPanggungMuseum3D(): void {
     const batuMat = new THREE.MeshStandardMaterial({
       map: this.teksturs.batuAndesitDiff,
@@ -211,7 +228,6 @@ export class ArtifactStage {
       metalness: 0.88,
     });
 
-    // Umpak pedestal segi delapan di bawah objek 3D
     const pedestalGroup = new THREE.Group();
     pedestalGroup.position.set(0, -0.86, 0);
 
@@ -231,7 +247,6 @@ export class ArtifactStage {
     mejaKayu.receiveShadow = true;
     pedestalGroup.add(mejaKayu);
 
-    // Cincin kompas kuningan berukir yang berputar perlahan di permukaan pedestal
     const cincinGeo = new THREE.RingGeometry(0.84, 0.92, 32);
     const cincinMesh = new THREE.Mesh(cincinGeo, emasMat);
     cincinMesh.rotation.x = -Math.PI / 2;
@@ -242,8 +257,16 @@ export class ArtifactStage {
 
     this.scene.add(pedestalGroup);
 
-    // Lengkung relung sanggar 3D di kejauhan agar ruang memiliki kedalaman nyata
-    const relungGeo = new THREE.CylinderGeometry(4.2, 4.2, 4.4, 24, 1, true, Math.PI * 0.65, Math.PI * 0.7);
+    const relungGeo = new THREE.CylinderGeometry(
+      4.2,
+      4.2,
+      4.4,
+      24,
+      1,
+      true,
+      Math.PI * 0.65,
+      Math.PI * 0.7,
+    );
     const relungMat = new THREE.MeshStandardMaterial({
       map: this.teksturs.tenunKelirDiff,
       bumpMap: this.teksturs.tenunKelirBump,
@@ -257,7 +280,6 @@ export class ArtifactStage {
     relungMesh.receiveShadow = true;
     this.scene.add(relungMesh);
 
-    // 4 Tiang Saka Pendopo di latar belakang untuk memberi skala arsitektural
     for (const xPos of [-2.3, -1.15, 1.15, 2.3]) {
       const zPos = -2.35 + Math.abs(xPos) * 0.22;
       const tiang = new THREE.Mesh(
@@ -275,12 +297,11 @@ export class ArtifactStage {
       this.scene.add(umpakTiang);
     }
 
-    // Partikel debu emas melayang di ruang 3D
     const jumlahPartikel = 72;
     const posPartikel = new Float32Array(jumlahPartikel * 3);
     for (let i = 0; i < jumlahPartikel; i++) {
       posPartikel[i * 3] = (Math.sin(i * 12.9898) - 0.5) * 3.4;
-      posPartikel[i * 3 + 1] = ((i / jumlahPartikel) - 0.45) * 2.4;
+      posPartikel[i * 3 + 1] = (i / jumlahPartikel - 0.45) * 2.4;
       posPartikel[i * 3 + 2] = (Math.cos(i * 78.233) - 0.5) * 2.2;
     }
     const partikelGeo = new THREE.BufferGeometry();
@@ -323,6 +344,11 @@ export class ArtifactStage {
       }
     });
 
+    // Klik ganda pada kanvas langsung memicu efek khusus 3D & suara budaya
+    el.addEventListener('dblclick', () => {
+      this.picuEfekKhusus3D();
+    });
+
     el.addEventListener(
       'wheel',
       (e: WheelEvent) => {
@@ -348,83 +374,106 @@ export class ArtifactStage {
     }
   }
 
-  // Membunyikan nada bilah saron menggunakan sintesis harmonik inharmonik perunggu (Web Audio API)
   tabuhWilahSaron(indeksWilah: number): void {
     const info = NADA_SARON_SLENDRO[indeksWilah];
     if (!info) return;
 
     const mesh = this.wilahMeshes[indeksWilah];
     if (mesh) {
-      mesh.position.y = 0.072;
+      mesh.position.y = 0.075;
       this.animasiTabuhTargetX = mesh.position.x;
       this.animasiTabuhWaktu = performance.now();
     }
 
-    if (typeof window === 'undefined') return;
-    const AudioCtor =
-      window.AudioContext ||
-      (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
-    if (!AudioCtor) return;
-
-    try {
-      if (!this.audioCtx) {
-        this.audioCtx = new AudioCtor();
-      }
-      if (this.audioCtx.state === 'suspended') {
-        void this.audioCtx.resume();
-      }
-      const now = this.audioCtx.currentTime;
-      const f0 = info.frekuensi;
-
-      const parsial = [
-        { rasio: 1.0, gain: 0.22, durasi: 1.45 },
-        { rasio: 2.756, gain: 0.1, durasi: 0.55 },
-        { rasio: 5.404, gain: 0.042, durasi: 0.22 },
-      ];
-
-      for (const p of parsial) {
-        const osc = this.audioCtx.createOscillator();
-        const gain = this.audioCtx.createGain();
-        osc.type = p.rasio === 1.0 ? 'triangle' : 'sine';
-        osc.frequency.setValueAtTime(f0 * p.rasio, now);
-
-        gain.gain.setValueAtTime(0.0001, now);
-        gain.gain.linearRampToValueAtTime(p.gain, now + 0.008);
-        gain.gain.exponentialRampToValueAtTime(0.0001, now + p.durasi);
-
-        osc.connect(gain);
-        gain.connect(this.audioCtx.destination);
-        osc.start(now);
-        osc.stop(now + p.durasi + 0.02);
-      }
-    } catch {
-      // Abaikan bila kebijakan autoplay memblokir audio
+    const cincin = this.cincinAkustikMeshes[indeksWilah];
+    if (cincin) {
+      this.cincinAkustikSkala[indeksWilah] = 0.25;
+      cincin.visible = true;
     }
+
+    audioBudaya.bunyikanWilahSaron(info.frekuensi, 0.22);
   }
 
-  // Mengaktifkan atau menonaktifkan simulasi mekanisme 3D hidup pada pusaka yang sedang dibuka
+  // Aksi Mekanis 1: Mengaktifkan / menonaktifkan mekanisme utama 3D disertai efek suara budaya
   toggleAksiHidup(paksaNilai?: boolean): boolean {
     this.aksiHidupAktif = typeof paksaNilai === 'boolean' ? paksaNilai : !this.aksiHidupAktif;
-    if (this.bendaAktifId === 'saron' && this.aksiHidupAktif) {
-      this.gendingLangkah = 0;
-      this.gendingWaktuTerakhir = 0;
+
+    if (this.bendaAktifId === 'keris') {
+      audioBudaya.bunyikanCabutKeris(this.aksiHidupAktif);
+    } else if (this.bendaAktifId === 'saron') {
+      if (this.aksiHidupAktif) {
+        this.gendingLangkah = 0;
+        this.gendingWaktuTerakhir = 0;
+        audioBudaya.bunyikanGongAgeng(0.16);
+      }
+    } else if (this.bendaAktifId === 'batik') {
+      audioBudaya.bunyikanCantingBatik();
+    } else if (this.bendaAktifId === 'joglo') {
+      audioBudaya.bunyikanStrukturJoglo(this.aksiHidupAktif);
+    } else if (this.bendaAktifId === 'wayang') {
+      audioBudaya.bunyikanCempalaKeprak(this.aksiHidupAktif ? 'keprak' : 'cempala');
     }
+
     return this.aksiHidupAktif;
+  }
+
+  // Aksi Fisik & Efek Khusus 2: Memicu simulasi fisik kedua yang berbeda pada tiap pusaka 3D
+  picuEfekKhusus3D(): void {
+    this.efekKhususWaktu = performance.now();
+
+    if (this.bendaAktifId === 'keris') {
+      // Pijar Pamor Wos Wutah & Tayuh Pusaka
+      audioBudaya.bunyikanCabutKeris(false);
+      if (this.kerisCincinPijar) {
+        this.kerisCincinPijar.visible = true;
+        this.kerisCincinPijar.position.y = -0.22;
+      }
+    } else if (this.bendaAktifId === 'saron') {
+      // Sapuan Glissando 7 Wilah Laras Slendro
+      NADA_SARON_SLENDRO.forEach((_, idx) => {
+        setTimeout(() => {
+          this.tabuhWilahSaron(idx);
+        }, idx * 75);
+      });
+    } else if (this.bendaAktifId === 'batik') {
+      // Celup Canting ke Wajan Malam Panas & Tiupan Cucuk
+      audioBudaya.bunyikanCantingBatik();
+    } else if (this.bendaAktifId === 'joglo') {
+      // Toggle Simulasi Uji Guncangan Gempa Bumi 3D pada Umpak & Saka Guru
+      this.simulasiGempaAktif = !this.simulasiGempaAktif;
+      audioBudaya.bunyikanStrukturJoglo(true);
+    } else if (this.bendaAktifId === 'wayang') {
+      // Lesatkan Anak Panah Guwawijaya 3D dari Busur Sri Rama
+      audioBudaya.bunyikanPanahWayang();
+      if (this.wayangAnakPanahGroup) {
+        this.wayangAnakPanahGroup.visible = true;
+        this.wayangAnakPanahGroup.position.set(0.05, 0.08, 0.04);
+      }
+    }
   }
 
   statusAksiHidup(): boolean {
     return this.aksiHidupAktif;
   }
 
+  statusSimulasiGempa(): boolean {
+    return this.simulasiGempaAktif;
+  }
+
   private resetReferensiAnimasi(): void {
     this.kerisBilahGroup = null;
     this.kerisWarangkaGroup = null;
+    this.kerisCincinPijar = null;
     this.wilahMeshes = [];
+    this.cincinAkustikMeshes = [];
+    this.cincinAkustikSkala = [];
     this.tabuhGroup = null;
     this.cantingGroup = null;
     this.kainBatikGeo = null;
     this.kainBatikPosAwal = null;
     this.baraAngloMat = null;
+    this.uapMalamPoints = null;
+    this.jejakMalamMesh = null;
     this.jogloUmpakGroup = null;
     this.jogloSakaGroup = null;
     this.jogloTumpangGroup = null;
@@ -434,11 +483,14 @@ export class ArtifactStage {
     this.wayangBahuDepan = null;
     this.wayangSikuDepan = null;
     this.wayangBahuBelakang = null;
+    this.wayangAnakPanahGroup = null;
   }
 
   muatBenda(benda: BendaPusaka): void {
     this.bendaAktifId = benda.id;
     this.aksiHidupAktif = false;
+    this.simulasiGempaAktif = false;
+    this.efekKhususWaktu = 0;
     this.resetReferensiAnimasi();
 
     for (let i = this.rootGroup.children.length - 1; i >= 0; i--) {
@@ -479,6 +531,7 @@ export class ArtifactStage {
     });
 
     this.rootGroup.add(model);
+    this.targetRotZ = 0;
     this.targetZoom = 2.65;
 
     if (benda.titikInfo[0]) {
@@ -503,14 +556,59 @@ export class ArtifactStage {
   resetPandangan(): void {
     this.targetRotY = 0.28;
     this.targetRotX = 0.12;
+    this.targetRotZ = 0;
     this.targetZoom = 2.65;
     this.targetFocus.set(0, 0, 0);
   }
 
-  terapkanInputTangan(normX: number, normY: number, zoomSkala: number): void {
+  // Menerapkan 6 variasi gestur tangan (orbit, zoom cubit, miring pergelangan, kepal aksi, tunjuk tabuh, sabetan 2 jari)
+  terapkanInputTangan(
+    normX: number,
+    normY: number,
+    zoomSkala: number,
+    frameLengkap?: FrameTangan,
+  ): void {
     this.targetRotY = normX * 1.35;
     this.targetRotX = Math.max(-0.7, Math.min(0.7, -normY * 0.65));
     this.targetZoom = Math.max(1.65, Math.min(3.8, 3.15 - zoomSkala * 0.65));
+
+    // Arahkan sorot lampu minyak blencong mengikuti posisi tangan
+    this.blencongLight.position.x = lerp(this.blencongLight.position.x, normX * 1.6, 0.2);
+
+    if (!frameLengkap) return;
+    this.targetRotZ = Math.max(-0.38, Math.min(0.38, frameLengkap.kemiringanPergelangan));
+
+    const sekarang = performance.now();
+
+    // Gestur Kepalan Tangan -> memicu mekanisme utama 3D (dengan jeda 1.4 detik agar tidak berulang liar)
+    if (
+      frameLengkap.gesturAktif === 'kepal-aksi' &&
+      sekarang - this.waktuGesturAksiTerakhir > 1400
+    ) {
+      this.waktuGesturAksiTerakhir = sekarang;
+      this.toggleAksiHidup();
+    }
+
+    // Gestur Dua Jari Sabetan -> memicu efek fisik khusus kedua 3D
+    if (
+      frameLengkap.gesturAktif === 'dua-jari-sabetan' &&
+      sekarang - this.waktuGesturAksiTerakhir > 1400
+    ) {
+      this.waktuGesturAksiTerakhir = sekarang;
+      this.picuEfekKhusus3D();
+    }
+
+    // Gestur Satu Jari Telunjuk pada Saron -> menabuh bilah berdasarkan posisi X jari di udara
+    if (frameLengkap.gesturAktif === 'tunjuk-ketuk' && this.bendaAktifId === 'saron') {
+      const idxWilah = Math.max(
+        0,
+        Math.min(6, Math.floor(((normX + 0.75) / 1.5) * 7)),
+      );
+      if (idxWilah !== this.wilahTerakhirTunjuk && sekarang - this.animasiTabuhWaktu > 210) {
+        this.wilahTerakhirTunjuk = idxWilah;
+        this.tabuhWilahSaron(idxWilah);
+      }
+    }
   }
 
   ubahUkuran(width: number, height: number): void {
@@ -522,7 +620,7 @@ export class ArtifactStage {
     this.renderer.setSize(w, h);
   }
 
-  // 1. KERIS JAWA LUK 5 BERPAMOR WOS WUTAH & WARANGKA GAYAMAN YOGYAKARTA (DENGAN ANIMASI CABUT-SARUNGKAN)
+  // 1. KERIS JAWA LUK 5 BERPAMOR WOS WUTAH & WARANGKA GAYAMAN YOGYAKARTA
   private bangunKerisRealistis(): THREE.Group {
     const g = new THREE.Group();
 
@@ -561,7 +659,6 @@ export class ArtifactStage {
     const bilahGroup = new THREE.Group();
     this.kerisBilahGroup = bilahGroup;
 
-    // Geometri bilah (Wilah) kontinu 64 irisan dengan tulang tengah (ada-ada) dan 5 luk
     const slices = 64;
     const positions: number[] = [];
     const uvs: number[] = [];
@@ -609,7 +706,21 @@ export class ArtifactStage {
     const wilahMesh = new THREE.Mesh(wilahGeo, wilahPamorMat);
     bilahGroup.add(wilahMesh);
 
-    // Kembang Kacang di pangkal sorsoran kanan
+    // Cincin Pijar Pamor 3D untuk efek Tayuh Pusaka
+    const cincinPijar = new THREE.Mesh(
+      new THREE.TorusGeometry(0.14, 0.008, 12, 32),
+      new THREE.MeshBasicMaterial({
+        color: '#FFE082',
+        transparent: true,
+        opacity: 0.85,
+      }),
+    );
+    cincinPijar.rotation.x = Math.PI / 2;
+    cincinPijar.position.y = -0.2;
+    cincinPijar.visible = false;
+    this.kerisCincinPijar = cincinPijar;
+    bilahGroup.add(cincinPijar);
+
     const kembangCurve = new THREE.CatmullRomCurve3([
       new THREE.Vector3(0.08, -0.15, 0),
       new THREE.Vector3(0.135, -0.11, 0.005),
@@ -622,7 +733,6 @@ export class ArtifactStage {
     );
     bilahGroup.add(kembangKacang);
 
-    // Ganja melintang asimetris
     const ganjaShape = new THREE.Shape();
     ganjaShape.moveTo(-0.14, -0.018);
     ganjaShape.quadraticCurveTo(-0.16, 0.015, -0.11, 0.024);
@@ -643,7 +753,6 @@ export class ArtifactStage {
     ganjaMesh.rotation.z = -0.05;
     bilahGroup.add(ganjaMesh);
 
-    // Mendak & Selut berhias 12 permata mirah
     const mendakGroup = new THREE.Group();
     mendakGroup.position.set(0, -0.255, 0);
     const cincinMendak = new THREE.Mesh(
@@ -667,7 +776,6 @@ export class ArtifactStage {
     }
     bilahGroup.add(mendakGroup);
 
-    // Hulu / Deder gaya Nunggak Semi Yogyakarta
     const huluCurve = new THREE.CatmullRomCurve3([
       new THREE.Vector3(0, -0.27, 0),
       new THREE.Vector3(-0.01, -0.38, 0.01),
@@ -686,7 +794,6 @@ export class ArtifactStage {
 
     g.add(bilahGroup);
 
-    // Warangka Gayaman Yogyakarta & Gandar berbalut Pendok Blewah Emas
     const warangkaGroup = new THREE.Group();
     warangkaGroup.position.set(-0.44, -0.08, -0.04);
     warangkaGroup.rotation.z = 0.08;
@@ -743,7 +850,7 @@ export class ArtifactStage {
     return g;
   }
 
-  // 2. SARON BARUNG GAMELAN DENGAN 7 WILAH GANGSA TEMPA & RANCAKAN UKIR EMAS
+  // 2. SARON BARUNG GAMELAN DENGAN 7 WILAH GANGSA TEMPA & GELOMBANG AKUSTIK 3D
   private bangunSaronRealistis(): THREE.Group {
     const g = new THREE.Group();
 
@@ -829,7 +936,18 @@ export class ArtifactStage {
       g.add(kasuran);
     }
 
+    const akustikRingGeo = new THREE.RingGeometry(0.04, 0.06, 24);
+    const akustikRingMat = new THREE.MeshBasicMaterial({
+      color: '#FFE082',
+      side: THREE.DoubleSide,
+      transparent: true,
+      opacity: 0.85,
+    });
+
     this.wilahMeshes = [];
+    this.cincinAkustikMeshes = [];
+    this.cincinAkustikSkala = [];
+
     for (let i = 0; i < 7; i++) {
       const x = -0.57 + i * 0.19;
       const panjangWilah = 0.48 - i * 0.022;
@@ -856,6 +974,15 @@ export class ArtifactStage {
       wilahMesh.userData = { indeksWilah: i, nada: NADA_SARON_SLENDRO[i] };
       this.wilahMeshes.push(wilahMesh);
       g.add(wilahMesh);
+
+      // Cincin gelombang akustik 3D di atas tiap bilah
+      const cincinAkustik = new THREE.Mesh(akustikRingGeo, akustikRingMat.clone());
+      cincinAkustik.rotation.x = -Math.PI / 2;
+      cincinAkustik.position.set(x, 0.09, 0);
+      cincinAkustik.visible = false;
+      this.cincinAkustikMeshes.push(cincinAkustik);
+      this.cincinAkustikSkala.push(0);
+      g.add(cincinAkustik);
 
       for (const arahZ of [-1, 1]) {
         const paku = new THREE.Mesh(
@@ -905,7 +1032,7 @@ export class ArtifactStage {
     return g;
   }
 
-  // 3. BATIK TULIS & CANTING TEMBAGA (GAWANGAN UKIR 3D, KAIN MORI BERGELOMBANG, CANTING HIDUP, WAJAN & ANGLO)
+  // 3. BATIK TULIS & CANTING TEMBAGA (DENGAN JEJAK MALAM EMAS 3D & UAP MALAM PANAS)
   private bangunBatikRealistis(): THREE.Group {
     const g = new THREE.Group();
 
@@ -941,7 +1068,6 @@ export class ArtifactStage {
       roughness: 0.76,
     });
 
-    // Gawangan kayu jati ukir penyangga kain batik
     const gawanganGroup = new THREE.Group();
     gawanganGroup.position.set(-0.1, 0, 0);
 
@@ -984,7 +1110,6 @@ export class ArtifactStage {
     palangBawah.position.set(0, -0.36, 0);
     gawanganGroup.add(palangBawah);
 
-    // Kain Mori Primissima 3D yang menjuntai melengkung melewati palang atas gawangan
     const segX = 32;
     const segY = 28;
     const kainGeo = new THREE.PlaneGeometry(0.92, 0.88, segX, segY);
@@ -994,8 +1119,7 @@ export class ArtifactStage {
     for (let i = 0; i < posAttr.count; i++) {
       const x = posAttr.getX(i);
       const y = posAttr.getY(i);
-      // Bentuk sampiran kain 3D melengkung di atas palang (y = 0.44) lalu menjuntai ke depan & belakang
-      const normY = (y + 0.44) / 0.88; // 0 di bawah, 1 di atas
+      const normY = (y + 0.44) / 0.88;
       const yMelengkung = -0.32 + normY * 0.76;
       const zSampiran =
         Math.sin(normY * Math.PI) * 0.14 +
@@ -1022,14 +1146,34 @@ export class ArtifactStage {
     const kainMesh = new THREE.Mesh(kainGeo, kainBatikMat);
     gawanganGroup.add(kainMesh);
 
+    const malamCairMat = new THREE.MeshPhysicalMaterial({
+      color: '#E5A93B',
+      emissive: '#9E5B08',
+      emissiveIntensity: 0.55,
+      roughness: 0.18,
+      transmission: 0.25,
+    });
+
+    // Pita Jejak Malam Emas 3D yang timbul di permukaan kain saat canting bergerak
+    const jejakCurve = new THREE.CatmullRomCurve3([
+      new THREE.Vector3(-0.22, 0.02, 0.15),
+      new THREE.Vector3(-0.08, 0.14, 0.155),
+      new THREE.Vector3(0.06, 0.06, 0.155),
+      new THREE.Vector3(0.2, 0.18, 0.15),
+    ]);
+    const jejakMalam = new THREE.Mesh(
+      new THREE.TubeGeometry(jejakCurve, 28, 0.008, 8, false),
+      malamCairMat,
+    );
+    this.jejakMalamMesh = jejakMalam;
+    gawanganGroup.add(jejakMalam);
+
     g.add(gawanganGroup);
 
-    // Canting Tulis Tembaga 3D yang bergerak hidup di depan permukaan kain
     const cantingGroup = new THREE.Group();
     cantingGroup.position.set(0.22, 0.18, 0.22);
     this.cantingGroup = cantingGroup;
 
-    // Nyamplungan (wadah malam cair dari tembaga tempa)
     const nyamplungan = new THREE.Mesh(
       new THREE.SphereGeometry(0.055, 24, 18),
       tembagaMat,
@@ -1037,14 +1181,6 @@ export class ArtifactStage {
     nyamplungan.scale.set(1.25, 0.82, 0.88);
     cantingGroup.add(nyamplungan);
 
-    // Permukaan malam emas cair hangat di dalam nyamplungan
-    const malamCairMat = new THREE.MeshPhysicalMaterial({
-      color: '#E5A93B',
-      emissive: '#8A4F08',
-      emissiveIntensity: 0.45,
-      roughness: 0.18,
-      transmission: 0.25,
-    });
     const isiMalam = new THREE.Mesh(
       new THREE.CylinderGeometry(0.045, 0.038, 0.02, 18),
       malamCairMat,
@@ -1052,7 +1188,6 @@ export class ArtifactStage {
     isiMalam.position.set(0, 0.028, 0);
     cantingGroup.add(isiMalam);
 
-    // Cucuk (cerat pipa lengkung tembaga tempat keluarnya malam)
     const cucukCurve = new THREE.CatmullRomCurve3([
       new THREE.Vector3(-0.058, 0.005, 0),
       new THREE.Vector3(-0.105, -0.008, -0.018),
@@ -1064,7 +1199,6 @@ export class ArtifactStage {
     );
     cantingGroup.add(cucukMesh);
 
-    // Tetesan malam emas di ujung cucuk
     const tetesMalam = new THREE.Mesh(
       new THREE.SphereGeometry(0.011, 12, 12),
       malamCairMat,
@@ -1072,7 +1206,6 @@ export class ArtifactStage {
     tetesMalam.position.set(-0.138, -0.042, -0.045);
     cantingGroup.add(tetesMalam);
 
-    // Gagang bambu / gelagah
     const gagangCanting = new THREE.Mesh(
       new THREE.CylinderGeometry(0.012, 0.016, 0.36, 14),
       bambuMat,
@@ -1085,7 +1218,6 @@ export class ArtifactStage {
     cantingGroup.rotation.z = 0.15;
     g.add(cantingGroup);
 
-    // Anglo Terakota & Wajan Malam Panas di kanan bawah
     const angloGroup = new THREE.Group();
     angloGroup.position.set(0.46, -0.34, 0.22);
 
@@ -1096,7 +1228,6 @@ export class ArtifactStage {
     badanAnglo.position.y = -0.08;
     angloGroup.add(badanAnglo);
 
-    // Bara api menyala di dalam tungku anglo
     const baraMat = new THREE.MeshStandardMaterial({
       color: '#FF5722',
       emissive: '#FF3D00',
@@ -1112,7 +1243,6 @@ export class ArtifactStage {
     baraMesh.position.set(0, -0.06, 0.06);
     angloGroup.add(baraMesh);
 
-    // Wajan logam cekung di atas anglo
     const wajanMat = new THREE.MeshStandardMaterial({
       color: '#2A2623',
       roughness: 0.45,
@@ -1125,7 +1255,6 @@ export class ArtifactStage {
     wajanMesh.position.y = 0.14;
     angloGroup.add(wajanMesh);
 
-    // Kolam malam cair keemasan di dalam wajan
     const kolamMalam = new THREE.Mesh(
       new THREE.CircleGeometry(0.145, 24),
       malamCairMat,
@@ -1134,11 +1263,33 @@ export class ArtifactStage {
     kolamMalam.position.y = 0.045;
     angloGroup.add(kolamMalam);
 
+    // Partikel uap malam hangat yang membubung dari wajan di atas anglo
+    const jmlUap = 24;
+    const posUap = new Float32Array(jmlUap * 3);
+    for (let i = 0; i < jmlUap; i++) {
+      posUap[i * 3] = Math.sin(i * 4.2) * 0.07;
+      posUap[i * 3 + 1] = 0.06 + (i / jmlUap) * 0.34;
+      posUap[i * 3 + 2] = Math.cos(i * 4.2) * 0.07;
+    }
+    const uapGeo = new THREE.BufferGeometry();
+    uapGeo.setAttribute('position', new THREE.BufferAttribute(posUap, 3));
+    const uapPoints = new THREE.Points(
+      uapGeo,
+      new THREE.PointsMaterial({
+        color: '#FFE6B0',
+        size: 0.022,
+        transparent: true,
+        opacity: 0.52,
+      }),
+    );
+    this.uapMalamPoints = uapPoints;
+    angloGroup.add(uapPoints);
+
     g.add(angloGroup);
     return g;
   }
 
-  // 4. PENDOPO JOGLO JAWA (UMPAK BATU ANDESIT, 4 SAKA GURU + 8 SAKA PENGARAK, TUMPANG SARI, ATAP BRUNJUNG)
+  // 4. PENDOPO JOGLO JAWA (DENGAN EXPLODED VIEW & SIMULASI UJI GEMPA 3D)
   private bangunJogloRealistis(): THREE.Group {
     const g = new THREE.Group();
 
@@ -1175,7 +1326,6 @@ export class ArtifactStage {
       clearcoat: 0.15,
     });
 
-    // 1. Kelompok Lantai Pendopo & 12 Umpak Batu Andesit
     const umpakGroup = new THREE.Group();
     this.jogloUmpakGroup = umpakGroup;
 
@@ -1193,7 +1343,6 @@ export class ArtifactStage {
     lantaiAtas.position.set(0, -0.46, 0);
     umpakGroup.add(lantaiAtas);
 
-    // 4 Umpak Utama Saka Guru
     const posSakaGuru: [number, number][] = [
       [-0.28, -0.22],
       [0.28, -0.22],
@@ -1210,7 +1359,6 @@ export class ArtifactStage {
       umpakGroup.add(umpak);
     }
 
-    // 8 Umpak Luar Saka Pengarak
     const posSakaLuar: [number, number][] = [
       [-0.64, -0.48],
       [0, -0.48],
@@ -1232,7 +1380,6 @@ export class ArtifactStage {
     }
     g.add(umpakGroup);
 
-    // 2. Kelompok Tiang Saka Guru & Saka Pengarak
     const sakaGroup = new THREE.Group();
     this.jogloSakaGroup = sakaGroup;
 
@@ -1254,7 +1401,6 @@ export class ArtifactStage {
       sakaGroup.add(tiangLuar);
     }
 
-    // Balok Blandar & Pengeret pengikat atas Saka Pengarak
     const blandarDepan = new THREE.Mesh(
       new THREE.BoxGeometry(1.34, 0.035, 0.035),
       kayuJatiSakaMat,
@@ -1279,7 +1425,6 @@ export class ArtifactStage {
 
     g.add(sakaGroup);
 
-    // 3. Kelompok Konstruksi Tumpang Sari (Susunan Balok Berundak Terbalik & Plafon Ukir Emas)
     const tumpangGroup = new THREE.Group();
     this.jogloTumpangGroup = tumpangGroup;
 
@@ -1307,7 +1452,6 @@ export class ArtifactStage {
       tumpangGroup.add(balokTimur);
     }
 
-    // Ornamen Dadaopeksi (balok kunci tengah berukir prada emas)
     const dadaPeksi = new THREE.Mesh(
       new THREE.BoxGeometry(0.28, 0.038, 0.048),
       emasTumpangMat,
@@ -1317,11 +1461,9 @@ export class ArtifactStage {
 
     g.add(tumpangGroup);
 
-    // 4. Kelompok Atap Brunjung (Puncak Tajug Menjulang) & Atap Penanggap (Lereng Bawah)
     const atapGroup = new THREE.Group();
     this.jogloAtapGroup = atapGroup;
 
-    // Atap Penanggap (lereng landai bawah menaungi Saka Pengarak)
     const penanggapGeo = new THREE.CylinderGeometry(0.56, 1.12, 0.22, 4, 1);
     const penanggapMesh = new THREE.Mesh(penanggapGeo, gentengTerakotaMat);
     penanggapMesh.rotation.y = Math.PI / 4;
@@ -1329,7 +1471,6 @@ export class ArtifactStage {
     penanggapMesh.position.set(0, 0.19, 0);
     atapGroup.add(penanggapMesh);
 
-    // Atap Brunjung (trapesium terjal menjulang di tengah khas Joglo)
     const brunjungGeo = new THREE.CylinderGeometry(0.18, 0.58, 0.42, 4, 1);
     const brunjungMesh = new THREE.Mesh(brunjungGeo, gentengTerakotaMat);
     brunjungMesh.rotation.y = Math.PI / 4;
@@ -1337,7 +1478,6 @@ export class ArtifactStage {
     brunjungMesh.position.set(0, 0.49, 0);
     atapGroup.add(brunjungMesh);
 
-    // Bubungan Wuwungan & Mahkota Puncak Kebaya/Gunungan Atap
     const bubunganPuncak = new THREE.Mesh(
       new THREE.BoxGeometry(0.32, 0.045, 0.045),
       emasTumpangMat,
@@ -1358,7 +1498,7 @@ export class ArtifactStage {
     return g;
   }
 
-  // 5. WAYANG & GUNUNGAN (KAYON) 3D VOLUMETRIK BERARTIKULASI (TANPA GAMBAR DATAR 2D)
+  // 5. WAYANG & GUNUNGAN (KAYON) 3D VOLUMETRIK BERARTIKULASI (DENGAN LESATAN PANAH GUWAWIJAYA 3D)
   private bangunWayangVolumetrikRealistis(): THREE.Group {
     const g = new THREE.Group();
 
@@ -1404,7 +1544,6 @@ export class ArtifactStage {
       clearcoat: 0.65,
     });
 
-    // A. GUNUNGAN / KAYON 3D VOLUMETRIK BERLAPIS DI SISI KIRI
     const gununganGroup = new THREE.Group();
     gununganGroup.position.set(-0.34, 0.04, -0.04);
     gununganGroup.rotation.y = 0.18;
@@ -1430,7 +1569,6 @@ export class ArtifactStage {
     const kayonDasarMesh = new THREE.Mesh(kayonDasarGeo, kulitPradaMat);
     gununganGroup.add(kayonDasarMesh);
 
-    // Lapisan bingkai lidah api (geni) merah tua timbul di sekeliling Gunungan
     const apiShape = new THREE.Shape();
     apiShape.moveTo(0, -0.44);
     apiShape.lineTo(0.19, -0.41);
@@ -1451,7 +1589,6 @@ export class ArtifactStage {
     const apiMesh = new THREE.Mesh(apiGeo, kulitSunggingMerahMat);
     gununganGroup.add(apiMesh);
 
-    // Relief 3D Gapura Candi di bagian bawah Gunungan
     const atapGapura1 = new THREE.Mesh(
       new THREE.BoxGeometry(0.28, 0.035, 0.056),
       kulitPradaMat,
@@ -1475,7 +1612,6 @@ export class ArtifactStage {
       gununganGroup.add(pilarGapura);
     }
 
-    // Batang & cabang 3D Pohon Kalpataru menjulang dari Gapura ke puncak Gunungan
     const batangKalpataru = new THREE.Mesh(
       new THREE.CylinderGeometry(0.016, 0.024, 0.56, 12),
       kulitPradaMat,
@@ -1495,7 +1631,6 @@ export class ArtifactStage {
       gununganGroup.add(dahan);
     }
 
-    // Cempurit tanduk kerbau pada Gunungan
     const cempuritGunungan = new THREE.Mesh(
       new THREE.CylinderGeometry(0.011, 0.015, 1.48, 14),
       tandukKerbauMat,
@@ -1505,12 +1640,10 @@ export class ArtifactStage {
 
     g.add(gununganGroup);
 
-    // B. TOKOH WAYANG SATRIA SRI RAMA 3D VOLUMETRIK BERARTIKULASI DI SISI KANAN
     const satriaGroup = new THREE.Group();
     satriaGroup.position.set(0.24, 0.02, 0.04);
     this.wayangSatriaGroup = satriaGroup;
 
-    // Torso 3D proporsi wayang purwa
     const torsoShape = new THREE.Shape();
     torsoShape.moveTo(-0.08, -0.14);
     torsoShape.lineTo(0.08, -0.14);
@@ -1530,7 +1663,6 @@ export class ArtifactStage {
     torsoMesh.position.set(0, 0.08, 0);
     satriaGroup.add(torsoMesh);
 
-    // Kepala 3D menunduk alus khas kasta satria
     const kepalaGroup = new THREE.Group();
     kepalaGroup.position.set(-0.02, 0.31, 0);
     kepalaGroup.rotation.z = 0.18;
@@ -1539,7 +1671,7 @@ export class ArtifactStage {
     wajahShape.moveTo(-0.07, -0.06);
     wajahShape.lineTo(0.05, -0.06);
     wajahShape.lineTo(0.06, 0.06);
-    wajahShape.lineTo(-0.12, 0.03); // Hidung mancung walimiring khas wayang
+    wajahShape.lineTo(-0.12, 0.03);
     wajahShape.closePath();
 
     const wajahGeo = new THREE.ExtrudeGeometry(wajahShape, {
@@ -1553,7 +1685,6 @@ export class ArtifactStage {
     const wajahMesh = new THREE.Mesh(wajahGeo, kulitHitamAlusMat);
     kepalaGroup.add(wajahMesh);
 
-    // Mahkota Gelung Supit Urang 3D melengkung ke atas
     const gelungCurve = new THREE.CatmullRomCurve3([
       new THREE.Vector3(0.02, 0.04, 0),
       new THREE.Vector3(0.11, 0.12, 0),
@@ -1575,7 +1706,6 @@ export class ArtifactStage {
 
     satriaGroup.add(kepalaGroup);
 
-    // Sayap Praba 3D di punggung satria
     const prabaShape = new THREE.Shape();
     prabaShape.moveTo(0, -0.08);
     prabaShape.quadraticCurveTo(0.18, 0.05, 0.16, 0.26);
@@ -1593,7 +1723,6 @@ export class ArtifactStage {
     prabaMesh.position.set(0.06, 0.08, -0.01);
     satriaGroup.add(prabaMesh);
 
-    // Kain Dodot / Kampuh Raja 3D berlapis di bagian bawah
     const dodotShape = new THREE.Shape();
     dodotShape.moveTo(-0.14, -0.38);
     dodotShape.lineTo(0.16, -0.38);
@@ -1613,7 +1742,6 @@ export class ArtifactStage {
     dodotMesh.position.set(0.02, -0.22, 0);
     satriaGroup.add(dodotMesh);
 
-    // Sepasang kaki 3D dalam kuda-kuda melangkah
     for (const [xKaki, rotKaki] of [
       [-0.08, 0.16],
       [0.08, -0.14],
@@ -1627,7 +1755,6 @@ export class ArtifactStage {
       satriaGroup.add(kaki);
     }
 
-    // Lengan Depan Berartikulasi 3D (Bahu -> Siku -> Tangan + Tuding + Busur Gendewa)
     const bahuDepan = new THREE.Group();
     bahuDepan.position.set(-0.1, 0.2, 0.026);
     bahuDepan.rotation.z = -0.55;
@@ -1662,7 +1789,6 @@ export class ArtifactStage {
     lenganBawah.position.set(0, -0.12, 0);
     sikuDepan.add(lenganBawah);
 
-    // Busur Gendewa 3D di genggaman tangan depan
     const busurMesh = new THREE.Mesh(
       new THREE.TorusGeometry(0.22, 0.011, 10, 28, Math.PI * 0.85),
       kulitPradaMat,
@@ -1671,7 +1797,6 @@ export class ArtifactStage {
     busurMesh.rotation.z = Math.PI * 0.58;
     sikuDepan.add(busurMesh);
 
-    // Tangkai Tuding penggerak tangan depan
     const tudingDepan = new THREE.Mesh(
       new THREE.CylinderGeometry(0.005, 0.006, 0.62, 10),
       tandukKerbauMat,
@@ -1683,7 +1808,6 @@ export class ArtifactStage {
     bahuDepan.add(sikuDepan);
     satriaGroup.add(bahuDepan);
 
-    // Lengan Belakang Berartikulasi 3D
     const bahuBelakang = new THREE.Group();
     bahuBelakang.position.set(0.11, 0.19, -0.024);
     bahuBelakang.rotation.z = 0.42;
@@ -1705,7 +1829,6 @@ export class ArtifactStage {
 
     satriaGroup.add(bahuBelakang);
 
-    // Gapit / Cempurit utama Sri Rama dari tanduk kerbau
     const cempuritSatria = new THREE.Mesh(
       new THREE.CylinderGeometry(0.011, 0.015, 1.44, 14),
       tandukKerbauMat,
@@ -1714,30 +1837,84 @@ export class ArtifactStage {
     satriaGroup.add(cempuritSatria);
 
     g.add(satriaGroup);
+
+    // Anak Panah Guwawijaya 3D yang melesat saat picuEfekKhusus3D dipanggil
+    const panahGroup = new THREE.Group();
+    panahGroup.position.set(0.05, 0.08, 0.04);
+    panahGroup.visible = false;
+    this.wayangAnakPanahGroup = panahGroup;
+
+    const batangPanah = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.006, 0.006, 0.42, 8),
+      kulitPradaMat,
+    );
+    batangPanah.rotation.z = Math.PI / 2;
+    panahGroup.add(batangPanah);
+
+    const mataPanah = new THREE.Mesh(
+      new THREE.ConeGeometry(0.022, 0.065, 8),
+      new THREE.MeshBasicMaterial({ color: '#FFE082' }),
+    );
+    mataPanah.rotation.z = Math.PI / 2;
+    mataPanah.position.x = -0.23;
+    panahGroup.add(mataPanah);
+
+    g.add(panahGroup);
     return g;
   }
 
   private perbaruiAnimasiHidup(time: number): void {
     const t = time * 0.001;
+    const dtEfek = this.efekKhususWaktu > 0 ? (time - this.efekKhususWaktu) * 0.001 : 99;
 
-    // 1. Animasi Keris: levitasi halus & aksi Cabut / Sarungkan Bilah ke dalam Warangka
+    // 1. Keris: Cabut/Sarungkan + Pijar Pamor Wesi Aji
     if (this.kerisBilahGroup && this.kerisWarangkaGroup) {
+      const sedangTayuh = dtEfek < 1.3;
       const targetX = this.aksiHidupAktif ? -0.44 : 0;
       const targetY = this.aksiHidupAktif
         ? -0.32
-        : Math.sin(t * 2.1) * 0.025;
+        : Math.sin(t * 2.1) * 0.025 + (sedangTayuh ? 0.08 : 0);
       const targetZ = this.aksiHidupAktif ? -0.035 : 0;
-      const targetRotZ = this.aksiHidupAktif ? 0.08 : 0;
+      const targetRotZ = this.aksiHidupAktif
+        ? 0.08
+        : sedangTayuh
+          ? Math.sin(dtEfek * Math.PI * 2) * 0.16
+          : 0;
 
       this.kerisBilahGroup.position.x = lerp(this.kerisBilahGroup.position.x, targetX, 0.08);
       this.kerisBilahGroup.position.y = lerp(this.kerisBilahGroup.position.y, targetY, 0.08);
       this.kerisBilahGroup.position.z = lerp(this.kerisBilahGroup.position.z, targetZ, 0.08);
       this.kerisBilahGroup.rotation.z = lerp(this.kerisBilahGroup.rotation.z, targetRotZ, 0.08);
+
+      if (this.kerisCincinPijar) {
+        if (sedangTayuh) {
+          this.kerisCincinPijar.visible = true;
+          this.kerisCincinPijar.position.y = -0.22 + (dtEfek / 1.3) * 1.12;
+          const sc = 1.0 - (dtEfek / 1.3) * 0.65;
+          this.kerisCincinPijar.scale.set(sc, sc, 1);
+        } else {
+          this.kerisCincinPijar.visible = false;
+        }
+      }
     }
 
-    // 2. Animasi Saron: kembalikan wilah + mainkan Gending Lancaran otomatis saat aksiHidupAktif
-    for (const w of this.wilahMeshes) {
+    // 2. Saron: Getaran wilah, cincin gelombang akustik 3D, & Gending Lancaran otomatis
+    for (let i = 0; i < this.wilahMeshes.length; i++) {
+      const w = this.wilahMeshes[i];
       w.position.y = lerp(w.position.y, 0.042, 0.18);
+
+      const cincin = this.cincinAkustikMeshes[i];
+      if (cincin && cincin.visible) {
+        this.cincinAkustikSkala[i] += 0.055;
+        const s = this.cincinAkustikSkala[i];
+        cincin.scale.set(s, s, 1);
+        cincin.position.y = 0.08 + s * 0.04;
+        const mat = cincin.material as THREE.MeshBasicMaterial;
+        mat.opacity = Math.max(0, 1 - s * 0.36);
+        if (mat.opacity <= 0.02) {
+          cincin.visible = false;
+        }
+      }
     }
 
     if (this.bendaAktifId === 'saron' && this.aksiHidupAktif && this.wilahMeshes.length === 7) {
@@ -1766,7 +1943,7 @@ export class ArtifactStage {
       }
     }
 
-    // 3. Animasi Batik: gelombang kain mori 3D + gerakan Canting Tulis menggambar motif
+    // 3. Batik: Gelombang kain mori 3D, uap malam panas, & celupan canting ke wajan
     if (this.kainBatikGeo && this.kainBatikPosAwal && !this.reducedMotion) {
       const posAttr = this.kainBatikGeo.attributes.position as THREE.BufferAttribute;
       for (let i = 0; i < posAttr.count; i++) {
@@ -1780,25 +1957,43 @@ export class ArtifactStage {
       posAttr.needsUpdate = true;
     }
 
-    if (this.cantingGroup) {
-      const kecepatan = this.aksiHidupAktif ? 2.6 : 0.9;
-      const radiusX = this.aksiHidupAktif ? 0.22 : 0.08;
-      const radiusY = this.aksiHidupAktif ? 0.16 : 0.05;
-      const targetCantingX = 0.08 + Math.sin(t * kecepatan) * radiusX;
-      const targetCantingY = 0.12 + Math.sin(t * kecepatan * 2) * radiusY;
-      const targetCantingZ = 0.22 + Math.cos(t * kecepatan) * 0.03;
+    if (this.uapMalamPoints && !this.reducedMotion) {
+      const uapAttr = this.uapMalamPoints.geometry.attributes.position as THREE.BufferAttribute;
+      for (let i = 0; i < uapAttr.count; i++) {
+        let yUap = uapAttr.getY(i) + 0.0032;
+        if (yUap > 0.42) yUap = 0.06;
+        uapAttr.setY(i, yUap);
+      }
+      uapAttr.needsUpdate = true;
+    }
 
-      this.cantingGroup.position.x = lerp(this.cantingGroup.position.x, targetCantingX, 0.12);
-      this.cantingGroup.position.y = lerp(this.cantingGroup.position.y, targetCantingY, 0.12);
-      this.cantingGroup.position.z = lerp(this.cantingGroup.position.z, targetCantingZ, 0.12);
-      this.cantingGroup.rotation.z = 0.15 + Math.cos(t * kecepatan) * 0.12;
+    if (this.cantingGroup) {
+      // Bila efek khusus baru dipicu (< 1.1 detik), canting mencelup ke kolam malam di wajan kanan bawah
+      if (dtEfek < 1.1) {
+        this.cantingGroup.position.x = lerp(this.cantingGroup.position.x, 0.48, 0.15);
+        this.cantingGroup.position.y = lerp(this.cantingGroup.position.y, -0.22, 0.15);
+        this.cantingGroup.position.z = lerp(this.cantingGroup.position.z, 0.25, 0.15);
+        this.cantingGroup.rotation.z = lerp(this.cantingGroup.rotation.z, -0.25, 0.15);
+      } else {
+        const kecepatan = this.aksiHidupAktif ? 2.6 : 0.9;
+        const radiusX = this.aksiHidupAktif ? 0.22 : 0.08;
+        const radiusY = this.aksiHidupAktif ? 0.16 : 0.05;
+        const targetCantingX = 0.08 + Math.sin(t * kecepatan) * radiusX;
+        const targetCantingY = 0.12 + Math.sin(t * kecepatan * 2) * radiusY;
+        const targetCantingZ = 0.22 + Math.cos(t * kecepatan) * 0.03;
+
+        this.cantingGroup.position.x = lerp(this.cantingGroup.position.x, targetCantingX, 0.12);
+        this.cantingGroup.position.y = lerp(this.cantingGroup.position.y, targetCantingY, 0.12);
+        this.cantingGroup.position.z = lerp(this.cantingGroup.position.z, targetCantingZ, 0.12);
+        this.cantingGroup.rotation.z = 0.15 + Math.cos(t * kecepatan) * 0.12;
+      }
     }
 
     if (this.baraAngloMat && !this.reducedMotion) {
       this.baraAngloMat.emissiveIntensity = 1.25 + Math.sin(t * 5.5) * 0.35;
     }
 
-    // 4. Animasi Joglo: Bedah Struktur 3D (Exploded View) saat aksiHidupAktif menyala
+    // 4. Joglo: Bedah Struktur 3D (Exploded View) & Simulasi Uji Guncangan Gempa Bumi
     if (
       this.jogloUmpakGroup &&
       this.jogloSakaGroup &&
@@ -1818,9 +2013,28 @@ export class ArtifactStage {
         0.09,
       );
       this.jogloAtapGroup.position.y = lerp(this.jogloAtapGroup.position.y, targetAtapY, 0.09);
+
+      // Bila simulasi gempa aktif, umpak batu berguncang horizontal sementara Saka Guru & Tumpang Sari meredam secara elastis
+      if (this.simulasiGempaAktif && !this.reducedMotion) {
+        const guncangTanah = Math.sin(t * 18.0) * 0.045;
+        const redamSaka = Math.sin(t * 18.0 - 0.65) * 0.024;
+        const redamAtap = Math.sin(t * 18.0 - 1.25) * 0.012;
+
+        this.jogloUmpakGroup.position.x = guncangTanah;
+        this.jogloSakaGroup.position.x = redamSaka;
+        this.jogloSakaGroup.rotation.z = -redamSaka * 0.65;
+        this.jogloTumpangGroup.position.x = redamAtap;
+        this.jogloAtapGroup.position.x = redamAtap;
+      } else {
+        this.jogloUmpakGroup.position.x = lerp(this.jogloUmpakGroup.position.x, 0, 0.15);
+        this.jogloSakaGroup.position.x = lerp(this.jogloSakaGroup.position.x, 0, 0.15);
+        this.jogloSakaGroup.rotation.z = lerp(this.jogloSakaGroup.rotation.z, 0, 0.15);
+        this.jogloTumpangGroup.position.x = lerp(this.jogloTumpangGroup.position.x, 0, 0.15);
+        this.jogloAtapGroup.position.x = lerp(this.jogloAtapGroup.position.x, 0, 0.15);
+      }
     }
 
-    // 5. Animasi Wayang & Gunungan 3D: artikulasi sendi bahu/siku/tuding & sabetan Kayon
+    // 5. Wayang & Gunungan 3D: Artikulasi sendi tuding & Lesatan Panah Guwawijaya 3D
     if (
       this.wayangGununganGroup &&
       this.wayangSatriaGroup &&
@@ -1836,6 +2050,16 @@ export class ArtifactStage {
       this.wayangSikuDepan.rotation.z = -0.95 + Math.cos(t * 2.8) * 0.28 * amp;
       this.wayangBahuBelakang.rotation.z = 0.42 - Math.sin(t * 2.8) * 0.25 * amp;
       this.wayangSatriaGroup.position.y = 0.02 + Math.sin(t * 2.2) * 0.02 * amp;
+
+      if (this.wayangAnakPanahGroup) {
+        if (dtEfek < 1.1) {
+          this.wayangAnakPanahGroup.visible = true;
+          this.wayangAnakPanahGroup.position.x = 0.05 - (dtEfek / 1.1) * 1.45;
+          this.wayangAnakPanahGroup.position.y = 0.08 + Math.sin((dtEfek / 1.1) * Math.PI) * 0.12;
+        } else {
+          this.wayangAnakPanahGroup.visible = false;
+        }
+      }
     }
   }
 
@@ -1843,6 +2067,7 @@ export class ArtifactStage {
     const step = (time: number): void => {
       this.rootGroup.rotation.y = lerp(this.rootGroup.rotation.y, this.targetRotY, 0.12);
       this.rootGroup.rotation.x = lerp(this.rootGroup.rotation.x, this.targetRotX, 0.12);
+      this.rootGroup.rotation.z = lerp(this.rootGroup.rotation.z, this.targetRotZ, 0.12);
       this.camera.position.z = lerp(this.camera.position.z, this.targetZoom, 0.12);
       this.currentFocus.lerp(this.targetFocus, 0.12);
       this.camera.lookAt(this.currentFocus);
@@ -1874,10 +2099,6 @@ export class ArtifactStage {
     if (this.rafId !== null) {
       cancelAnimationFrame(this.rafId);
       this.rafId = null;
-    }
-    if (this.audioCtx) {
-      void this.audioCtx.close().catch(() => {});
-      this.audioCtx = null;
     }
     if (this.renderer) {
       this.renderer.dispose();

@@ -32,8 +32,9 @@ test.describe('Kelir E2E & Antislop R-35 Verification', () => {
     await expect(page.getByTestId('layar-pegang')).toBeVisible();
     await expect(page.getByTestId('detail-titik-aktif')).toContainText('Wilah');
 
-    // Klik tiap titik anatomis & tombol kendali 3D + aksi hidup 3D
+    // Klik tiap titik anatomis & tombol kendali 3D + aksi hidup 3D + simulasi fisik khusus 3D
     await page.getByTestId('tombol-aksi-3d').click();
+    await page.getByTestId('tombol-efek-3d').click();
     await page.getByTestId('titik-info-ganja').click();
     await expect(page.getByTestId('detail-titik-aktif')).toContainText('Ganja');
     await page.getByTestId('titik-info-pamor').click();
@@ -49,19 +50,28 @@ test.describe('Kelir E2E & Antislop R-35 Verification', () => {
     await expect(page.getByTestId('detail-titik-aktif')).toContainText('Wilah Gangsa');
     await expect(page.getByTestId('tabuh-wilah-1')).toBeVisible();
     await page.getByTestId('tabuh-wilah-1').click();
+    await page.getByTestId('tombol-efek-3d').click();
 
     await page.getByTestId('tab-benda-batik').click();
     await expect(page.getByTestId('detail-titik-aktif')).toContainText('Canting Tulis');
     await page.getByTestId('tombol-aksi-3d').click();
+    await page.getByTestId('tombol-efek-3d').click();
 
     await page.getByTestId('tab-benda-joglo').click();
     await expect(page.getByTestId('detail-titik-aktif')).toContainText('Atap Brunjung');
     await page.getByTestId('tombol-aksi-3d').click();
+    await page.getByTestId('tombol-efek-3d').click();
 
     await page.getByTestId('tab-benda-wayang').click();
     await expect(page.getByTestId('detail-titik-aktif')).toContainText('Awak Wayang');
     await page.getByTestId('titik-info-kelir-blencong').click();
     await expect(page.getByTestId('detail-titik-aktif')).toContainText('Gunungan');
+    await page.getByTestId('tombol-efek-3d').click();
+
+    // Uji kontrol Suara Budaya & Gong Ageng
+    await page.getByTestId('tombol-gong-ageng').click();
+    await page.getByTestId('toggle-suara-budaya').click();
+    await page.getByTestId('toggle-suara-budaya').click();
 
     // Uji validasi form tanya jawab kosong (failure state)
     await page.getByTestId('kirim-tanya').click();
@@ -75,6 +85,9 @@ test.describe('Kelir E2E & Antislop R-35 Verification', () => {
     await page.getByTestId('ke-panggung-dari-pegang').click();
     await expect(page.getByTestId('layar-panggung')).toBeVisible();
     await expect(page.getByTestId('narasi-babak-aktif')).toContainText('Babak 1');
+    await page.getByTestId('panggung-panah-rama').click();
+    await page.getByTestId('panggung-sabetan-kayon').click();
+    await page.getByTestId('panggung-cempala-dalang').click();
 
     // Navigasi 4 babak
     await page.getByTestId('tombol-babak-2').click();

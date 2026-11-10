@@ -1,21 +1,48 @@
-// Pelacakan tangan lokal di browser memakai @mediapipe/tasks-vision dengan berkas WASM & model lokal.
-// Video webcam diproses di memori perangkat dan tidak pernah dikirim ke server.
+// Pelacakan tangan 21 titik lokal di browser memakai @mediapipe/tasks-vision (WASM & model lokal).
+// Mendeteksi 6 variasi gestur budaya & pedalangan:
+// - 'telapak-putar': Telapak terbuka (mengorbit objek & menggerakkan sorot lampu blencong)
+// - 'cubit-zoom': Cubit jempol-telunjuk (memperbesar detail tekstur pamor/batik/ukir)
+// - 'kepal-aksi': Kepalan tangan / Genggam (memicu aksi mekanis 3D: cabut keris / bedah joglo / tarik busur)
+// - 'tunjuk-ketuk': Satu jari telunjuk (menabuh bilah saron / menuntun canting batik / memilih anatomi)
+// - 'dua-jari-sabetan': Dua jari terentang (memicu efek khusus: uji gempa Joglo / pijar pamor / lesatan panah)
+// - 'dua-tangan-dalang': Dua tangan aktif bersamaan (menggerakkan Sri Rama & Kidang Kencana sekaligus)
 
 import { FilesetResolver, HandLandmarker } from '@mediapipe/tasks-vision';
 
 export type StatusKamera = 'nonaktif' | 'meminta-izin' | 'aktif' | 'ditolak' | 'galat';
 
+export type JenisGesturTangan =
+  | 'diam'
+  | 'telapak-putar'
+  | 'cubit-zoom'
+  | 'kepal-aksi'
+  | 'tunjuk-ketuk'
+  | 'dua-jari-sabetan'
+  | 'dua-tangan-dalang';
+
 export interface FrameTangan {
   terdeteksi: boolean;
   jumlahTangan: number;
-  // Koordinat terhalus dalam rentang [-1, 1] untuk menggerakkan objek/wayang
   kananX: number;
   kananY: number;
   kiriX: number;
   kiriY: number;
   jarakCubit: number;
-  gesturAktif: 'diam' | 'putar' | 'zoom' | 'tunjuk' | 'buka-kelir';
+  kemiringanPergelangan: number;
+  kecepatanGerak: number;
+  jumlahJariTerbuka: number;
+  gesturAktif: JenisGesturTangan;
 }
+
+export const DESKRIPSI_GESTUR: Record<JenisGesturTangan, string> = {
+  diam: 'Menunggu gerakan tangan',
+  'telapak-putar': 'Telapak Terbuka · Putar 3D & Arahkan Blencong',
+  'cubit-zoom': 'Cubit Jari · Perbesar Detail Permukaan',
+  'kepal-aksi': 'Kepal Tangan · Picu Mekanisme Utama 3D',
+  'tunjuk-ketuk': 'Telunjuk · Tabuh Saron / Tuntun Canting',
+  'dua-jari-sabetan': 'Dua Jari · Picu Efek Fisik & Simulasi 3D',
+  'dua-tangan-dalang': 'Dua Tangan Dalang · Kemudi Ganda Pakeliran',
+};
 
 export function lerp(sekarang: number, target: number, faktor: number): number {
   return sekarang + (target - sekarang) * Math.max(0, Math.min(1, faktor));
@@ -37,6 +64,9 @@ export class PengelolaTangan {
     kiriX: -0.35,
     kiriY: 0,
     jarakCubit: 1,
+    kemiringanPergelangan: 0,
+    kecepatanGerak: 0,
+    jumlahJariTerbuka: 0,
     gesturAktif: 'diam',
   };
 
@@ -50,12 +80,12 @@ export class PengelolaTangan {
 
   async mulai(videoElement: HTMLVideoElement): Promise<boolean> {
     this.videoEl = videoElement;
-    this.onStatus('meminta-izin', 'Meminta izin akses webcam dan memuat model tangan lokal...');
+    this.onStatus('meminta-izin', 'Meminta izin akses webcam dan memuat model 21 titik tangan lokal...');
 
     if (typeof navigator === 'undefined' || !navigator.mediaDevices?.getUserMedia) {
       this.onStatus(
         'ditolak',
-        'Perangkat atau browser ini tidak menyediakan webcam. Mode kendali manual (mouse, sentuh, keyboard) diaktifkan otomatis.',
+        'Perangkat atau browser ini tidak menyediakan webcam. Mode kendali manual & tombol simulasi gestur diaktifkan otomatis.',
       );
       return false;
     }
@@ -68,7 +98,7 @@ export class PengelolaTangan {
     } catch {
       this.onStatus(
         'ditolak',
-        'Izin kamera ditolak atau webcam tidak ditemukan. Anda tetap dapat menggunakan seluruh fitur dengan mouse, layar sentuh, atau tombol keyboard.',
+        'Izin kamera ditolak atau webcam tidak ditemukan. Anda tetap dapat menggunakan seluruh fitur dengan mouse, layar sentuh, atau tombol aksi di layar.',
       );
       return false;
     }
@@ -91,7 +121,7 @@ export class PengelolaTangan {
         });
       }
 
-      this.onStatus('aktif', 'Pelacakan tangan aktif di perangkat Anda (video tidak diunggah).');
+      this.onStatus('aktif', 'Pelacakan 6 gestur tangan aktif secara lokal (video tidak pernah diunggah).');
       this.loopDeteksi();
       return true;
     } catch {
@@ -116,23 +146,53 @@ export class PengelolaTangan {
           ...this.stateHalus,
           terdeteksi: false,
           jumlahTangan: 0,
+          kecepatanGerak: 0,
+          jumlahJariTerbuka: 0,
           gesturAktif: 'diam',
         };
       } else {
-        const tanganPertama = landmarks[0];
-        const pergelangan = tanganPertama[0];
-        const jempol = tanganPertama[4];
-        const telunjuk = tanganPertama[8];
-        const tengah = tanganPertama[12];
-        const kelingking = tanganPertama[20];
+        const t1 = landmarks[0];
+        const pergelangan = t1[0];
+        const jempolUjung = t1[4];
+        const telunjukPangkal = t1[5];
+        const telunjukPip = t1[6];
+        const telunjukUjung = t1[8];
+        const tengahPip = t1[10];
+        const tengahUjung = t1[12];
+        const manisPip = t1[14];
+        const manisUjung = t1[16];
+        const kelingkingPangkal = t1[17];
+        const kelingkingPip = t1[18];
+        const kelingkingUjung = t1[20];
 
-        // Cerminkan sumbu X agar gerakan tangan terasa alami seperti becermin di depan kelir
-        const targetKananX = (0.5 - telunjuk.x) * 2;
-        const targetKananY = (0.5 - telunjuk.y) * 2;
+        const targetKananX = (0.5 - telunjukUjung.x) * 2;
+        const targetKananY = (0.5 - telunjukUjung.y) * 2;
 
-        const dxCubit = jempol.x - telunjuk.x;
-        const dyCubit = jempol.y - telunjuk.y;
+        const dxCubit = jempolUjung.x - telunjukUjung.x;
+        const dyCubit = jempolUjung.y - telunjukUjung.y;
         const jarakCubitRaw = Math.hypot(dxCubit, dyCubit);
+
+        // Hitung jari yang terbuka (ujung jari lebih jauh dari pergelangan dibanding sendi PIP)
+        const jarak = (a: { x: number; y: number }, b: { x: number; y: number }): number =>
+          Math.hypot(a.x - b.x, a.y - b.y);
+
+        const telunjukBuka = jarak(telunjukUjung, pergelangan) > jarak(telunjukPip, pergelangan) * 1.12;
+        const tengahBuka = jarak(tengahUjung, pergelangan) > jarak(tengahPip, pergelangan) * 1.12;
+        const manisBuka = jarak(manisUjung, pergelangan) > jarak(manisPip, pergelangan) * 1.1;
+        const kelingkingBuka =
+          jarak(kelingkingUjung, pergelangan) > jarak(kelingkingPip, pergelangan) * 1.1;
+
+        const jumlahJari =
+          (telunjukBuka ? 1 : 0) +
+          (tengahBuka ? 1 : 0) +
+          (manisBuka ? 1 : 0) +
+          (kelingkingBuka ? 1 : 0);
+
+        // Kemiringan pergelangan tangan (roll) untuk memiringkan bilah keris / canting / wayang
+        const sudutRoll = Math.atan2(
+          kelingkingPangkal.y - telunjukPangkal.y,
+          kelingkingPangkal.x - telunjukPangkal.x,
+        );
 
         let targetKiriX = this.stateHalus.kiriX;
         let targetKiriY = this.stateHalus.kiriY;
@@ -142,26 +202,40 @@ export class PengelolaTangan {
           targetKiriY = (0.5 - telunjuk2.y) * 2;
         }
 
-        // Tentukan gestur dari konfigurasi jari
-        const bentangTelapak = Math.hypot(jempol.x - kelingking.x, jempol.y - kelingking.y);
-        const tinggiTengah = Math.hypot(tengah.x - pergelangan.x, tengah.y - pergelangan.y);
-        let gestur: FrameTangan['gesturAktif'] = 'putar';
-        if (jarakCubitRaw < 0.055) {
-          gestur = 'tunjuk';
-        } else if (bentangTelapak > 0.28 && tinggiTengah > 0.32) {
-          gestur = 'buka-kelir';
-        } else if (landmarks.length === 2) {
-          gestur = 'zoom';
+        const kecX = Math.abs(targetKananX - this.stateHalus.kananX);
+        const kecY = Math.abs(targetKananY - this.stateHalus.kananY);
+        const kecepatan = Math.min(1, Math.hypot(kecX, kecY) * 3.5);
+
+        let gestur: JenisGesturTangan = 'telapak-putar';
+        if (landmarks.length >= 2) {
+          gestur = 'dua-tangan-dalang';
+        } else if (jarakCubitRaw < 0.052) {
+          gestur = 'cubit-zoom';
+        } else if (jumlahJari === 0) {
+          gestur = 'kepal-aksi';
+        } else if (jumlahJari === 1 && telunjukBuka) {
+          gestur = 'tunjuk-ketuk';
+        } else if (jumlahJari === 2 && telunjukBuka && tengahBuka) {
+          gestur = 'dua-jari-sabetan';
+        } else {
+          gestur = 'telapak-putar';
         }
 
         this.stateHalus = {
           terdeteksi: true,
           jumlahTangan: landmarks.length,
-          kananX: lerp(this.stateHalus.kananX, targetKananX, 0.25),
-          kananY: lerp(this.stateHalus.kananY, targetKananY, 0.25),
-          kiriX: lerp(this.stateHalus.kiriX, targetKiriX, 0.25),
-          kiriY: lerp(this.stateHalus.kiriY, targetKiriY, 0.25),
-          jarakCubit: lerp(this.stateHalus.jarakCubit, Math.min(1.6, Math.max(0.65, jarakCubitRaw * 4.2)), 0.2),
+          kananX: lerp(this.stateHalus.kananX, targetKananX, 0.26),
+          kananY: lerp(this.stateHalus.kananY, targetKananY, 0.26),
+          kiriX: lerp(this.stateHalus.kiriX, targetKiriX, 0.26),
+          kiriY: lerp(this.stateHalus.kiriY, targetKiriY, 0.26),
+          jarakCubit: lerp(
+            this.stateHalus.jarakCubit,
+            Math.min(1.6, Math.max(0.65, jarakCubitRaw * 4.2)),
+            0.22,
+          ),
+          kemiringanPergelangan: lerp(this.stateHalus.kemiringanPergelangan, sudutRoll * 0.45, 0.2),
+          kecepatanGerak: lerp(this.stateHalus.kecepatanGerak, kecepatan, 0.3),
+          jumlahJariTerbuka: jumlahJari,
           gesturAktif: gestur,
         };
       }
