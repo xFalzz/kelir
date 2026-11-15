@@ -1,2405 +1,1676 @@
 <script lang="ts">
   import { onDestroy, onMount, tick } from 'svelte';
-  import gsap from 'gsap';
-  import { ScrollTrigger } from 'gsap/ScrollTrigger';
   import {
     DAFTAR_BENDA,
-    DAFTAR_LISENSI,
     DAFTAR_SUMBER,
+    DINDING_MATRIX,
+    KEUNGGULAN_SISTEM,
+    KOLEKSI_ETALASE,
     KRONIK_SEJARAH_BUDAYA,
     LAKON_KIJANG_KENCANA,
+    PILAR_NILAI,
     ambilTeks,
-    type BahasaMode,
+    type BahasaAktif,
     type BendaPusaka,
-  } from '../content/pusaka';
-  import {
-    CONTOH_TERUJI,
-    DAFTAR_20_CARAKAN,
-    FILOSOFI_BARIS_CARAKAN,
-    latinToAksara,
-    type KartuCarakan,
-  } from '../lib/aksara';
-  import { audioBudaya } from '../lib/audioBudaya';
-  import {
-    DESKRIPSI_GESTUR,
-    PengelolaTangan,
-    type FrameTangan,
-    type JenisGesturTangan,
-    type StatusKamera,
-  } from '../lib/handTracker';
-  import {
-    CONTOH_PERTANYAAN,
-    tanyakanKeAsisten,
-    type JawabanTanya,
-  } from '../lib/tanya';
-  import {
-    ArtifactStage,
-    LABEL_EFEK_KHUSUS_3D,
-    NADA_SARON_SLENDRO,
-  } from '../scenes/ArtifactStage';
-  import { WayangStage } from '../scenes/WayangStage';
+    type KodeSumber,
+    type TitikInfoPusaka,
+  } from '../content/pusaka.ts';
+  import { DAFTAR_CARAKAN, latinKeAksaraJawa, type KartuCarakan } from '../lib/aksara.ts';
+  import { audioBudaya, NADA_SARON_SLENDRO } from '../lib/audioBudaya.ts';
+  import type { FrameTangan, PengelolaTangan, StatusKamera } from '../lib/handTracker.ts';
+  import { jawabDariKurasiLokal, tanyakanKeAsisten, type HasilTanya } from '../lib/tanya.ts';
+  import type { DigitalTwinStage, ModeVisualTwin, ProyeksiPinTwin } from '../scenes/digitalTwinStage.ts';
+  import { LivingPendopoStage, type ProyeksiPinDiorama } from '../scenes/livingPendopoStage.ts';
+  import type { PamomongOrbStage } from '../scenes/pamomongOrbStage.ts';
+  import type { WayangStage } from '../scenes/wayangStage.ts';
+  import BerandaWallEtalase, { type FilterEtalase } from './components/BerandaWallEtalase.svelte';
+  import FooterSection from './components/FooterSection.svelte';
+  import KawruhOrbSection from './components/KawruhOrbSection.svelte';
+  import PixelNumber from './PixelNumber.svelte';
+  import PusakaArtwork from './PusakaArtwork.svelte';
 
-  if (typeof window !== 'undefined') {
-    gsap.registerPlugin(ScrollTrigger);
+  // =========================================================================
+  // 1. Arsitektur Multi-Halaman (5 Halaman Terpadu & Selaras)
+  // =========================================================================
+  type HalamanId = 'beranda' | 'twin' | 'koleksi' | 'pakeliran' | 'kawruh';
+
+  interface DefinisiHalaman {
+    id: HalamanId;
+    nomor: string;
+    label: string;
+    aksara: string;
+    subjudul: string;
+    deskripsi: string;
   }
 
-  type LayarId = 'pintu' | 'rak' | 'pegang' | 'panggung' | 'sumber';
-  type TemaMode = 'malam' | 'siang';
-
-  const URUTAN_LAYAR: LayarId[] = ['pintu', 'rak', 'pegang', 'panggung', 'sumber'];
-
-  let layarAktif = $state<LayarId>('pintu');
-  let bahasaAktif = $state<BahasaMode>('id');
-  let temaAktif = $state<TemaMode>('malam');
-
-  let bendaIdAktif = $state<BendaPusaka['id']>('keris');
-  let bendaHeroId = $state<BendaPusaka['id']>('keris');
-  let indeksTitikAktif = $state<number>(0);
-  let indeksLangkahScrolly = $state<number>(0);
-  let indeksBabakAktif = $state<number>(0);
-  let waktuWib = $state<string>('YOGYAKARTA · WIB');
-  let labelBabTransisi = $state<string>('Bab I · Beranda Eksibisi');
-
-  let statusKamera = $state<StatusKamera>('nonaktif');
-  let pesanKamera = $state<string | null>(null);
-  let infoTangan = $state<FrameTangan>({
-    terdeteksi: false,
-    jumlahTangan: 0,
-    kananX: 0.35,
-    kananY: 0,
-    kiriX: -0.35,
-    kiriY: 0,
-    jarakCubit: 1,
-    gesturAktif: 'diam',
-    kemiringanPergelangan: 0,
-    kemiringanPergelanganKiri: 0,
-    angkatTudingDepan: 0.15,
-    tekukSikuDepan: 0.2,
-    angkatTudingBelakang: -0.1,
-    tekukSikuBelakang: 0.25,
-    kedalamanKelir: 0,
-    kecepatanGerak: 0,
-    jumlahJariTerbuka: 0,
-  });
-
-  let suaraBudayaAktif = $state<boolean>(true);
-  let gendingPendopoAktif = $state<boolean>(false);
-
-  const DAFTAR_PANDUAN_GESTUR: {
-    kode: JenisGesturTangan;
-    nomor: string;
-    judul: string;
-    uraian: string;
-  }[] = [
+  const DAFTAR_HALAMAN: DefinisiHalaman[] = [
     {
-      kode: 'telapak-putar',
+      id: 'beranda',
       nomor: '01',
-      judul: 'Telapak Terbuka & Miring',
-      uraian: 'Putar orbit 3D, miringkan pergelangan (roll), dan arahkan sorot lampu blencong.',
+      label: 'Beranda',
+      aksara: 'ꦥꦼꦤ꧀ꦝꦥ',
+      subjudul: 'SUAKA SPASIAL 3D · KRONIK 01–05 · MATRIKS 12 UNSUR',
+      deskripsi:
+        'Diorama kompleks Pendopo Jawa interaktif, lima kronik sejarah pusaka, indeks dua belas anatomi, dan etalase kurasi.',
     },
     {
-      kode: 'cubit-zoom',
+      id: 'twin',
       nomor: '02',
-      judul: 'Cubit Ibu Jari & Telunjuk',
-      uraian: 'Perbesar atau perkecil jarak kamera untuk mengamati detail tekstur pamor & serat.',
+      label: 'Digital Twin',
+      aksara: 'ꦏꦼꦩ꧀ꦧꦂ',
+      subjudul: 'STUDIO INSPEKSI CAD & PBR · EXPLODED VIEW 0–100%',
+      deskripsi:
+        'Bedah struktur geometris lima artefak utama dengan mode material PBR nyata, hibrida, dan rangkai kawat X-Ray CAD.',
     },
     {
-      kode: 'kepal-aksi',
+      id: 'koleksi',
       nomor: '03',
-      judul: 'Kepalan Tangan (Aksi Utama)',
-      uraian: 'Cabut Keris, putar Gending Saron, jalankan Canting, atau bedah atap Joglo 3D.',
+      label: 'Coverflow',
+      aksara: 'ꦱꦸꦭꦸꦏ꧀',
+      subjudul: 'GALERI PERSPEKTIF 3D · SULUK DALANG · INDEKS GENDING',
+      deskripsi:
+        'Galeri perspektif melengkung, pembacaan larik suluk sinkron layar penuh, serta pemutar suasana gending pendopo.',
     },
     {
-      kode: 'dua-jari-sabetan',
+      id: 'pakeliran',
       nomor: '04',
-      judul: 'Dua Jari (Simulasi Fisik 3D)',
-      uraian: 'Pijar pamor Keris, glissando Saron, celup malam, uji gempa Joglo, atau panah 3D.',
+      label: 'Pakeliran',
+      aksara: 'ꦥꦏꦼꦭꦶꦂ',
+      subjudul: 'TEATER BAYANGAN BLENCONG 3D · LAKON KIJANG KENCANA',
+      deskripsi:
+        'Simulasi panggung wayang kulit purwa dengan sorot lampu blencong, sabetan dalang, dan kendali gestur tangan.',
     },
     {
-      kode: 'tunjuk-ketuk',
+      id: 'kawruh',
       nomor: '05',
-      judul: 'Telunjuk Tunggal (Tabuh Saron)',
-      uraian: 'Arahkan telunjuk dari kiri ke kanan untuk menabuh 7 wilah Saron di udara.',
-    },
-    {
-      kode: 'dua-tangan-dalang',
-      nomor: '06',
-      judul: 'Dua Tangan Dalang',
-      uraian: 'Kemudikan Sri Rama (tangan kanan) dan Kidang Kencana (tangan kiri) bersamaan.',
+      label: 'Aksara & AI',
+      aksara: 'ꦲꦤꦕꦫꦏ',
+      subjudul: 'TRANSLITERASI HANACARAKA · ASISTEN PAMOMONG · PUSTAKA S1–S7',
+      deskripsi:
+        'Konverter aksara Jawa Unicode, asisten tanya-jawab BM25 berbasis arsip resmi S1–S7, dan ledger rujukan.',
     },
   ];
 
-  let sliderRamaX = $state<number>(LAKON_KIJANG_KENCANA.babak[0].posisiAwalRama);
-  let sliderKidangX = $state<number>(LAKON_KIJANG_KENCANA.babak[0].posisiAwalKidang);
-  let sliderTudingDepan = $state<number>(-0.38);
-  let sliderTudingBelakang = $state<number>(0.35);
-  let sliderCondhongRama = $state<number>(0);
+  let halamanAktif: HalamanId = $state('beranda');
+  let tema: 'malam' | 'terang' = $state('terang');
+  let bahasa: BahasaAktif = $state('id');
+  let preloaderProgres = $state(0);
+  let preloaderSelesai = $state(false);
+  let audioAktif = $state(false);
+  let suasanaPendopoAktif = $state(false);
 
-  let inputPertanyaan = $state<string>('');
-  let statusTanya = $state<'kosong' | 'memuat' | 'selesai' | 'galat'>('kosong');
-  let hasilTanya = $state<JawabanTanya | null>(null);
-  let galatTanya = $state<string | null>(null);
+  // Scrollytelling & Diorama Hero State (Halaman 01)
+  let scrollyIndeksAktif = $state(-1);
+  let wireframeDioramaAktif = $state(false);
+  let dioramaPins: ProyeksiPinDiorama[] = $state([]);
+  let bendaSorotDiorama: BendaPusaka['id'] | null = $state(null);
 
-  let inputUjiAksara = $state<string>('kelir pusaka jawi');
-  let carakanTerpilih = $state<KartuCarakan>(DAFTAR_20_CARAKAN[0]);
-  let aksi3DPintuAktif = $state<boolean>(false);
-  let aksi3DPegangAktif = $state<boolean>(false);
-  let webglPintuTersedia = $state<boolean>(true);
-  let webglPegangTersedia = $state<boolean>(true);
-  let webglPanggungTersedia = $state<boolean>(true);
+  // Digital Twin Studio State (Halaman 02)
+  let bendaAktifId: BendaPusaka['id'] = $state('keris');
+  let titikAktifId = $state('keris-wilah');
+  let modeVisualTwin: ModeVisualTwin = $state('hibrida');
+  let faktorLedak = $state(0.18);
+  let aksiHidupTwin = $state(true);
+  let twinPins: ProyeksiPinTwin[] = $state([]);
 
-  let wadahLayarEl: HTMLElement | undefined = $state();
-  let barProgresEl: HTMLElement | undefined = $state();
-  let tiraiKiriEl: HTMLElement | undefined = $state();
-  let tiraiKananEl: HTMLElement | undefined = $state();
-  let tiraiIkonEl: HTMLElement | undefined = $state();
-  let kartuTitikEl: HTMLElement | undefined = $state();
-  let kartuBabakEl: HTMLElement | undefined = $state();
-  let videoEl: HTMLVideoElement | undefined = $state();
-  let kanvasPintuEl: HTMLElement | undefined = $state();
-  let kanvasPegangEl: HTMLElement | undefined = $state();
-  let kanvasPanggungEl: HTMLElement | undefined = $state();
+  // Lola Wilde 3D Coverflow & Modal Suluk State (Halaman 03 & Global Modal)
+  let coverflowIdx = $state(0);
+  let modalSulukBuka = $state(false);
+  let modalSulukTrackIdx = $state(0);
+  let sulukLarikAktif = $state(0);
 
+  // Etalase Showcase Filter & 3D Spatial Wall State (Halaman 01)
+  let filterEtalase: FilterEtalase = $state('semua');
+  let wallTiltX = $state(0);
+  let wallTiltY = $state(0);
+
+  // Panggung Pakeliran Ramayana State (Halaman 04)
+  let babakIdx = $state(0);
+  let posRama = $state(0.46);
+  let posKidang = $state(-0.58);
+
+  // Lab Aksara Jawa & Pamomong AI State (Halaman 05)
+  let inputAksaraLatin = $state('Kelir warisan budaya Jawa nusantara.');
+  let kartuCarakanTerpilih: KartuCarakan = $state(DAFTAR_CARAKAN[4]);
+  let pertanyaanInput = $state('');
+  let sediaTanya = $state(false);
+  let jawabanPamomong: HasilTanya = $state(
+    jawabDariKurasiLokal('keris', 'Mengapa Keris Luk 5 identik dengan filosofi Pandawa?'),
+  );
+
+  // Hand Tracker Webcam State (Global Utility)
+  let statusKamera: StatusKamera = $state('nonaktif');
+  let gesturTerkini = $state('-');
+  let jumlahTanganTerdeteksi = $state(0);
+  let videoKameraEl: HTMLVideoElement | undefined = $state();
+
+  // Instance Panggung WebGL Aktif (dimuat malas sesuai halaman aktif)
+  let dioramaStage: LivingPendopoStage | null = null;
+  let twinStage: DigitalTwinStage | null = null;
+  let wayangStage: WayangStage | null = null;
+  let orbStage: PamomongOrbStage | null = null;
   let pengelolaTangan: PengelolaTangan | null = null;
-  let stagePintu: ArtifactStage | null = null;
-  let stagePegang: ArtifactStage | null = null;
-  let stagePanggung: WayangStage | null = null;
-  let timerJam: ReturnType<typeof setInterval> | null = null;
 
-  const bendaAktif = $derived(
-    DAFTAR_BENDA.find((b) => b.id === bendaIdAktif) ?? DAFTAR_BENDA[0],
+  // Derived Values
+  let infoHalamanAktif = $derived(
+    DAFTAR_HALAMAN.find((h) => h.id === halamanAktif) ?? DAFTAR_HALAMAN[0],
   );
-  const bendaHeroAktif = $derived(
-    DAFTAR_BENDA.find((b) => b.id === bendaHeroId) ?? DAFTAR_BENDA[0],
+  let indeksHalamanAktif = $derived(
+    DAFTAR_HALAMAN.findIndex((h) => h.id === halamanAktif),
   );
-  const titikAktif = $derived(
-    bendaAktif.titikInfo[indeksTitikAktif] ?? bendaAktif.titikInfo[0],
+  let halamanSebelumnya = $derived(
+    DAFTAR_HALAMAN[(indeksHalamanAktif - 1 + DAFTAR_HALAMAN.length) % DAFTAR_HALAMAN.length],
   );
-  const kronikAktif = $derived(KRONIK_SEJARAH_BUDAYA[bendaAktif.id]);
-  const babakAktif = $derived(
-    LAKON_KIJANG_KENCANA.babak[indeksBabakAktif] ?? LAKON_KIJANG_KENCANA.babak[0],
+  let halamanBerikutnya = $derived(
+    DAFTAR_HALAMAN[(indeksHalamanAktif + 1) % DAFTAR_HALAMAN.length],
   );
-  const hasilUjiAksara = $derived(latinToAksara(inputUjiAksara));
 
-  const SPEC_MATERIAL_PBR: Record<BendaPusaka['id'], string> = {
-    keris: 'Bilah 3D 64 Irisan Berpamor + Kayu Jati 1K (Poly Haven CC0) + Animasi Sarungkan',
-    saron: '7 Wilah Perunggu Cembung 3D + Rancakan Ukir Emas + Gending Slendro Otomatis',
-    batik: 'Kain Mori 3D Bergelombang + Canting Tembaga Hidup + Anglo & Wajan Malam Panas',
-    joglo: '4 Saka Guru + Konstruksi Tumpang Sari 3D + Atap Brunjung (Exploded View)',
-    wayang: 'Gunungan Kayon 3D Berlapis + Wayang Satria Berartikulasi Sendi & Busur 3D',
-  };
+  let bendaAktif = $derived(DAFTAR_BENDA.find((b) => b.id === bendaAktifId) ?? DAFTAR_BENDA[0]);
+  let titikAktif: TitikInfoPusaka = $derived(
+    bendaAktif.titikInfo.find((t) => t.id === titikAktifId) ?? bendaAktif.titikInfo[0],
+  );
+  let babakAktif = $derived(
+    LAKON_KIJANG_KENCANA.daftarBabak[babakIdx] ?? LAKON_KIJANG_KENCANA.daftarBabak[0],
+  );
+  let modalTrackBenda = $derived(DAFTAR_BENDA[modalSulukTrackIdx] ?? DAFTAR_BENDA[0]);
+  let aksaraTerkonversi = $derived(latinKeAksaraJawa(inputAksaraLatin));
+  let itemEtalaseTersaring = $derived(
+    filterEtalase === 'semua'
+      ? KOLEKSI_ETALASE
+      : KOLEKSI_ETALASE.filter((item) => item.kategoriKey === filterEtalase),
+  );
 
-  // Ringkasan nilai filosofis pendidikan budaya (Kawruh Budaya) untuk tiap ranah warisan
-  const KAWRUH_FILOSOFI: Record<
-    BendaPusaka['id'],
-    { istilahJawa: string; aksaraJawa: string; intiPendidikan: string }
-  > = {
-    keris: {
-      istilahJawa: 'Curiga Manjing Warangka',
-      aksaraJawa: latinToAksara('curiga manjing warangka'),
-      intiPendidikan:
-        'Pertemuan bilah logam (wilah) dan sarung kayu (warangka) melambangkan keselarasan antara ketajaman ilmu pengetahuan dan kebijaksanaan etika yang menyelimutinya.',
-    },
-    saron: {
-      istilahJawa: 'Tabuhan Laras Slendro & Pithatan',
-      aksaraJawa: latinToAksara('laras sléndro'),
-      intiPendidikan:
-        'Dalam karawitan gamelan, tangan kanan menabuh nada baru sementara tangan kiri memencet (pithat) bilah sebelumnya; mengajarkan disiplin kolaborasi dan kepekaan mendengar sesama.',
-    },
-    batik: {
-      istilahJawa: 'Mbatik saking Manah (Ketekunan Tulis Malam)',
-      aksaraJawa: latinToAksara('batik tulis'),
-      intiPendidikan:
-        'Goresan cairan malam panas dari cucuk canting menuntut kesabaran terukur: bagian yang ditutup malam justru terjaga kemurnian warnanya saat kain dicelup ke pewarna.',
-    },
-    joglo: {
-      istilahJawa: 'Saka Guru & Tumpang Sari Tahan Gempa',
-      aksaraJawa: latinToAksara('saka guru joglo'),
-      intiPendidikan:
-        'Kearifan rekayasa arsitektur Jawa menghubungkan balok kayu jati dengan sistem takik (cathokan) di atas batu sendi umpak, sehingga bangunan lentur menyerap guncangan gempa bumi.',
-    },
-    wayang: {
-      istilahJawa: 'Kayon (Pohon Kehidupan Kalpataru)',
-      aksaraJawa: latinToAksara('gunungan kayon'),
-      intiPendidikan:
-        'Gunungan (Kayon) dan bayangan wayang mengingatkan bahwa panggung kehidupan bergerak di antara terang lampu blencong dan layar kelir, menuntut manusia memahami perannya.',
-    },
-  };
-
-  const NAMA_BAB: Record<LayarId, string> = {
-    pintu: 'Bab I · Eksibisi & Pengantar Budaya',
-    rak: 'Bab II · Ensiklopedia 5 Ranah Budaya',
-    pegang: 'Bab III · Laboratorium Anatomi 3D',
-    panggung: 'Bab IV · Panggung Pakeliran Ramayana',
-    sumber: 'Bab V · Sanggar Aksara & Pustaka Ilmiah',
-  };
-
-  function bolehAnimasiGSAP(): boolean {
-    return (
-      typeof window !== 'undefined' &&
-      !window.matchMedia('(prefers-reduced-motion: reduce)').matches
-    );
-  }
-
-  function perbaruiJamWib(): void {
-    try {
-      const fmt = new Intl.DateTimeFormat('id-ID', {
-        timeZone: 'Asia/Jakarta',
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit',
-        hour12: false,
-      });
-      waktuWib = `${fmt.format(new Date())} WIB`;
-    } catch {
-      waktuWib = 'YOGYAKARTA · WIB';
-    }
-  }
-
-  function terapkanTema(mode: TemaMode): void {
-    temaAktif = mode;
-    if (typeof document !== 'undefined') {
-      document.documentElement.setAttribute('data-theme', mode);
-    }
-  }
-
-  function terapkanBahasa(mode: BahasaMode): void {
-    bahasaAktif = mode;
-    if (typeof document !== 'undefined') {
-      document.documentElement.setAttribute('lang', mode === 'id' ? 'id' : 'jv');
-    }
-  }
-
-  function jalankanKoreografiGSAP(): void {
-    const idxBab = Math.max(0, URUTAN_LAYAR.indexOf(layarAktif));
-    const rasioProgres = (idxBab + 1) / URUTAN_LAYAR.length;
-
-    if (barProgresEl) {
-      if (bolehAnimasiGSAP()) {
-        gsap.to(barProgresEl, {
-          scaleX: rasioProgres,
-          duration: 0.55,
-          ease: 'power3.out',
-        });
-      } else {
-        barProgresEl.style.transform = `scaleX(${rasioProgres})`;
-      }
-    }
-
-    if (!wadahLayarEl || !bolehAnimasiGSAP()) return;
-
-    const tl = gsap.timeline({ defaults: { ease: 'power3.out' } });
-
-    tl.fromTo(
-      wadahLayarEl,
-      { opacity: 0.2, y: 12 },
-      { opacity: 1, y: 0, duration: 0.34 },
-      0,
-    );
-
-    const jalurUkir = wadahLayarEl.querySelectorAll('.gsap-jalur-ukir');
-    if (jalurUkir.length > 0) {
-      tl.fromTo(
-        jalurUkir,
-        { strokeDasharray: 240, strokeDashoffset: 240 },
-        { strokeDashoffset: 0, duration: 0.65, stagger: 0.06, ease: 'power2.out' },
-        0.04,
-      );
-    }
-
-    const kartuList = wadahLayarEl.querySelectorAll('.anim-masuk');
-    if (kartuList.length > 0) {
-      tl.fromTo(
-        kartuList,
-        { opacity: 0, y: 14 },
-        { opacity: 1, y: 0, duration: 0.36, stagger: 0.05 },
-        0.05,
-      );
-    }
-
-    ScrollTrigger.getAll().forEach((st) => st.kill());
-    const blokScroll = wadahLayarEl.querySelectorAll('.gsap-scroll-seksi');
-    blokScroll.forEach((el) => {
-      gsap.fromTo(
-        el,
-        { opacity: 0.25, y: 22 },
-        {
-          opacity: 1,
-          y: 0,
-          duration: 0.48,
-          ease: 'power3.out',
-          scrollTrigger: {
-            trigger: el,
-            start: 'top 88%',
-            toggleActions: 'play none none none',
-          },
-        },
-      );
+  // =========================================================================
+  // 2. Svelte Actions untuk Siklus Hidup 3D WebGL per Halaman
+  // =========================================================================
+  function mountDioramaStage(node: HTMLDivElement) {
+    dioramaStage = new LivingPendopoStage(node, tema);
+    dioramaStage.onProyeksiPin((pins) => {
+      dioramaPins = pins;
     });
 
-    const langkahCards = wadahLayarEl.querySelectorAll('.gsap-langkah-scrolly');
-    langkahCards.forEach((el, idx) => {
-      ScrollTrigger.create({
-        trigger: el,
-        start: 'top 55%',
-        end: 'bottom 45%',
-        onEnter: () => {
-          if (Date.now() - waktuKunciScrollScrolly < 1100) return;
-          terapkanLangkahScrolly(idx, false);
-        },
-        onEnterBack: () => {
-          if (Date.now() - waktuKunciScrollScrolly < 1100) return;
-          terapkanLangkahScrolly(idx, false);
-        },
-      });
-    });
-  }
+    const ro = new ResizeObserver(() => dioramaStage?.ubahUkuran());
+    ro.observe(node);
 
-  function animasiTiraiGunungan(judulBab: string): void {
-    labelBabTransisi = judulBab;
-    if (!bolehAnimasiGSAP() || !tiraiKiriEl || !tiraiKananEl || !tiraiIkonEl) return;
-
-    gsap.killTweensOf([tiraiKiriEl, tiraiKananEl, tiraiIkonEl]);
-    const tl = gsap.timeline();
-    tl.fromTo(
-      tiraiKiriEl,
-      { xPercent: -102, opacity: 0.95 },
-      { xPercent: -35, opacity: 0.95, duration: 0.16, ease: 'power2.out' },
-      0,
-    )
-      .fromTo(
-        tiraiKananEl,
-        { xPercent: 102, opacity: 0.95 },
-        { xPercent: 35, opacity: 0.95, duration: 0.16, ease: 'power2.out' },
-        0,
-      )
-      .fromTo(
-        tiraiIkonEl,
-        { opacity: 0, scale: 0.8 },
-        { opacity: 1, scale: 1, duration: 0.15, ease: 'back.out(1.6)' },
-        0.02,
-      )
-      .to(
-        [tiraiKiriEl, tiraiKananEl],
-        {
-          xPercent: (i) => (i === 0 ? -105 : 105),
-          opacity: 0,
-          duration: 0.28,
-          ease: 'power3.inOut',
-        },
-        0.18,
-      )
-      .to(
-        tiraiIkonEl,
-        { opacity: 0, scale: 0.88, duration: 0.2, ease: 'power2.in' },
-        0.18,
-      );
-  }
-
-  function toggleSuaraBudaya(): void {
-    suaraBudayaAktif = audioBudaya.aturAktif(!suaraBudayaAktif);
-    if (!suaraBudayaAktif) {
-      gendingPendopoAktif = false;
-    }
-  }
-
-  function toggleGendingPendopo(): void {
-    gendingPendopoAktif = audioBudaya.toggleSuasanaPendopo();
-    if (gendingPendopoAktif) {
-      suaraBudayaAktif = true;
-    }
-  }
-
-  async function pindahLayar(target: LayarId): Promise<void> {
-    if (layarAktif === target) return;
-    audioBudaya.bunyikanGongAgeng(0.14);
-    animasiTiraiGunungan(NAMA_BAB[target]);
-    layarAktif = target;
-    await tick();
-
-    jalankanKoreografiGSAP();
-    await inisialisasiKanvasLayar();
-  }
-
-  async function inisialisasiKanvasLayar(): Promise<void> {
-    await tick();
-
-    if (layarAktif === 'pintu' && kanvasPintuEl) {
-      stagePegang?.destroy();
-      stagePegang = null;
-      stagePanggung?.destroy();
-      stagePanggung = null;
-      if (!stagePintu) {
-        stagePintu = new ArtifactStage(kanvasPintuEl, bendaHeroAktif);
-        webglPintuTersedia = stagePintu.webglTersedia;
-      } else {
-        stagePintu.muatBenda(bendaHeroAktif);
-      }
-    } else if (layarAktif === 'pegang' && kanvasPegangEl) {
-      stagePintu?.destroy();
-      stagePintu = null;
-      stagePanggung?.destroy();
-      stagePanggung = null;
-      if (!stagePegang) {
-        stagePegang = new ArtifactStage(kanvasPegangEl, bendaAktif);
-        webglPegangTersedia = stagePegang.webglTersedia;
-      } else {
-        stagePegang.muatBenda(bendaAktif);
-      }
-      if (titikAktif) {
-        stagePegang.fokusKeTitik(titikAktif.posisi3D, titikAktif.kameraTarget);
-      }
-    } else if (layarAktif === 'panggung' && kanvasPanggungEl) {
-      stagePintu?.destroy();
-      stagePintu = null;
-      stagePegang?.destroy();
-      stagePegang = null;
-      if (!stagePanggung) {
-        stagePanggung = new WayangStage(kanvasPanggungEl);
-        webglPanggungTersedia = stagePanggung.webglTersedia;
-      }
-      stagePanggung.aturPosisiTokoh(sliderRamaX, sliderKidangX);
-    } else {
-      stagePintu?.destroy();
-      stagePintu = null;
-      stagePegang?.destroy();
-      stagePegang = null;
-      stagePanggung?.destroy();
-      stagePanggung = null;
-    }
-  }
-
-  function gantiBendaHero(id: BendaPusaka['id']): void {
-    bendaHeroId = id;
-    aksi3DPintuAktif = false;
-    audioBudaya.bunyikanCempalaKeprak('cempala');
-    const b = DAFTAR_BENDA.find((x) => x.id === id) ?? DAFTAR_BENDA[0];
-    stagePintu?.muatBenda(b);
-  }
-
-  function toggleAksi3DPintu(): void {
-    if (!stagePintu) return;
-    aksi3DPintuAktif = stagePintu.toggleAksiHidup();
-  }
-
-  function picuEfek3DPintu(): void {
-    stagePintu?.picuEfekKhusus3D();
-  }
-
-  function toggleAksi3DPegang(): void {
-    if (!stagePegang) return;
-    aksi3DPegangAktif = stagePegang.toggleAksiHidup();
-  }
-
-  function picuEfek3DPegang(): void {
-    stagePegang?.picuEfekKhusus3D();
-  }
-
-  async function pilihBenda(
-    id: BendaPusaka['id'],
-    langsungBuka = true,
-    indeksTitik = 0,
-  ): Promise<void> {
-    waktuKunciScrollScrolly = Date.now();
-    bendaIdAktif = id;
-    indeksTitikAktif = indeksTitik;
-    indeksLangkahScrolly = indeksTitik === 0 ? 0 : Math.min(4, indeksTitik + 1);
-    aksi3DPegangAktif = false;
-    statusTanya = 'kosong';
-    hasilTanya = null;
-    galatTanya = null;
-    if (langsungBuka) {
-      await pindahLayar('pegang');
-    } else if (stagePegang) {
-      audioBudaya.bunyikanCempalaKeprak('cempala');
-      const b = DAFTAR_BENDA.find((x) => x.id === id) ?? DAFTAR_BENDA[0];
-      stagePegang.muatBenda(b);
-      const t = b.titikInfo[indeksTitik] ?? b.titikInfo[0];
-      if (t) {
-        stagePegang.fokusKeTitik(t.posisi3D, t.kameraTarget);
-      }
-      if (kartuTitikEl && bolehAnimasiGSAP()) {
-        gsap.fromTo(
-          kartuTitikEl,
-          { opacity: 0.35, y: 10 },
-          { opacity: 1, y: 0, duration: 0.3, ease: 'power2.out' },
-        );
-      }
-    }
-  }
-
-  let waktuKunciScrollScrolly = 0;
-
-  function pilihTitikInfo(idx: number): void {
-    waktuKunciScrollScrolly = Date.now();
-    indeksTitikAktif = idx;
-    indeksLangkahScrolly = Math.min(4, idx + 1);
-    audioBudaya.bunyikanCempalaKeprak('cempala');
-    const t = bendaAktif.titikInfo[idx];
-    const langkah = kronikAktif.langkahScroll3D[indeksLangkahScrolly];
-    if (stagePegang) {
-      if (langkah) {
-        stagePegang.aturPoseScrolly3D(langkah.rotasiY, langkah.rotasiX, langkah.zoom);
-      }
-      if (t) {
-        stagePegang.fokusKeTitik(t.posisi3D, t.kameraTarget);
-      }
-    }
-    if (kartuTitikEl && bolehAnimasiGSAP()) {
-      gsap.fromTo(
-        kartuTitikEl,
-        { opacity: 0.35, x: 10 },
-        { opacity: 1, x: 0, duration: 0.28, ease: 'power2.out' },
-      );
-    }
-  }
-
-  function terapkanLangkahScrolly(idx: number, gulirKeKartu = true): void {
-    const daftarLangkah = kronikAktif.langkahScroll3D;
-    const langkah = daftarLangkah[idx];
-    if (!langkah) return;
-    if (gulirKeKartu) {
-      waktuKunciScrollScrolly = Date.now();
-    }
-    indeksLangkahScrolly = idx;
-    indeksTitikAktif = langkah.indeksTitik;
-    const titik = bendaAktif.titikInfo[langkah.indeksTitik];
-    if (stagePegang) {
-      stagePegang.aturPoseScrolly3D(langkah.rotasiY, langkah.rotasiX, langkah.zoom);
-      if (titik) {
-        stagePegang.fokusKeTitik(titik.posisi3D, titik.kameraTarget);
-      }
-    }
-    if (gulirKeKartu && typeof document !== 'undefined') {
-      audioBudaya.bunyikanCempalaKeprak('cempala');
-      const el = document.getElementById(`langkah-scrolly-${langkah.nomor}`);
-      el?.scrollIntoView({ behavior: bolehAnimasiGSAP() ? 'smooth' : 'auto', block: 'nearest' });
-    }
-  }
-
-  function lompatKeSeksiZeggo(id: BendaPusaka['id']): void {
-    audioBudaya.bunyikanCempalaKeprak('cempala');
-    if (typeof document !== 'undefined') {
-      const el = document.getElementById(`seksi-zeggo-${id}`);
-      el?.scrollIntoView({ behavior: bolehAnimasiGSAP() ? 'smooth' : 'auto', block: 'start' });
-    }
-  }
-
-  function pilihBabak(idx: number): void {
-    indeksBabakAktif = idx;
-    audioBudaya.bunyikanCempalaKeprak('keprak');
-    const b = LAKON_KIJANG_KENCANA.babak[idx];
-    if (b) {
-      sliderRamaX = b.posisiAwalRama;
-      sliderKidangX = b.posisiAwalKidang;
-      stagePanggung?.aturPosisiTokoh(sliderRamaX, sliderKidangX);
-    }
-    if (kartuBabakEl && bolehAnimasiGSAP()) {
-      gsap.fromTo(
-        kartuBabakEl,
-        { opacity: 0.35, y: 10 },
-        { opacity: 1, y: 0, duration: 0.3, ease: 'power2.out' },
-      );
-    }
-  }
-
-  function pilihKartuCarakan(item: KartuCarakan, tombolEl?: HTMLElement): void {
-    carakanTerpilih = item;
-    inputUjiAksara = item.contohKata;
-    audioBudaya.bunyikanCempalaKeprak('cempala');
-    if (tombolEl && bolehAnimasiGSAP()) {
-      gsap.fromTo(
-        tombolEl,
-        { scale: 0.92 },
-        { scale: 1, duration: 0.28, ease: 'back.out(2)' },
-      );
-    }
-  }
-
-  function ubahPosisiWayangManual(rama: number, kidang: number): void {
-    sliderRamaX = rama;
-    sliderKidangX = kidang;
-    stagePanggung?.aturPosisiTokoh(sliderRamaX, sliderKidangX);
-  }
-
-  async function aktifkanKamera(): Promise<void> {
-    if (!videoEl) return;
-    if (!pengelolaTangan) {
-      pengelolaTangan = new PengelolaTangan(
-        (frame) => {
-          infoTangan = frame;
-          if (!frame.terdeteksi) return;
-          if (layarAktif === 'pintu' && stagePintu) {
-            stagePintu.terapkanInputTangan(frame.kananX, frame.kananY, frame.jarakCubit, frame);
-          } else if (layarAktif === 'pegang' && stagePegang) {
-            stagePegang.terapkanInputTangan(frame.kananX, frame.kananY, frame.jarakCubit, frame);
-          } else if (layarAktif === 'panggung' && stagePanggung) {
-            sliderRamaX = Number(frame.kananX.toFixed(2));
-            sliderKidangX = Number(frame.kiriX.toFixed(2));
-            stagePanggung.terapkanGesturPanggung(frame);
+    let io: IntersectionObserver | null = null;
+    void tick().then(() => {
+      const langkahNodes = document.querySelectorAll<HTMLElement>('[data-scrolly-idx]');
+      io = new IntersectionObserver(
+        (entries) => {
+          for (const entry of entries) {
+            if (entry.isIntersecting) {
+              const val = Number(entry.target.getAttribute('data-scrolly-idx'));
+              if (!Number.isNaN(val)) {
+                scrollyIndeksAktif = val;
+                dioramaStage?.aturProgresGulir(val);
+              }
+            }
           }
         },
-        (st, psn) => {
-          statusKamera = st;
-          pesanKamera = psn;
-        },
+        { threshold: 0.45 },
       );
+      langkahNodes.forEach((n) => io?.observe(n));
+    });
+
+    return {
+      destroy() {
+        io?.disconnect();
+        ro.disconnect();
+        dioramaStage?.destroy();
+        dioramaStage = null;
+      },
+    };
+  }
+
+  function mountTwinStage(node: HTMLDivElement) {
+    let destroyed = false;
+    let ro: ResizeObserver | null = null;
+
+    void import('../scenes/digitalTwinStage.ts').then(({ DigitalTwinStage }) => {
+      if (destroyed) return;
+      twinStage = new DigitalTwinStage(node, tema);
+      twinStage.muatBenda(bendaAktif);
+      twinStage.aturLedakAnatomi(faktorLedak);
+      twinStage.terapkanModeVisual(modeVisualTwin);
+      twinStage.onProyeksiPin((pins) => {
+        twinPins = pins;
+      });
+
+      ro = new ResizeObserver(() => twinStage?.ubahUkuran());
+      ro.observe(node);
+    });
+
+    return {
+      destroy() {
+        destroyed = true;
+        ro?.disconnect();
+        twinStage?.destroy();
+        twinStage = null;
+      },
+    };
+  }
+
+  function mountWayangStage(node: HTMLDivElement) {
+    let destroyed = false;
+    let ro: ResizeObserver | null = null;
+
+    void import('../scenes/wayangStage.ts').then(({ WayangStage }) => {
+      if (destroyed) return;
+      wayangStage = new WayangStage(node);
+      wayangStage.aturPosisiTokoh(posRama, posKidang);
+
+      ro = new ResizeObserver(() => wayangStage?.ubahUkuran());
+      ro.observe(node);
+    });
+
+    return {
+      destroy() {
+        destroyed = true;
+        ro?.disconnect();
+        wayangStage?.destroy();
+        wayangStage = null;
+      },
+    };
+  }
+
+  function mountOrbStage(node: HTMLDivElement) {
+    let destroyed = false;
+    let ro: ResizeObserver | null = null;
+
+    void import('../scenes/pamomongOrbStage.ts').then(({ PamomongOrbStage }) => {
+      if (destroyed) return;
+      orbStage = new PamomongOrbStage(node);
+
+      ro = new ResizeObserver(() => orbStage?.ubahUkuran());
+      ro.observe(node);
+    });
+
+    return {
+      destroy() {
+        destroyed = true;
+        ro?.disconnect();
+        orbStage?.destroy();
+        orbStage = null;
+      },
+    };
+  }
+
+  // =========================================================================
+  // 3. Fungsi Navigasi Antar-Halaman & Interaksi
+  // =========================================================================
+  function pindahHalaman(id: HalamanId, targetAnchorId?: string): void {
+    halamanAktif = id;
+    if (typeof window !== 'undefined') {
+      const url = new URL(window.location.href);
+      url.searchParams.set('hal', id);
+      url.hash = targetAnchorId ? `#${targetAnchorId}` : '';
+      window.history.pushState({ halaman: id }, '', url);
+
+      void tick().then(() => {
+        if (targetAnchorId) {
+          const el = document.getElementById(targetAnchorId);
+          if (el) {
+            el.scrollIntoView({ behavior: 'smooth' });
+            return;
+          }
+        }
+        window.scrollTo({ top: 0, behavior: 'instant' as ScrollBehavior });
+      });
     }
-    await pengelolaTangan.mulai(videoEl);
   }
 
-  function matikanKamera(): void {
-    pengelolaTangan?.matikan();
+  function teksSesuaiBahasa(teksId: string, teksJw?: string): string {
+    if (bahasa === 'aks') return latinKeAksaraJawa(teksJw ?? teksId);
+    if (bahasa === 'jw') return teksJw ?? teksId;
+    return teksId;
   }
 
-  async function masukDenganKamera(): Promise<void> {
-    await aktifkanKamera();
-    await pindahLayar('rak');
+  function tutupPreloaderSeketika(): void {
+    preloaderProgres = 100;
+    preloaderSelesai = true;
   }
 
-  async function masukTanpaKamera(): Promise<void> {
-    matikanKamera();
-    pesanKamera =
-      'Mode tanpa kamera aktif. Gunakan mouse, layar sentuh, atau tombol keyboard untuk seluruh interaksi.';
-    await pindahLayar('rak');
+  function toggleTema(): void {
+    tema = tema === 'malam' ? 'terang' : 'malam';
+    if (typeof document !== 'undefined') {
+      document.documentElement.setAttribute('data-theme', tema);
+    }
+    dioramaStage?.setTheme(tema);
+    twinStage?.setTheme(tema);
   }
 
-  async function kirimPertanyaan(teksOpsional?: string): Promise<void> {
-    const q = (teksOpsional ?? inputPertanyaan).trim();
-    if (!q) {
-      statusTanya = 'galat';
-      galatTanya = 'Tuliskan pertanyaan atau pilih salah satu pertanyaan contoh terlebih dahulu.';
+  function toggleAudio(): void {
+    audioAktif = !audioAktif;
+    audioBudaya.aturAktif(audioAktif);
+    if (!audioAktif) suasanaPendopoAktif = false;
+    else audioBudaya.bunyikanWilahSaron(2, 0.18);
+  }
+
+  function toggleSuasanaGending(): void {
+    if (!audioAktif) {
+      audioAktif = true;
+      audioBudaya.aturAktif(true);
+    }
+    suasanaPendopoAktif = audioBudaya.toggleSuasanaPendopo();
+  }
+
+  function pilihPusaka(id: BendaPusaka['id'], bukaHalamanTwin = false): void {
+    bendaAktifId = id;
+    const bendaBaru = DAFTAR_BENDA.find((b) => b.id === id) ?? DAFTAR_BENDA[0];
+    titikAktifId = bendaBaru.titikInfo[0].id;
+    twinStage?.muatBenda(bendaBaru);
+    dioramaStage?.fokusKeBangunan(id);
+
+    if (audioAktif) picuSuaraBenda(id);
+
+    if (bukaHalamanTwin) {
+      pindahHalaman('twin');
+    }
+  }
+
+  function picuSuaraBenda(id: BendaPusaka['id']): void {
+    if (!audioAktif) return;
+    if (id === 'keris') audioBudaya.bunyikanHunusKeris();
+    else if (id === 'saron') audioBudaya.bunyikanWilahSaron(3);
+    else if (id === 'batik') audioBudaya.bunyikanCantingMalam();
+    else if (id === 'joglo') audioBudaya.bunyikanKetukKayuJoglo();
+    else audioBudaya.bunyikanCempalaKeprak();
+  }
+
+  function aturModeVisualTwin(mode: ModeVisualTwin): void {
+    modeVisualTwin = mode;
+    twinStage?.terapkanModeVisual(mode);
+  }
+
+  function pilihTitikInfo(t: TitikInfoPusaka): void {
+    titikAktifId = t.id;
+    twinStage?.fokusKeTitik(t);
+    picuSuaraBenda(bendaAktif.id);
+  }
+
+  function bukaModalSuluk(idx: number): void {
+    modalSulukTrackIdx = ((idx % DAFTAR_BENDA.length) + DAFTAR_BENDA.length) % DAFTAR_BENDA.length;
+    sulukLarikAktif = 0;
+    modalSulukBuka = true;
+    if (audioAktif) audioBudaya.bunyikanWilahSaron(idx % 6, 0.2);
+  }
+
+  function geserCoverflow(delta: number): void {
+    coverflowIdx =
+      (((coverflowIdx + delta) % DAFTAR_BENDA.length) + DAFTAR_BENDA.length) % DAFTAR_BENDA.length;
+    if (audioAktif) audioBudaya.bunyikanWilahSaron(coverflowIdx, 0.14);
+  }
+
+  function hitungGayaKartuCoverflow(indeks: number): string {
+    const len = DAFTAR_BENDA.length;
+    let delta = indeks - coverflowIdx;
+    if (delta > Math.floor(len / 2)) delta -= len;
+    if (delta < -Math.floor(len / 2)) delta += len;
+
+    const abs = Math.abs(delta);
+    const tx = delta * 245;
+    const tz = -abs * 155;
+    const ry = delta * -22;
+    const skala = abs === 0 ? 1 : Math.max(0.72, 1 - abs * 0.14);
+    const kabur = abs === 0 ? 0 : abs * 1.9;
+    const opasitas = abs > 2 ? 0 : 1 - abs * 0.18;
+    const zIndeks = 20 - abs * 4;
+
+    return `transform: translateX(${tx}px) translateZ(${tz}px) rotateY(${ry}deg) scale(${skala}); filter: blur(${kabur}px); opacity: ${opasitas}; z-index: ${zIndeks};`;
+  }
+
+  function pilihBabak(i: number): void {
+    babakIdx = i;
+    const bab = LAKON_KIJANG_KENCANA.daftarBabak[i];
+    if (bab) {
+      posRama = bab.posisiAwalRama;
+      posKidang = bab.posisiAwalKidang;
+      wayangStage?.aturPosisiTokoh(posRama, posKidang);
+      if (audioAktif) audioBudaya.bunyikanCempalaKeprak();
+    }
+  }
+
+  async function kirimTanyaPamomong(e?: SubmitEvent): Promise<void> {
+    if (e) e.preventDefault();
+    const q = pertanyaanInput.trim() || bendaAktif.pertanyaanContoh[0];
+    if (!pertanyaanInput.trim()) pertanyaanInput = q;
+    sediaTanya = true;
+    orbStage?.picuDenyutBerpikir();
+    jawabanPamomong = await tanyakanKeAsisten(bendaAktif.id, q);
+    sediaTanya = false;
+  }
+
+  async function toggleKameraTangan(): Promise<void> {
+    if (statusKamera === 'aktif' || statusKamera === 'memuat') {
+      pengelolaTangan?.matikan();
       return;
     }
-    inputPertanyaan = q;
-    statusTanya = 'memuat';
-    galatTanya = null;
-
-    try {
-      hasilTanya = await tanyakanKeAsisten(bendaAktif.id, q);
-      statusTanya = 'selesai';
-    } catch (err) {
-      statusTanya = 'galat';
-      galatTanya =
-        err instanceof Error
-          ? err.message
-          : 'Gagal memproses pertanyaan. Silakan coba lagi.';
+    if (!videoKameraEl) return;
+    if (!pengelolaTangan) {
+      statusKamera = 'memuat';
+      const { PengelolaTangan } = await import('../lib/handTracker.ts');
+      pengelolaTangan = new PengelolaTangan();
     }
+    await pengelolaTangan.mulai(
+      videoKameraEl,
+      (frame: FrameTangan) => {
+        jumlahTanganTerdeteksi = frame.jumlahTangan;
+        const kanan = frame.tanganKanan;
+        const kiri = frame.tanganKiri;
+        gesturTerkini = kanan?.gestur ?? kiri?.gestur ?? '-';
+
+        if (kiri) {
+          posKidang = Math.max(-0.85, Math.min(0.85, (kiri.pusatX - 0.5) * 1.8));
+        }
+        if (kanan) {
+          posRama = Math.max(-0.85, Math.min(0.85, (kanan.pusatX - 0.5) * 1.8));
+          const zoom = kanan.gestur === 'cubit' ? 1.4 : 1.0;
+          twinStage?.aturPutaranTangan((kanan.pusatX - 0.5) * 1.2, zoom);
+          wayangStage?.terapkanGesturPanggung({
+            kemiringan: kanan.kemiringan,
+            intensitasSabetan: kanan.gestur === 'kepal' ? 1 : 0,
+          });
+        }
+        wayangStage?.aturPosisiTokoh(posRama, posKidang);
+      },
+      (st) => {
+        statusKamera = st;
+      },
+    );
   }
 
-  function tanganiResize(): void {
-    if (layarAktif === 'pintu' && stagePintu && kanvasPintuEl) {
-      stagePintu.ubahUkuran(kanvasPintuEl.clientWidth, kanvasPintuEl.clientHeight);
-    }
-    if (layarAktif === 'pegang' && stagePegang && kanvasPegangEl) {
-      stagePegang.ubahUkuran(kanvasPegangEl.clientWidth, kanvasPegangEl.clientHeight);
-    }
-    if (layarAktif === 'panggung' && stagePanggung && kanvasPanggungEl) {
-      stagePanggung.ubahUkuran(kanvasPanggungEl.clientWidth, kanvasPanggungEl.clientHeight);
-    }
+  function handleMouseMoveGlobal(e: MouseEvent): void {
+    const nx = (e.clientX / Math.max(window.innerWidth, 1)) * 2 - 1;
+    const ny = (e.clientY / Math.max(window.innerHeight, 1)) * 2 - 1;
+    dioramaStage?.aturParalaks(nx, ny);
+    orbStage?.aturArahKursor(nx, ny);
   }
 
+  function handleWallMouseMove(e: MouseEvent): void {
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    const nx = ((e.clientX - rect.left) / Math.max(rect.width, 1)) * 2 - 1;
+    const ny = ((e.clientY - rect.top) / Math.max(rect.height, 1)) * 2 - 1;
+    wallTiltX = -ny * 7.5;
+    wallTiltY = nx * 9.5;
+  }
+
+  function formatSumberLabel(s: KodeSumber): string {
+    return `${s} · ${DAFTAR_SUMBER[s].lembaga}`;
+  }
+
+  // =========================================================================
+  // 4. Mount Global & Sinkronisasi URL History
+  // =========================================================================
   onMount(() => {
-    perbaruiJamWib();
-    timerJam = setInterval(perbaruiJamWib, 1000);
-    window.addEventListener('resize', tanganiResize);
-    jalankanKoreografiGSAP();
-    void inisialisasiKanvasLayar();
+    document.documentElement.setAttribute('data-theme', tema);
+
+    // Baca parameter halaman dari URL jika ada (?hal=twin, dsb.)
+    const params = new URLSearchParams(window.location.search);
+    const halParam = params.get('hal') as HalamanId | null;
+    if (halParam && DAFTAR_HALAMAN.some((h) => h.id === halParam)) {
+      halamanAktif = halParam;
+    }
+
+    const onPopState = () => {
+      const p = new URLSearchParams(window.location.search).get('hal') as HalamanId | null;
+      if (p && DAFTAR_HALAMAN.some((h) => h.id === p)) {
+        halamanAktif = p;
+      } else {
+        halamanAktif = 'beranda';
+      }
+    };
+    window.addEventListener('popstate', onPopState);
+
+    const reduceMotion =
+      typeof window !== 'undefined' &&
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (reduceMotion) {
+      tutupPreloaderSeketika();
+    } else {
+      const start = performance.now();
+      const durasi = 560;
+      const tickLoader = (now: number) => {
+        const p = Math.min(1, (now - start) / durasi);
+        preloaderProgres = Math.round(p * 100);
+        if (p < 1 && !preloaderSelesai) {
+          requestAnimationFrame(tickLoader);
+        } else {
+          setTimeout(() => {
+            preloaderSelesai = true;
+          }, 70);
+        }
+      };
+      requestAnimationFrame(tickLoader);
+    }
+
+    return () => {
+      window.removeEventListener('popstate', onPopState);
+    };
   });
 
   onDestroy(() => {
-    if (timerJam) {
-      clearInterval(timerJam);
-    }
-    if (typeof window !== 'undefined') {
-      window.removeEventListener('resize', tanganiResize);
-    }
     pengelolaTangan?.matikan();
-    stagePintu?.destroy();
-    stagePegang?.destroy();
-    stagePanggung?.destroy();
+    audioBudaya.hentikanSuasanaPendopo();
+    dioramaStage?.destroy();
+    twinStage?.destroy();
+    wayangStage?.destroy();
+    orbStage?.destroy();
   });
 </script>
 
-<a class="tautan-lompat" href="#konten-utama">Lompat ke konten utama</a>
+<svelte:window
+  onmousemove={handleMouseMoveGlobal}
+  onkeydown={(e) => {
+    if (e.key === 'Escape' && modalSulukBuka) modalSulukBuka = false;
+  }}
+/>
 
-<video
-  bind:this={videoEl}
-  class="video-tersembunyi"
-  playsinline
-  muted
-  aria-hidden="true"
-></video>
-
-<!-- Tirai Transisi GSAP Gunungan / Kayon saat berpindah Bab Pembelajaran -->
-<div class="tirai-gsap-wadah" aria-hidden="true">
-  <div class="tirai-panel-kiri" bind:this={tiraiKiriEl}></div>
-  <div class="tirai-panel-kanan" bind:this={tiraiKananEl}></div>
-  <div class="tirai-gunungan-ikon" bind:this={tiraiIkonEl}>
-    <div lang="jv" class="teks-aksara" style="color: #e2b153; font-size: 1.15rem;">ꦏꦼꦭꦶꦂ</div>
-    <div style="font-family: var(--font-display); font-weight: 700; font-size: 0.95rem;">
-      {labelBabTransisi}
-    </div>
-  </div>
-</div>
-
-<!-- Pita Atribusi Ensiklopedia Pendidikan Budaya -->
-<div class="strip-telemetri" role="region" aria-label="Informasi ensiklopedia budaya dan wilayah">
-  <div class="strip-telemetri-dalam">
-    <div class="item-telemetri">
-      <span>ENSIKLOPEDIA PENDIDIKAN BUDAYA JAWA &amp; NUSANTARA</span>
-      <span>·</span>
-      <span>{waktuWib}</span>
-    </div>
-    <div class="item-telemetri">
-      <span>RUJUKAN ILMIAH: UNESCO (00063 · 00112 · 00170 · 01760) &amp; MUSEUM SONOBUDOYO</span>
-    </div>
-  </div>
-</div>
-
-<header class="bilah-atas">
-  <div class="bilah-atas-dalam">
+<!-- =========================================================================
+     PRELOADER NUMERIK ARSIP (00 -> 100)
+     ========================================================================= -->
+<div
+  class="preloader-curtain"
+  class:is-done={preloaderSelesai}
+  aria-hidden={preloaderSelesai}
+  data-preloader-done={String(preloaderSelesai)}
+>
+  <div class="preloader-top">
+    <span>KELIR · ARSIP SPASIAL WARISAN NUSANTARA · S1–S7</span>
     <button
       type="button"
-      class="identitas-merek"
-      data-testid="logo-kelir"
-      onclick={() => pindahLayar('pintu')}
-      aria-label="Kelir, kembali ke Bab I Beranda Eksibisi"
+      class="preloader-skip"
+      onclick={tutupPreloaderSeketika}
+      data-testid="skip-preloader"
     >
-      <svg width="30" height="30" viewBox="0 0 64 64" aria-hidden="true">
-        <path
-          d="M32 6 C46 22 52 38 42 56 L22 56 C12 38 18 22 32 6 Z"
-          fill="#9E2E17"
-          stroke="#E2B153"
-          stroke-width="3"
-        />
-        <path d="M32 14 L32 52 M24 38 L40 38 M26 28 L38 28" stroke="#F5EDE0" stroke-width="2.5" />
-      </svg>
-      <span class="merek-teks-grup">
-        <span class="merek-latin">Kelir</span>
-        <span class="merek-sub">Ensiklopedia Budaya 3D</span>
-      </span>
-      <span class="merek-aksara" lang="jv">ꦏꦼꦭꦶꦂ</span>
+      Lewati Intro &#8594;
+    </button>
+  </div>
+
+  <div class="preloader-center">
+    <svg class="preloader-emblem" viewBox="0 0 64 64" fill="none">
+      <circle cx="32" cy="32" r="26" stroke="currentColor" stroke-width="2" stroke-dasharray="6 4" />
+      <path d="M32 10 L46 38 L18 38 Z" stroke="currentColor" stroke-width="2" />
+    </svg>
+    <div>
+      <div style="font-family: var(--font-display); font-size: 1.5rem; font-weight: 700;">
+        Menyiapkan 5 Ruang Kurasi &amp; Studio Geometri 3D
+      </div>
+      <div style="font-family: var(--font-mono); font-size: 0.78rem; color: var(--text-secondary);">
+        Diorama Pendopo · Bedah Anatomi CAD · Panggung Pakeliran · Kendali Gestur Lokal
+      </div>
+    </div>
+  </div>
+
+  <div class="preloader-bottom">
+    <div class="preloader-count">{String(preloaderProgres).padStart(2, '0')}</div>
+    <div class="preloader-bar-wrap">
+      <div class="preloader-bar-fill" style="width: {preloaderProgres}%"></div>
+    </div>
+  </div>
+</div>
+
+<!-- =========================================================================
+     FLOATING GLASS PILL NAVBAR (5 HALAMAN SELARAS + KONTROL GLOBAL)
+     ========================================================================= -->
+<header class="top-nav">
+  <button
+    type="button"
+    class="brand-mark"
+    onclick={() => pindahHalaman('beranda')}
+    data-testid="nav-brand-beranda"
+  >
+    <span class="brand-dot" aria-hidden="true"></span>
+    <span>KELIR</span>
+    <span class="brand-aksara" lang="jv">ꦏꦼꦭꦶꦂ</span>
+  </button>
+
+  <nav class="nav-links" aria-label="Navigasi Halaman Utama">
+    {#each DAFTAR_HALAMAN as hal}
+      <button
+        type="button"
+        class="nav-page-tab"
+        class:is-active={halamanAktif === hal.id}
+        aria-current={halamanAktif === hal.id ? 'page' : undefined}
+        onclick={() => pindahHalaman(hal.id)}
+        data-testid="page-tab-{hal.id}"
+      >
+        <span class="nav-page-num">{hal.nomor}</span>
+        <span>{hal.label}</span>
+      </button>
+    {/each}
+  </nav>
+
+  <div class="nav-controls">
+    <button
+      type="button"
+      class="util-pill"
+      class:is-active={audioAktif}
+      onclick={toggleAudio}
+      data-testid="toggle-audio"
+      aria-pressed={audioAktif}
+    >
+      {audioAktif ? 'Suara Aktif' : 'Suara'}
     </button>
 
-    <nav class="nav-utama" aria-label="Navigasi bab pembelajaran budaya">
-      <button
-        type="button"
-        class="tombol-nav"
-        data-testid="nav-pintu"
-        aria-current={layarAktif === 'pintu' ? 'page' : undefined}
-        onclick={() => pindahLayar('pintu')}
-      >
-        <span class="nomor-tab">Bab I</span> Beranda
-      </button>
-      <button
-        type="button"
-        class="tombol-nav"
-        data-testid="nav-rak"
-        aria-current={layarAktif === 'rak' ? 'page' : undefined}
-        onclick={() => pindahLayar('rak')}
-      >
-        <span class="nomor-tab">Bab II</span> Ensiklopedia Budaya
-      </button>
-      <button
-        type="button"
-        class="tombol-nav"
-        data-testid="nav-pegang"
-        aria-current={layarAktif === 'pegang' ? 'page' : undefined}
-        onclick={() => pindahLayar('pegang')}
-      >
-        <span class="nomor-tab">Bab III</span> Studio Anatomi 3D
-      </button>
-      <button
-        type="button"
-        class="tombol-nav"
-        data-testid="nav-panggung"
-        aria-current={layarAktif === 'panggung' ? 'page' : undefined}
-        onclick={() => pindahLayar('panggung')}
-      >
-        <span class="nomor-tab">Bab IV</span> Kisah Pakeliran
-      </button>
-      <button
-        type="button"
-        class="tombol-nav"
-        data-testid="nav-sumber"
-        aria-current={layarAktif === 'sumber' ? 'page' : undefined}
-        onclick={() => pindahLayar('sumber')}
-      >
-        <span class="nomor-tab">Bab V</span> Aksara &amp; Pustaka
-      </button>
-    </nav>
+    <button
+      type="button"
+      class="util-pill"
+      class:is-active={statusKamera === 'aktif'}
+      onclick={toggleKameraTangan}
+      data-testid="toggle-kamera"
+    >
+      {statusKamera === 'aktif' ? 'Kamera Hidup' : 'Gestur 21-Titik'}
+    </button>
 
-    <div class="kontrol-kanan" role="group" aria-label="Bahasa dan suasana ruang baca">
+    <div class="lang-group" role="group" aria-label="Pilih Bahasa Tampilan">
       <button
         type="button"
-        class="tombol-bahasa"
+        class="lang-btn"
+        class:is-active={bahasa === 'id'}
+        onclick={() => (bahasa = 'id')}
         data-testid="lang-id"
-        aria-pressed={bahasaAktif === 'id'}
-        onclick={() => terapkanBahasa('id')}
       >
         ID
       </button>
       <button
         type="button"
-        class="tombol-bahasa"
-        data-testid="lang-jv"
-        aria-pressed={bahasaAktif === 'jv'}
-        onclick={() => terapkanBahasa('jv')}
+        class="lang-btn"
+        class:is-active={bahasa === 'jw'}
+        onclick={() => (bahasa = 'jw')}
+        data-testid="lang-jw"
       >
-        Krama
+        JW
       </button>
       <button
         type="button"
-        class="tombol-bahasa"
-        data-testid="lang-aksara"
-        aria-pressed={bahasaAktif === 'aksara'}
-        onclick={() => terapkanBahasa('aksara')}
+        class="lang-btn"
+        class:is-active={bahasa === 'aks'}
+        onclick={() => (bahasa = 'aks')}
+        data-testid="lang-aks"
+        title="Mode Aksara Jawa"
       >
-        <span lang="jv">ꦲꦤꦕꦫꦏ</span>
-      </button>
-      <button
-        type="button"
-        class="tombol"
-        data-testid="toggle-tema"
-        onclick={() => terapkanTema(temaAktif === 'malam' ? 'siang' : 'malam')}
-      >
-        Suasana: {temaAktif === 'malam' ? 'Galeri Keraton' : 'Naskah Lontar'}
+        AKS
       </button>
     </div>
-  </div>
 
-  <!-- Bilah progres belajar antarbab yang dianimasikan dengan GSAP -->
-  <div class="bar-progres-baca" aria-hidden="true">
-    <div class="bar-progres-isi" bind:this={barProgresEl}></div>
+    <button
+      type="button"
+      class="util-pill"
+      onclick={toggleTema}
+      data-testid="toggle-tema"
+      aria-label="Ganti Tema Malam atau Terang"
+    >
+      {tema === 'malam' ? 'Malam' : 'Terang'}
+    </button>
+
+    <button
+      type="button"
+      class="nav-cta-white"
+      onclick={() => pindahHalaman('twin')}
+      data-testid="cta-nav-twin"
+    >
+      Bedah 3D
+    </button>
   </div>
 </header>
 
-<main id="konten-utama" class="wadah-utama" bind:this={wadahLayarEl}>
-  <section class="pita-status" aria-label="Status kendali belajar, efek suara budaya, dan rujukan">
-    <div class="label-status" data-testid="status-kendali">
-      {#if statusKamera === 'aktif'}
-        <span class="penanda-status">KAMERA TANGAN AKTIF</span>
-        <span>
-          Tangan: {infoTangan.jumlahTangan} · Gestur: {infoTangan.gesturAktif} ({DESKRIPSI_GESTUR[
-            infoTangan.gesturAktif
-          ]})
-        </span>
-      {:else if statusKamera === 'meminta-izin'}
-        <span class="penanda-draf">MEMUAT KAMERA</span>
-        <span>{pesanKamera}</span>
-      {:else if statusKamera === 'ditolak' || statusKamera === 'galat'}
-        <span class="penanda-draf" data-testid="badge-fallback-kamera">MODE MANUAL AKTIF</span>
-        <span>{pesanKamera}</span>
-      {:else}
-        <span class="penanda-status">PANDUAN BELAJAR &amp; AUDIO BUDAYA</span>
-        <span>
-          {pesanKamera ??
-            'Putar objek 3D, jalankan simulasi fisik 3D, ketuk bilah gamelan, dan dengarkan akustik budaya Jawa.'}
-        </span>
-      {/if}
-    </div>
+<!-- Bar Navigasi Halaman Kompak untuk Layar Mobile/Tablet -->
+<nav class="mobile-page-dock" aria-label="Pindah Halaman Cepat">
+  {#each DAFTAR_HALAMAN as hal}
+    <button
+      type="button"
+      class="mobile-page-btn"
+      class:is-active={halamanAktif === hal.id}
+      onclick={() => pindahHalaman(hal.id)}
+    >
+      <span>{hal.nomor}</span>
+      <span>{hal.label}</span>
+    </button>
+  {/each}
+</nav>
 
-    <div class="panel-kamera-kecil">
-      {#if bahasaAktif !== 'id'}
-        <span class="penanda-draf" data-testid="status-tinjauan-jawa">
-          Teks Jawa: Draf (Aksara dihitung berbasis aturan)
-        </span>
-      {:else}
-        <span class="penanda-status">TERVERIFIKASI S1..S7</span>
-      {/if}
-
-      <button
-        type="button"
-        class={suaraBudayaAktif ? 'tombol tombol-utama' : 'tombol'}
-        data-testid="toggle-suara-budaya"
-        aria-pressed={suaraBudayaAktif}
-        onclick={toggleSuaraBudaya}
-      >
-        Suara Budaya: {suaraBudayaAktif ? 'Aktif' : 'Senyap'}
-      </button>
-
-      <button
-        type="button"
-        class={gendingPendopoAktif ? 'tombol tombol-utama' : 'tombol'}
-        data-testid="toggle-gending-pendopo"
-        aria-pressed={gendingPendopoAktif}
-        onclick={toggleGendingPendopo}
-      >
-        Gending Pendopo: {gendingPendopoAktif ? 'Hidup' : 'Mati'}
-      </button>
-
-      <button
-        type="button"
-        class="tombol"
-        data-testid="tombol-gong-ageng"
-        onclick={() => audioBudaya.bunyikanGongAgeng(0.32)}
-      >
-        Bunyikan Gong Ageng
-      </button>
-
-      {#if statusKamera === 'aktif'}
-        <button
-          type="button"
-          class="tombol"
-          data-testid="tombol-matikan-kamera"
-          onclick={matikanKamera}
-        >
-          Matikan Kamera
-        </button>
-      {:else}
-        <button
-          type="button"
-          class="tombol"
-          data-testid="tombol-aktifkan-kamera"
-          onclick={aktifkanKamera}
-        >
-          Kemudi Gestur Tangan (Opsional)
-        </button>
-      {/if}
-    </div>
-  </section>
-
-  {#if layarAktif === 'pintu'}
-    {@const kawruhHero = KAWRUH_FILOSOFI[bendaHeroAktif.id]}
-    <section class="panggung-pintu" aria-labelledby="judul-pintu" data-testid="layar-pintu">
-      <div class="aksara-latar-air" lang="jv" aria-hidden="true">
-        ꦏꦮruhꦧꦸꦢꦪꦗꦮꦶ
-      </div>
-
-      <div class="grid-pintu">
-        <div class="anim-masuk">
-          <p class="kicker-editorial">
-            Bab I · Ruang Belajar Budaya Nusantara · Yogyakarta &amp; Jawa Tengah
-          </p>
-
-          <h1 id="judul-pintu">
-            <span class="baris-judul-reveal">
-              {#if bahasaAktif === 'aksara'}
-                <span class="teks-aksara" lang="jv">
-                  {latinToAksara('kelir kawruh warisan budaya jawi')}
-                </span>
-              {:else if bahasaAktif === 'jv'}
-                Kelir: Ngudi Kawruh <span class="sorot-garis-bawah">Warisan Budaya Jawi</span> saking Tosan Aji, Gamelan, Batik, Joglo, dumugi Ringgit
-              {:else}
-                Pelajari Filosofi dan Anatomi <span class="sorot-garis-bawah">Warisan Budaya Jawa</span> lewat Eksibisi 3D Hidup
-              {/if}
-            </span>
-          </h1>
-
-          <!-- Ornamen Pembatas Ukir Jawa yang digambar oleh GSAP -->
-          <div class="pembatas-ornamen" aria-hidden="true">
-            <svg width="160" height="22" viewBox="0 0 160 22" fill="none">
-              <path
-                class="gsap-jalur-ukir"
-                d="M2 11 C28 2, 42 20, 68 11 C92 2, 112 20, 158 11"
-                stroke="#9E2E17"
-                stroke-width="2.2"
-                stroke-linecap="round"
-              />
-              <circle cx="68" cy="11" r="3.5" fill="#CFA048" />
-            </svg>
-            <div class="garis-ornamen"></div>
-          </div>
-
-          <p>
-            <strong>Kelir</strong> dirancang sebagai ruang belajar budaya interaktif bagi pelajar
-            dan mahasiswa. Alih-alih hanya membaca teks buku atau melihat foto datar di balik kaca
-            museum, Anda dapat mengamati dan menggerakkan mekanisme tiga dimensi dari lima mahakarya
-            peradaban Jawa: <strong>Tosan Aji (Keris Luk 5)</strong>,
-            <strong>Karawitan (Saron Gamelan)</strong>, <strong>Wastra (Batik Tulis &amp; Canting)</strong>,
-            <strong>Arsitektur Tahan Gempa (Pendopo Joglo)</strong>, serta
-            <strong>Pakeliran (Wayang &amp; Gunungan)</strong>.
-          </p>
-
-          <!-- Jendela Pengetahuan Filosofis (Kawruh Budaya) yang berubah mengikuti objek 3D yang dipilih -->
-          <div class="kotak-kawruh-budaya">
-            <div class="judul-kawruh">
-              <span>Kawruh Budaya · { kawruhHero.istilahJawa }</span>
-              <span lang="jv" class="teks-aksara" style="font-size: 0.95rem;">
-                {kawruhHero.aksaraJawa}
-              </span>
-            </div>
-            <p style="margin: 0; font-size: 0.92rem;">
-              {kawruhHero.intiPendidikan}
-            </p>
-          </div>
-
-          <div class="baris-aksi-pintu">
-            <button
-              type="button"
-              class="tombol tombol-utama"
-              data-testid="cta-masuk-manual"
-              onclick={masukTanpaKamera}
-            >
-              Mulai Jelajahi Ensiklopedia Budaya →
-            </button>
-            <button
-              type="button"
-              class="tombol"
-              data-testid="cta-masuk-kamera"
-              onclick={masukDenganKamera}
-            >
-              Mulai dengan Gestur Tangan
-            </button>
-            <button
-              type="button"
-              class="tombol"
-              data-testid="cta-lihat-sumber-pintu"
-              onclick={() => pindahLayar('sumber')}
-            >
-              Belajar 20 Aksara Jawa &amp; Pustaka
-            </button>
-          </div>
+<main class="page-stage-shell" data-active-page={halamanAktif}>
+  {#if halamanAktif !== 'beranda'}
+    <!-- Header Status Halaman Selaras untuk Halaman 02..05 -->
+    <div class="subpage-status-strip">
+      <div class="subpage-status-inner">
+        <div class="subpage-breadcrumb">
+          <button type="button" class="breadcrumb-home" onclick={() => pindahHalaman('beranda')}>
+            01 BERANDA
+          </button>
+          <span aria-hidden="true">/</span>
+          <span class="breadcrumb-current">
+            HALAMAN {infoHalamanAktif.nomor} DARI 05 · {infoHalamanAktif.label.toUpperCase()}
+          </span>
+          <span class="breadcrumb-aksara" lang="jv">{infoHalamanAktif.aksara}</span>
         </div>
 
-        <!-- Vitrin Museum 3D Interaktif Langsung di Beranda -->
-        <div
-          class="kotak-siluet-pintu anim-masuk"
-          aria-label="Vitrin museum 3D interaktif warisan budaya Jawa"
-        >
-          <div class="hud-atas-3d">
-            <span>VITRIN MUSEUM 3D · SERET UNTUK MEMUTAR</span>
-            <span>{bendaHeroAktif.kategori.toUpperCase()}</span>
-          </div>
-
-          <div
-            class="kanvas-hero-pintu"
-            bind:this={kanvasPintuEl}
-            role="region"
-            aria-label={`Vitrin 3D ${bendaHeroAktif.nama.id}`}
-          ></div>
-
-          {#if !webglPintuTersedia}
-            <div style="padding: 1rem;">
-              <p style="margin: 0; font-size: 0.88rem;">
-                Vitrin 3D siap dijalankan. Pilih salah satu warisan budaya di bawah untuk mempelajari
-                anatomi dan filosofinya.
-              </p>
-            </div>
-          {/if}
-
-          <div class="hud-bawah-3d" role="group" aria-label="Pilih warisan budaya pada vitrin 3D">
-            <div style="display: flex; flex-wrap: wrap; gap: 0.35rem;">
-              <button
-                type="button"
-                class="tombol-hud"
-                aria-pressed={bendaHeroId === 'keris'}
-                onclick={() => gantiBendaHero('keris')}
-              >
-                I. Keris
-              </button>
-              <button
-                type="button"
-                class="tombol-hud"
-                aria-pressed={bendaHeroId === 'saron'}
-                onclick={() => gantiBendaHero('saron')}
-              >
-                II. Saron
-              </button>
-              <button
-                type="button"
-                class="tombol-hud"
-                aria-pressed={bendaHeroId === 'batik'}
-                onclick={() => gantiBendaHero('batik')}
-              >
-                III. Batik
-              </button>
-              <button
-                type="button"
-                class="tombol-hud"
-                aria-pressed={bendaHeroId === 'joglo'}
-                onclick={() => gantiBendaHero('joglo')}
-              >
-                IV. Joglo
-              </button>
-              <button
-                type="button"
-                class="tombol-hud"
-                aria-pressed={bendaHeroId === 'wayang'}
-                onclick={() => gantiBendaHero('wayang')}
-              >
-                V. Wayang
-              </button>
-            </div>
-
-            <div style="display: flex; flex-wrap: wrap; gap: 0.35rem;">
-              <button
-                type="button"
-                class="tombol-hud"
-                data-testid="hero-aksi-3d"
-                aria-pressed={aksi3DPintuAktif}
-                onclick={toggleAksi3DPintu}
-              >
-                {bendaHeroAktif.labelAksi3D}
-              </button>
-              <button
-                type="button"
-                class="tombol-hud"
-                data-testid="hero-efek-3d"
-                onclick={picuEfek3DPintu}
-              >
-                {LABEL_EFEK_KHUSUS_3D[bendaHeroAktif.id]}
-              </button>
-              <button
-                type="button"
-                class="tombol-hud"
-                onclick={() => pilihBenda(bendaHeroId, true)}
-              >
-                Pelajari Anatomi
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Seksi Terpisah I: Matriks Indeks 01..05 Sejarah & Sains Benda Budaya (gaya ZEGGO) -->
-      <div class="seksi-terpisah" aria-label="Matriks indeks 5 ranah budaya Nusantara">
-        <div
-          style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 0.75rem; margin-bottom: 1rem;"
-        >
-          <div>
-            <span class="mono-kecil teks-redup">
-              INDEKS ARSITEKTUR BUDAYA 01..05 · KLIK UNTUK PRATINJAU 3D ATAU BUKA ENSIKLOPEDIA
-            </span>
-            <h2 style="margin-top: 0.25rem; margin-bottom: 0;">
-              Lima Pilar Warisan Budaya &amp; Sejarah Sains Nusantara
-            </h2>
-          </div>
+        <div class="subpage-quick-switch">
           <button
             type="button"
-            class="tombol"
-            onclick={() => pindahLayar('rak')}
+            class="util-pill"
+            onclick={() => pindahHalaman(halamanSebelumnya.id)}
           >
-            Buka Katalog Lengkap 01..05 →
+            &#8592; {halamanSebelumnya.nomor} {halamanSebelumnya.label}
+          </button>
+          <button
+            type="button"
+            class="util-pill"
+            onclick={() => pindahHalaman(halamanBerikutnya.id)}
+          >
+            {halamanBerikutnya.nomor} {halamanBerikutnya.label} &#8594;
           </button>
         </div>
+      </div>
+    </div>
+  {/if}
 
-        <div class="matriks-zeggo-grid">
-          {#each DAFTAR_BENDA as b (b.id)}
-            {@const kronik = KRONIK_SEJARAH_BUDAYA[b.id]}
-            <div class="kartu-matriks-zeggo anim-masuk">
-              <div>
-                <div class="angka-matriks-zeggo">{kronik.nomorIndeks}</div>
-                <span class="mono-kecil teks-redup">{b.kategori}</span>
-                <div class="judul-indeks-kurikulum" style="margin-top: 0.2rem;">
-                  {b.nama.id}
-                </div>
-                <p style="font-size: 0.82rem; margin: 0.35rem 0 0 0;" class="teks-redup">
-                  {kronik.eraSejarah}
-                </p>
-              </div>
-              <div style="display: flex; flex-wrap: wrap; gap: 0.35rem; margin-top: 0.65rem;">
-                <button
-                  type="button"
-                  class={bendaHeroId === b.id ? 'tombol tombol-utama' : 'tombol'}
-                  style="font-size: 0.78rem; padding: 0.32rem 0.6rem; min-height: 36px;"
-                  onclick={() => gantiBendaHero(b.id)}
-                >
-                  Tampilkan di Vitrin
-                </button>
-                <button
-                  type="button"
-                  class="tombol"
-                  style="font-size: 0.78rem; padding: 0.32rem 0.6rem; min-height: 36px;"
-                  onclick={() => pilihBenda(b.id, true)}
-                >
-                  Bedah 3D →
-                </button>
-              </div>
-            </div>
+  <!-- =======================================================================
+       HALAMAN 01: BERANDA, DIORAMA PENDOPO 3D, KRONIK 01-05 & ETALASE SPASIAL
+       ======================================================================= -->
+  {#if halamanAktif === 'beranda'}
+    <section id="pendopo" class="diorama-master-band" aria-label="Diorama Pendopo Budaya Jawa 3D">
+      <div class="diorama-sticky-stage">
+        <div class="diorama-webgl-host" use:mountDioramaStage aria-hidden="true"></div>
+        <div class="diorama-scrim"></div>
+
+        <!-- Pin Callout 3D Terproyeksi Langsung ke Bangunan Diorama -->
+        <div class="diorama-pins-layer">
+          {#each dioramaPins as pin}
+            {@const info = DAFTAR_BENDA.find((b) => b.id === pin.bendaId)}
+            {#if info && pin.terlihat}
+              <button
+                type="button"
+                class="diorama-pin"
+                class:is-selected={bendaSorotDiorama === pin.bendaId}
+                style="left: {pin.x}px; top: {pin.y}px;"
+                onmouseenter={() => {
+                  bendaSorotDiorama = pin.bendaId;
+                  dioramaStage?.sorotBangunan(pin.bendaId);
+                }}
+                onmouseleave={() => {
+                  bendaSorotDiorama = null;
+                  dioramaStage?.sorotBangunan(null);
+                }}
+                onclick={() => pilihPusaka(pin.bendaId, true)}
+              >
+                <span class="pin-dot" aria-hidden="true"></span>
+                <span>{info.dioramaLabel}</span>
+              </button>
+            {/if}
           {/each}
         </div>
       </div>
 
-      <!-- Seksi Terpisah II: Indeks 4 Tahap Kurikulum Pembelajaran Budaya -->
-      <div class="seksi-terpisah">
-        <div class="indeks-kurikulum-baris" style="margin-top: 0;">
-          <div class="item-indeks-kurikulum anim-masuk">
-            <span class="mono-kecil">TAHAP I · ENSIKLOPEDIA WARISAN</span>
-            <div class="judul-indeks-kurikulum">5 Ranah Budaya</div>
-            <p style="margin: 0; font-size: 0.88rem;">
-              Mempelajari keterkaitan antara metalurgi <em>Tosan Aji</em>, akustik <em>Karawitan</em>,
-              kimia rintang warna <em>Batik Tulis</em>, struktur <em>Joglo</em>, dan <em>Wayang</em>.
-            </p>
-          </div>
+      <!-- Hero Headline & CTA -->
+      <div class="hero-overlay-copy" data-scrolly-idx="-1">
+        <div class="hero-text-col">
+          <span class="eyebrow-mono">
+            <span class="live-dot" aria-hidden="true"></span>
+            ARSIP SPASIAL WARISAN NUSANTARA · 5 HALAMAN · S1–S7
+          </span>
 
-          <div class="item-indeks-kurikulum anim-masuk">
-            <span class="mono-kecil">TAHAP II · BEDAH ANATOMI 3D</span>
-            <div class="judul-indeks-kurikulum">20 Bagian Benda</div>
-            <p style="margin: 0; font-size: 0.88rem;">
-              Mengamati fungsi tiap bagian secara langsung: mencabut keris dari warangka, menggerakkan
-              canting, hingga membedah konstruksi <em>Tumpang Sari</em> Joglo.
-            </p>
-          </div>
+          <h1 class="hero-h1">
+            {teksSesuaiBahasa(
+              'Menembus ke dalam jiwa pusaka.',
+              'Nlusuri jeroaning pusaka agung.',
+            )}
+          </h1>
 
-          <div class="item-indeks-kurikulum anim-masuk">
-            <span class="mono-kecil">TAHAP III · SENI PERTUNJUKAN</span>
-            <div class="judul-indeks-kurikulum">4 Babak Epos</div>
-            <p style="margin: 0; font-size: 0.88rem;">
-              Memahami struktur dramatik <em>Pakeliran</em> lewat episode Ramayana
-              <em>Kijang Kencana</em> dengan gerak sendi Sri Rama dan Kidang Kencana 3D.
-            </p>
-          </div>
+          <p class="hero-lead">
+            {teksSesuaiBahasa(
+              'Kelir memetakan keris, gamelan saron, wastra batik, arsitektur joglo, dan panggung wayang kulit ke dalam 5 ruang halaman tematik WebGL dengan bedah anatomi CAD dan gestur tangan lokal.',
+              'Kelir nggambarake dhuwung, saron, sinjang batik, pendhapa joglo, saha pakeliran wayang ing wujud diorama WebGL interaktif.',
+            )}
+          </p>
 
-          <div class="item-indeks-kurikulum anim-masuk">
-            <span class="mono-kecil">TAHAP IV · LITERASI AKSARA JAWA</span>
-            <div class="judul-indeks-kurikulum">20 Carakan Dasar</div>
-            <p style="margin: 0; font-size: 0.88rem;">
-              Berlatih membaca dan mengalihaksarakan <em>Dentawyanjana (Ha-Na-Ca-Ra-Ka)</em> beserta
-              filosofi hidup Jawa dan daftar pustaka UNESCO.
-            </p>
-          </div>
-        </div>
-      </div>
-    </section>
-  {:else if layarAktif === 'rak'}
-    <section aria-labelledby="judul-rak" data-testid="layar-rak">
-      <div class="header-bab-editorial anim-masuk">
-        <p class="mono-kecil teks-redup" style="margin-bottom: 0.25rem;">
-          BAB II · KATALOG ARSITEKTUR SEJARAH &amp; SAINS BUDAYA NUSANTARA (01..05)
-        </p>
-        <h1 id="judul-rak">
-          <span class="baris-judul-reveal">Lima Ranah Warisan Budaya Jawa</span>
-        </h1>
-        <div class="pembatas-ornamen" aria-hidden="true">
-          <svg width="140" height="18" viewBox="0 0 140 18" fill="none">
-            <path
-              class="gsap-jalur-ukir"
-              d="M2 9 C30 1, 50 17, 78 9 C102 2, 118 16, 138 9"
-              stroke="#CFA048"
-              stroke-width="2"
-            />
-          </svg>
-          <div class="garis-ornamen"></div>
-        </div>
-        <p class="teks-redup" style="margin-bottom: 1.15rem;">
-          Setiap warisan budaya disusun dalam seksi terpisah bernomor <strong>01</strong> hingga
-          <strong>05</strong>. Bagian kiri menampilkan identitas kuratorial dan akses langsung ke
-          Studio 3D, sedangkan bagian kanan memisahkan <strong>spesifikasi sains tradisional</strong>,
-          <strong>linimasa evolusi sejarah</strong>, serta <strong>peta anatomi benda</strong>.
-        </p>
-
-        <!-- Matriks Lompat Cepat 01..05 (Gaya ZEGGO) -->
-        <div class="matriks-zeggo-grid" role="navigation" aria-label="Lompat cepat ke seksi 01 sampai 05">
-          {#each DAFTAR_BENDA as b (b.id)}
-            {@const kronikRingkas = KRONIK_SEJARAH_BUDAYA[b.id]}
+          <div class="hero-actions">
             <button
               type="button"
-              class="kartu-matriks-zeggo"
-              onclick={() => lompatKeSeksiZeggo(b.id)}
+              class="pill-cta-white"
+              onclick={() => pindahHalaman('twin')}
             >
-              <div>
-                <div class="angka-matriks-zeggo">{kronikRingkas.nomorIndeks}</div>
-                <span class="mono-kecil teks-redup">{b.kategori}</span>
-                <div class="judul-indeks-kurikulum" style="margin-top: 0.15rem;">
-                  {b.nama.id}
-                </div>
-              </div>
-              <span class="mono-kecil" style="color: var(--aksen-terakota); margin-top: 0.5rem;">
-                Lihat Seksi {kronikRingkas.nomorIndeks} ↓
-              </span>
+              {teksSesuaiBahasa('Buka Studio Digital Twin 3D →', 'Bukak Studio Digital Twin 3D →')}
             </button>
-          {/each}
+            <button
+              type="button"
+              class="pill-cta-outline"
+              onclick={() => bukaModalSuluk(0)}
+            >
+              {teksSesuaiBahasa('Putar Suluk ▶', 'Puter Suluk ▶')}
+            </button>
+          </div>
+
+          <div class="hero-spec-strip" aria-label="Ringkasan Koleksi Kelir">
+            <div>
+              <strong>5</strong>
+              <span>Pusaka Utama</span>
+            </div>
+            <div>
+              <strong>16</strong>
+              <span>Titik Anatomi 3D</span>
+            </div>
+            <div>
+              <strong>S1–S7</strong>
+              <span>Pustaka Terkurasi</span>
+            </div>
+          </div>
+
+          <div class="hero-micro-meta">
+            UNESCO ICH · Museum Sonobudoyo · Kemdikbud RI · Perpusnas RI
+          </div>
+        </div>
+
+        <div class="hero-live-pill">
+          <span class="live-dot" aria-hidden="true"></span>
+          <span>Klik penanda diorama untuk Bedah 3D, atau gulir untuk menelusuri 5 kronik</span>
         </div>
       </div>
 
-      <div class="tata-rak">
-        {#each DAFTAR_BENDA as benda, i (benda.id)}
-          {@const namaTerjemah = ambilTeks(benda.nama, bahasaAktif)}
-          {@const subTerjemah = ambilTeks(benda.subjudul, bahasaAktif)}
-          {@const ringkasTerjemah = ambilTeks(benda.ringkasan, bahasaAktif)}
-          {@const filosofi = KAWRUH_FILOSOFI[benda.id]}
-          {@const kronik = KRONIK_SEJARAH_BUDAYA[benda.id]}
+      <!-- Scrollytelling 5 Bab dengan Angka Piksel 01..05 & Kartu HUD Kaca -->
+      <div id="scrolly" class="scrolly-chapters">
+        {#each KRONIK_SEJARAH_BUDAYA as kronik, idx}
           <article
-            id={`seksi-zeggo-${benda.id}`}
-            class={i === 0
-              ? 'panel-pusaka panel-pusaka-utama item-rak-utama anim-masuk gsap-scroll-seksi'
-              : 'panel-pusaka anim-masuk gsap-scroll-seksi'}
-            data-testid={`kartu-pusaka-${benda.id}`}
+            id="kronik-{kronik.nomor}"
+            class="scrolly-step"
+            class:is-active={scrollyIndeksAktif === idx}
+            data-scrolly-idx={idx}
           >
-            <!-- Kolom Kiri Sticky (Gaya ZEGGO Index 01..05) -->
-            <div class="kolom-kiri-zeggo">
-              <div class="angka-besar-zeggo" aria-hidden="true">{kronik.nomorIndeks}</div>
-
-              <div class="meta-unesco" style="margin-top: 0.45rem;">
-                <span>BAB II.{i + 1} · {benda.kategori}</span>
-                <span>UNESCO {benda.tahunUnesco} ({benda.berkasUnesco})</span>
-              </div>
-
-              <h2
-                class={bahasaAktif === 'aksara' ? 'teks-aksara' : ''}
-                style="margin-top: 0.65rem; margin-bottom: 0.35rem;"
-              >
-                {namaTerjemah.utama}
+            <div class="scrolly-narrative">
+              <PixelNumber value={kronik.nomor} />
+              <h2 class="scrolly-step-title">
+                {teksSesuaiBahasa(kronik.judul.id, kronik.judul.jw)}
               </h2>
-              {#if namaTerjemah.pendampingLatin}
-                <p class="teks-redup" style="margin-bottom: 0.35rem; font-size: 0.9rem;">
-                  {namaTerjemah.pendampingLatin}
-                </p>
-              {/if}
-
-              <div style="margin: 0.65rem 0; display: grid; gap: 0.35rem; font-size: 0.85rem;">
-                <div>
-                  <span class="mono-kecil teks-redup">RENTANG SEJARAH:</span>
-                  <div><strong>{kronik.eraSejarah}</strong></div>
-                </div>
-                <div>
-                  <span class="mono-kecil teks-redup">SENTRA BUDAYA:</span>
-                  <div class="teks-redup">{kronik.asalDaerah}</div>
-                </div>
-              </div>
-
-              <div style="display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.85rem;">
-                <button
-                  type="button"
-                  class="tombol tombol-utama"
-                  data-testid={`buka-pegang-${benda.id}`}
-                  onclick={() => pilihBenda(benda.id, true)}
-                >
-                  Pelajari {benda.nama.id} di Studio 3D →
-                </button>
-                <button
-                  type="button"
-                  class="tombol"
-                  onclick={() => pindahLayar('panggung')}
-                >
-                  Buka Kisah Pakeliran
-                </button>
+              <p class="scrolly-step-body" style="font-weight: 500; color: var(--text-primary);">
+                {teksSesuaiBahasa(kronik.sorotan.id, kronik.sorotan.jw)}
+              </p>
+              <p class="scrolly-step-body">
+                {teksSesuaiBahasa(kronik.narasiMendalam.id, kronik.narasiMendalam.jw)}
+              </p>
+              <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-top: 14px;">
+                {#each kronik.sumber as ks}
+                  <span class="source-badge">{ks}</span>
+                {/each}
               </div>
             </div>
 
-            <!-- Kolom Kanan Terpisah: 3 Blok Arsitektur Pengetahuan (Sains, Linimasa Sejarah, Anatomi) -->
-            <div class="kolom-kanan-zeggo">
-              <!-- Blok Terpisah 1: Ikhtisar & Spesifikasi Sains Tradisional -->
-              <div class="blok-sejarah-terpisah">
-                <div class="kepala-pane-townhouse">
-                  <span>{kronik.nomorIndeks}.A · IKHTISAR &amp; SAINS KRIYA</span>
-                  <span>MATERIAL 3D PBR</span>
-                </div>
-                <p><strong>{subTerjemah.utama}</strong></p>
-                <p>{ringkasTerjemah.utama}</p>
-                <p class="teks-redup" style="font-size: 0.92rem;">
-                  <strong>Intisari Sains Tradisional:</strong> {kronik.intisariSains}
-                </p>
-
-                <div class="grid-metrik-zeggo" aria-label={`Spesifikasi teknis ${benda.nama.id}`}>
-                  {#each kronik.metrik as m (m.label)}
-                    <div class="kartu-metrik-zeggo">
-                      <span class="label-metrik-zeggo">{m.label}</span>
-                      <div class="nilai-metrik-zeggo">{m.nilai}</div>
-                      <p style="font-size: 0.8rem; margin: 0.25rem 0 0 0;" class="teks-redup">
-                        {m.keterangan}
-                      </p>
-                    </div>
-                  {/each}
-                </div>
+            <div class="scrolly-hud-card">
+              <div class="hud-header">
+                <span>TELEMETRI ANATOMI 3D</span>
+                <span>{kronik.kodeArsip}</span>
               </div>
 
-              <!-- Blok Terpisah 2: Linimasa Evolusi Sejarah (3 Periode) -->
-              <div class="blok-sejarah-terpisah">
-                <div class="kepala-pane-townhouse">
-                  <span>{kronik.nomorIndeks}.B · LINIMASA EVOLUSI SEJARAH</span>
-                  <span>3 PERIODE PERADABAN</span>
+              {#each kronik.metrik as m}
+                <div class="hud-metric-row">
+                  <div class="hud-metric-meta">
+                    <span style="color: var(--text-secondary);">{m.label}</span>
+                    <strong style="font-family: var(--font-mono);">{m.nilai}</strong>
+                  </div>
+                  <div class="hud-bar">
+                    <div class="hud-bar-fill" style="width: {m.persen}%"></div>
+                  </div>
                 </div>
-                <div class="linimasa-sejarah-grid">
-                  {#each kronik.linimasaSejarah as tahap (tahap.periode)}
-                    <div class="item-linimasa-sejarah">
-                      <span class="periode-linimasa">{tahap.periode}</span>
-                      <div style="font-weight: 700; margin: 0.2rem 0; color: var(--teks-utama);">
-                        {tahap.judul}
-                      </div>
-                      <p style="font-size: 0.84rem; margin: 0;" class="teks-redup">
-                        {tahap.uraian}
-                      </p>
-                    </div>
-                  {/each}
-                </div>
-              </div>
+              {/each}
 
-              <!-- Blok Terpisah 3: Filosofi Pendidikan & Peta 4 Titik Anatomi 3D -->
-              <div class="blok-sejarah-terpisah">
-                <div class="kepala-pane-townhouse">
-                  <span>{kronik.nomorIndeks}.C · KAWRUH FILOSOFI &amp; 4 TITIK ANATOMI 3D</span>
-                  <span>RUJUKAN: {benda.sumber.join(', ')}</span>
-                </div>
-
-                <div class="kotak-filosofi-ensiklopedia" style="margin-top: 0;">
-                  <strong>Filosofi Pendidikan ({filosofi.istilahJawa}):</strong>
-                  {filosofi.intiPendidikan}
-                </div>
-
-                <p class="mono-kecil" style="margin-bottom: 0.35rem;">
-                  SIMULASI 3D: {SPEC_MATERIAL_PBR[benda.id]}
-                </p>
-
-                <div class="daftar-chip-anatomi" aria-label="Daftar istilah anatomi budaya">
-                  {#each benda.titikInfo as t, tIdx (t.id)}
-                    <span class="chip-anatomi">
-                      {tIdx + 1}. {t.label.id}
-                    </span>
-                  {/each}
-                </div>
-
-                <p class="teks-redup" style="font-size: 0.88rem; margin-bottom: 0;">
-                  <strong>Konteks budaya:</strong> {benda.peranPanggung} · Rujukan ilmiah:
-                  <strong>{benda.sumber.join(', ')}</strong>
-                </p>
+              <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-top: 16px;">
+                <button
+                  type="button"
+                  class="util-pill"
+                  class:is-active={wireframeDioramaAktif}
+                  onclick={() => {
+                    wireframeDioramaAktif = !wireframeDioramaAktif;
+                    dioramaStage?.aturWireframeMode(wireframeDioramaAktif ? 0.85 : 0.08);
+                  }}
+                >
+                  {wireframeDioramaAktif ? 'Rangka Kawat: Aktif' : 'Rangka Kawat X-Ray'}
+                </button>
+                <button
+                  type="button"
+                  class="nav-cta-white"
+                  onclick={() => pilihPusaka(kronik.bendaId, true)}
+                >
+                  Bedah di Digital Twin &#8594;
+                </button>
               </div>
             </div>
           </article>
         {/each}
       </div>
     </section>
-  {:else if layarAktif === 'pegang'}
-    {@const namaBenda = ambilTeks(bendaAktif.nama, bahasaAktif)}
-    {@const ringkasBenda = ambilTeks(bendaAktif.ringkasan, bahasaAktif)}
-    {@const labelTitik = ambilTeks(titikAktif.label, bahasaAktif)}
-    {@const uraianTitik = ambilTeks(titikAktif.uraian, bahasaAktif)}
-    {@const filosofiAktif = KAWRUH_FILOSOFI[bendaAktif.id]}
-    <section aria-labelledby="judul-pegang" data-testid="layar-pegang">
-      <div class="header-bab-editorial anim-masuk">
-        <div
-          style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 0.75rem;"
-        >
-          <div>
-            <p class="mono-kecil teks-redup" style="margin-bottom: 0.25rem;">
-              BAB III · LABORATORIUM ANATOMI 3D &amp; MEKANISME KRIYA NUSANTARA ({kronikAktif.nomorIndeks})
-            </p>
-            <h1 id="judul-pegang" class={bahasaAktif === 'aksara' ? 'teks-aksara' : ''}>
-              <span class="baris-judul-reveal">{namaBenda.utama}</span>
-            </h1>
-            {#if namaBenda.pendampingLatin}
-              <p class="teks-redup" style="margin-bottom: 0.25rem;">
-                {namaBenda.pendampingLatin}
-              </p>
-            {/if}
-            <p class="teks-redup" style="font-size: 0.9rem; margin: 0;">
-              Gulir kartu bab di kolom kanan atau klik nomor bab <strong>01..05</strong> pada rel di
-              atas kanvas untuk memutar sudut kamera 3D secara otomatis ke setiap bagian anatomis.
-            </p>
-          </div>
 
-          <div
-            style="display: flex; flex-wrap: wrap; gap: 0.45rem;"
-            role="group"
-            aria-label="Pilih warisan budaya di Studio 3D"
-          >
-            {#each DAFTAR_BENDA as b (b.id)}
-              <button
-                type="button"
-                class="tombol"
-                data-testid={`tab-benda-${b.id}`}
-                aria-pressed={bendaIdAktif === b.id}
-                onclick={() => pilihBenda(b.id, false)}
-              >
-                {b.nama.id}
-              </button>
-            {/each}
-          </div>
+    <BerandaWallEtalase
+      {tema}
+      {halamanAktif}
+      {teksSesuaiBahasa}
+      matrixItems={DINDING_MATRIX}
+      {wallTiltX}
+      {wallTiltY}
+      onWallMouseMove={handleWallMouseMove}
+      onWallMouseLeave={() => {
+        wallTiltX = 0;
+        wallTiltY = 0;
+      }}
+      {filterEtalase}
+      onFilterChange={(kunci) => (filterEtalase = kunci)}
+      {itemEtalaseTersaring}
+      daftarHalaman={DAFTAR_HALAMAN}
+      onPilihPusaka={pilihPusaka}
+      onPindahHalaman={(id) => pindahHalaman(id as HalamanId)}
+    />
+  {/if}
+
+  <!-- =======================================================================
+       HALAMAN 02: STUDIO KEMBARAN DIGITAL 3D (CAD & PBR STUDIO)
+       ======================================================================= -->
+  {#if halamanAktif === 'twin'}
+    <section id="digital-twin" class="band-section" aria-label="Studio Kembaran Digital 3D">
+      <div class="band-header">
+        <div>
+          <span class="eyebrow-mono">HALAMAN 02 · DIGITAL TWIN CAD STUDIO · EXPLODED VIEW</span>
+          <h1 class="display-h2">
+            {teksSesuaiBahasa(
+              'Bedah Lapisan Geometris Pusaka',
+              'Nliti Lapisan Geometri Pusaka',
+            )}
+          </h1>
+        </div>
+
+        <div class="artifact-tab-row" role="tablist" aria-label="Pilih Benda Pusaka">
+          {#each DAFTAR_BENDA as b}
+            <button
+              type="button"
+              role="tab"
+              aria-selected={bendaAktifId === b.id}
+              class="tab-chip"
+              class:is-active={bendaAktifId === b.id}
+              onclick={() => pilihPusaka(b.id)}
+              data-testid="tab-{b.id}"
+            >
+              {b.nomorUrut} · {ambilTeks(b.nama, bahasa)}
+            </button>
+          {/each}
         </div>
       </div>
 
-      <div class="tata-pegang">
-        <!-- Kolom Kiri Sticky: Rel Bab (Scene Rail) + Panggung 3D (Gaya Townhouse) -->
-        <div class="kolom-sticky-3d anim-masuk">
-          <nav
-            class="rel-bab-townhouse"
-            aria-label="Rel navigasi bab penceritaan 3D"
-            data-testid="scene-rail"
-          >
-            <div style="display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
-              <span class="mono-kecil teks-redup">
-                REL BAB 3D ({kronikAktif.nomorIndeks}) · KLIK ATAU GULIR CERITA:
-              </span>
-              <button
-                type="button"
-                class="tombol"
-                style="font-size: 0.76rem; padding: 0.28rem 0.6rem; min-height: 34px;"
-                data-testid="scene-next"
-                onclick={() =>
-                  terapkanLangkahScrolly(
-                    (indeksLangkahScrolly + 1) % kronikAktif.langkahScroll3D.length,
-                    true,
-                  )}
-              >
-                Bab Berikutnya →
-              </button>
-            </div>
-
-            <div class="daftar-langkah-rail" role="group" aria-label="Lima bab sudut pandang 3D">
-              {#each kronikAktif.langkahScroll3D as langkah, idx (langkah.nomor)}
-                <button
-                  type="button"
-                  class="tombol-langkah-rail"
-                  data-testid={`langkah-rail-${langkah.nomor}`}
-                  aria-current={indeksLangkahScrolly === idx ? 'step' : undefined}
-                  onclick={() => terapkanLangkahScrolly(idx, true)}
-                >
-                  <span class="nomor-langkah-rail">{langkah.nomor}</span>
-                  <span>{langkah.bab}</span>
-                </button>
+      <div class="twin-workspace">
+        <div class="twin-viewport-card">
+          <div class="twin-canvas-host" use:mountTwinStage>
+            <div class="twin-pins-overlay">
+              {#each twinPins as pin, pIdx}
+                {@const t = bendaAktif.titikInfo.find((item) => item.id === pin.id)}
+                {#if t && pin.terlihat}
+                  <button
+                    type="button"
+                    class="twin-pin"
+                    class:is-active={titikAktifId === t.id}
+                    style="left: {pin.x}px; top: {pin.y}px;"
+                    onclick={() => pilihTitikInfo(t)}
+                    aria-label="Anatomi {ambilTeks(t.judul, bahasa)}"
+                  >
+                    {pIdx + 1}
+                  </button>
+                {/if}
               {/each}
             </div>
-          </nav>
+          </div>
 
-          <div class="bingkai-kanvas-3d">
-            <div class="hud-atas-3d">
-              <span>STUDI 3D: {SPEC_MATERIAL_PBR[bendaAktif.id]}</span>
-              <span>UNESCO {bendaAktif.berkasUnesco}</span>
-            </div>
-
-            <div
-              class="kanvas-viewport"
-              bind:this={kanvasPegangEl}
-              data-testid="kanvas-3d-pegang"
-              role="region"
-              aria-label={`Kanvas 3D ${bendaAktif.nama.id}. Seret untuk memutar atau gunakan tombol kendali di bawah.`}
-            ></div>
-
-            {#if !webglPegangTersedia}
-              <div style="padding: 1rem; background: var(--bg-permukaan);">
-                <p>
-                  Perangkat ini tidak mengaktifkan WebGL. Seluruh titik anatomis dan penjelasan
-                  {bendaAktif.nama.id} tetap dapat dipelajari melalui lembar kerja di samping.
-                </p>
-              </div>
-            {/if}
-
-            {#if bendaAktif.id === 'saron'}
-              <div class="panel-nada-saron" role="group" aria-label="Tabuh 7 bilah saron laras slendro">
-                <span class="mono-kecil">
-                  PRAKTIK KARAWITAN · KETUK 7 WILAH LARAS SLENDRO:
-                </span>
-                <div class="baris-tombol-wilah">
-                  {#each NADA_SARON_SLENDRO as infoNada, idxNada (infoNada.nomor)}
-                    <button
-                      type="button"
-                      class="tombol"
-                      data-testid={`tabuh-wilah-${infoNada.nomor}`}
-                      onclick={() => stagePegang?.tabuhWilahSaron(idxNada)}
-                    >
-                      Wilah {infoNada.nomor} ({infoNada.notasi})
-                    </button>
-                  {/each}
-                </div>
-              </div>
-            {/if}
-
-            <div class="bilah-kendali-3d" role="group" aria-label="Kendali putar, perbesar, dan aksi mekanis model 3D">
-              <div style="display: flex; flex-wrap: wrap; gap: 0.4rem;">
-                <button
-                  type="button"
-                  class={aksi3DPegangAktif ? 'tombol tombol-utama' : 'tombol'}
-                  data-testid="tombol-aksi-3d"
-                  aria-pressed={aksi3DPegangAktif}
-                  onclick={toggleAksi3DPegang}
-                >
-                  {bendaAktif.labelAksi3D}
-                </button>
-                <button
-                  type="button"
-                  class="tombol"
-                  data-testid="tombol-efek-3d"
-                  onclick={picuEfek3DPegang}
-                >
-                  {LABEL_EFEK_KHUSUS_3D[bendaAktif.id]}
-                </button>
-                <button
-                  type="button"
-                  class="tombol"
-                  data-testid="putar-kiri"
-                  onclick={() => stagePegang?.putarManual(-0.35, 0)}
-                >
-                  Putar Kiri
-                </button>
-                <button
-                  type="button"
-                  class="tombol"
-                  data-testid="putar-kanan"
-                  onclick={() => stagePegang?.putarManual(0.35, 0)}
-                >
-                  Putar Kanan
-                </button>
-                <button
-                  type="button"
-                  class="tombol"
-                  data-testid="zoom-dekat"
-                  onclick={() => stagePegang?.ubahZoom(-0.35)}
-                >
-                  Perbesar
-                </button>
-                <button
-                  type="button"
-                  class="tombol"
-                  data-testid="zoom-jauh"
-                  onclick={() => stagePegang?.ubahZoom(0.35)}
-                >
-                  Perkecil
-                </button>
-                <button
-                  type="button"
-                  class="tombol"
-                  data-testid="reset-pandangan"
-                  onclick={() => stagePegang?.resetPandangan()}
-                >
-                  Tengah Semula
-                </button>
-              </div>
-
+          <div class="twin-controls-bar">
+            <div class="mode-switch-group" role="group" aria-label="Mode Render 3D">
               <button
                 type="button"
-                class="tombol tombol-utama"
-                data-testid="ke-panggung-dari-pegang"
-                onclick={() => pindahLayar('panggung')}
+                class="mode-btn"
+                class:is-active={modeVisualTwin === 'pbr'}
+                onclick={() => aturModeVisualTwin('pbr')}
               >
-                Lanjut ke Kisah Pakeliran →
+                PBR Nyata
+              </button>
+              <button
+                type="button"
+                class="mode-btn"
+                class:is-active={modeVisualTwin === 'hibrida'}
+                onclick={() => aturModeVisualTwin('hibrida')}
+              >
+                Hibrida
+              </button>
+              <button
+                type="button"
+                class="mode-btn"
+                class:is-active={modeVisualTwin === 'kawat'}
+                onclick={() => aturModeVisualTwin('kawat')}
+                data-testid="toggle-xray"
+              >
+                Kawat X-Ray CAD
               </button>
             </div>
 
-            <!-- Panel 6 Variasi Gestur Tangan & Simulasi Fisik 3D -->
-            <div
-              style="padding: 0.85rem 1.05rem; border-top: 1px solid var(--garis-batas); background: var(--bg-kartu);"
-              data-testid="panel-panduan-gestur"
-            >
-              <div class="mono-kecil teks-redup" style="margin-bottom: 0.45rem;">
-                6 VARIASI GESTUR TANGAN &amp; EFEK AKUSTIK BUDAYA (DAPAT DIKLIK ATAU PAKAI KAMERA):
-              </div>
-              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 0.45rem;">
-                {#each DAFTAR_PANDUAN_GESTUR as g (g.kode)}
-                  <div
-                    style="padding: 0.5rem 0.65rem; border: 1px solid var(--garis-batas); border-radius: var(--radius-kotak); background: var(--bg-permukaan); font-size: 0.82rem;"
-                  >
-                    <div style="font-weight: 700; color: var(--teks-utama);">
-                      {g.nomor}. {g.judul}
-                    </div>
-                    <div class="teks-redup" style="font-size: 0.78rem; margin-top: 0.15rem;">
-                      {g.uraian}
-                    </div>
-                  </div>
-                {/each}
-              </div>
+            <label class="explode-slider-wrap">
+              <span>LEDAK ANATOMI {Math.round(faktorLedak * 100)}%</span>
+              <input
+                type="range"
+                min="0"
+                max="1"
+                step="0.02"
+                value={faktorLedak}
+                oninput={(e) => {
+                  faktorLedak = Number((e.currentTarget as HTMLInputElement).value);
+                  twinStage?.aturLedakAnatomi(faktorLedak);
+                }}
+                data-testid="slider-ledak"
+              />
+            </label>
+
+            <div style="display: flex; gap: 8px;">
+              <button
+                type="button"
+                class="util-pill"
+                onclick={() => {
+                  twinStage?.picuEfekKhusus3D();
+                  if (!audioAktif) {
+                    audioAktif = true;
+                    audioBudaya.aturAktif(true);
+                  }
+                  picuSuaraBenda(bendaAktif.id);
+                }}
+              >
+                Bunyikan Efek
+              </button>
+              <button
+                type="button"
+                class="util-pill"
+                class:is-active={aksiHidupTwin}
+                onclick={() => {
+                  aksiHidupTwin = twinStage?.toggleAksiHidup() ?? !aksiHidupTwin;
+                }}
+              >
+                {aksiHidupTwin ? 'Putar Otomatis' : 'Jeda Putar'}
+              </button>
             </div>
           </div>
         </div>
 
-        <!-- Kolom Kanan Terpisah: Alur Penceritaan Sejarah, Scrollytelling 3D, Anatomi, & Tanya Jawab (Gaya Townhouse) -->
-        <div class="kolom-cerita-terpisah anim-masuk" data-testid="story">
-          <!-- Pane Terpisah 1: Ikhtisar Sejarah, Spesifikasi Sains, & Linimasa Peradaban -->
-          <div class="pane-cerita-terpisah">
-            <div class="kepala-pane-townhouse">
-              <span>SEJARAH &amp; SAINS KRIYA · {kronikAktif.nomorIndeks}</span>
-              <span>{kronikAktif.eraSejarah}</span>
-            </div>
-
-            <p>{ringkasBenda.utama}</p>
-            <div class="kotak-filosofi-ensiklopedia">
-              <strong>Nilai Filosofis ({filosofiAktif.istilahJawa}):</strong>
-              {filosofiAktif.intiPendidikan}
-            </div>
-
-            {#if ringkasBenda.catatanStatus}
-              <p class="penanda-draf" style="display: inline-block;">
-                {ringkasBenda.catatanStatus}
-              </p>
-            {/if}
-
-            <div class="grid-metrik-zeggo">
-              {#each kronikAktif.metrik as m (m.label)}
-                <div class="kartu-metrik-zeggo">
-                  <span class="label-metrik-zeggo">{m.label}</span>
-                  <div class="nilai-metrik-zeggo">{m.nilai}</div>
-                  <p style="font-size: 0.78rem; margin: 0.2rem 0 0 0;" class="teks-redup">
-                    {m.keterangan}
-                  </p>
-                </div>
-              {/each}
-            </div>
-
-            <div class="linimasa-sejarah-grid">
-              {#each kronikAktif.linimasaSejarah as tahap (tahap.periode)}
-                <div class="item-linimasa-sejarah">
-                  <span class="periode-linimasa">{tahap.periode}</span>
-                  <div style="font-weight: 700; margin: 0.15rem 0;">{tahap.judul}</div>
-                  <p style="font-size: 0.8rem; margin: 0;" class="teks-redup">{tahap.uraian}</p>
-                </div>
-              {/each}
-            </div>
-          </div>
-
-          <!-- Pane Terpisah 2..6: Kartu Bab Scrollytelling 3D (Gaya Townhouse Story Cards) -->
-          {#each kronikAktif.langkahScroll3D as langkah, idx (langkah.nomor)}
-            <article
-              id={`langkah-scrolly-${langkah.nomor}`}
-              class={indeksLangkahScrolly === idx
-                ? 'pane-cerita-terpisah pane-cerita-aktif gsap-langkah-scrolly'
-                : 'pane-cerita-terpisah gsap-langkah-scrolly'}
-              data-testid={`kartu-scrolly-${langkah.nomor}`}
-            >
-              <div class="angka-bab-townhouse" data-testid="chapter-numeral">
-                {langkah.nomor}
-              </div>
-              <div class="kepala-pane-townhouse">
-                <span>BAB SCROLL 3D {langkah.nomor} · {langkah.bab.toUpperCase()}</span>
-                <span>{langkah.tempat}</span>
-              </div>
-              <h2 class="font-display" style="margin-top: 0; font-size: clamp(1.35rem, 2.2vw, 1.85rem);">
-                {langkah.judul}
-              </h2>
-              <p style="margin-bottom: 0.85rem; font-size: 0.94rem;">{langkah.uraian}</p>
-              <div style="display: flex; flex-wrap: wrap; gap: 0.45rem; align-items: center;">
-                <button
-                  type="button"
-                  class={indeksLangkahScrolly === idx ? 'tombol tombol-utama' : 'tombol'}
-                  style="font-size: 0.8rem; padding: 0.35rem 0.7rem; min-height: 38px;"
-                  onclick={() => terapkanLangkahScrolly(idx, false)}
-                >
-                  Arahkan Kamera 3D ke Bab {langkah.nomor}
-                </button>
-                <span class="mono-kecil teks-redup">
-                  Sudut 3D: Y={langkah.rotasiY.toFixed(2)} rad · Zoom={langkah.zoom.toFixed(2)}x
-                </span>
-              </div>
-            </article>
-          {/each}
-
-          <!-- Pane Terpisah 7: Peta Anatomi 3D & Lembar Kerja Titik Aktif -->
-          <div class="pane-cerita-terpisah">
-            <div class="kepala-pane-townhouse">
-              <span>PETA ANATOMI 3D TERPISAH</span>
-              <span>BAGIAN {indeksTitikAktif + 1} DARI {bendaAktif.titikInfo.length}</span>
-            </div>
-
-            <h2 style="font-size: 1.18rem; margin-top: 0;">
-              Peta Anatomi Benda (Bagian {indeksTitikAktif + 1} dari {bendaAktif.titikInfo.length})
+        <aside class="twin-inspector-panel">
+          <div>
+            <div class="eyebrow-mono">{bendaAktif.zonaKode} · {ambilTeks(bendaAktif.asal, bahasa)}</div>
+            <h2 style="margin: 8px 0 4px; font-family: var(--font-display); font-size: 1.75rem;">
+              {teksSesuaiBahasa(bendaAktif.nama.id, bendaAktif.nama.jw)}
             </h2>
-
-            <div class="daftar-titik-info" role="group" aria-label="Titik anatomis benda">
-              {#each bendaAktif.titikInfo as titik, idx (titik.id)}
-                <button
-                  type="button"
-                  class={indeksTitikAktif === idx ? 'tombol tombol-utama' : 'tombol'}
-                  data-testid={`titik-info-${titik.id}`}
-                  aria-pressed={indeksTitikAktif === idx}
-                  onclick={() => pilihTitikInfo(idx)}
-                >
-                  {idx + 1}. {titik.label.id}
-                </button>
-              {/each}
-            </div>
-
-            <article
-              class="kartu-anatomi-fokus"
-              bind:this={kartuTitikEl}
-              data-testid="detail-titik-aktif"
-            >
-              <h3 class={bahasaAktif === 'aksara' ? 'teks-aksara' : ''}>
-                {labelTitik.utama}
-              </h3>
-              {#if labelTitik.pendampingLatin}
-                <p class="teks-redup" style="font-size: 0.88rem; margin-bottom: 0.35rem;">
-                  {labelTitik.pendampingLatin}
-                </p>
-              {/if}
-              <p style="margin-bottom: 0.45rem;" class={bahasaAktif === 'aksara' ? 'teks-aksara' : ''}>
-                {uraianTitik.utama}
-              </p>
-              {#if uraianTitik.pendampingLatin && bahasaAktif === 'aksara'}
-                <p class="teks-redup" style="font-size: 0.88rem;">
-                  Latin: {uraianTitik.pendampingLatin}
-                </p>
-              {/if}
-              <p class="teks-redup" style="font-size: 0.84rem; margin: 0;">
-                Kode sumber: <strong>{titikAktif.sumber.join(', ')}</strong> · Lisensi geometri:
-                <strong>{bendaAktif.lisensiRef}, P1</strong>
-              </p>
-            </article>
+            <p style="margin: 0; font-size: 0.9rem; color: var(--text-secondary); line-height: 1.54;">
+              {teksSesuaiBahasa(bendaAktif.sejarahSingkat.id, bendaAktif.sejarahSingkat.jw)}
+            </p>
           </div>
 
-          <!-- Pane Terpisah 8: Tanya Jawab Guru Budaya -->
-          <div class="pane-cerita-terpisah">
-            <div class="kepala-pane-townhouse">
-              <span>DIALOG GURU BUDAYA TERVERIFIKASI</span>
-              <span>SUMBER: {bendaAktif.sumber.join(', ')}</span>
-            </div>
+          <div class="twin-meta-strip" aria-label="Spesifikasi Kuratorial Pusaka">
+            {#each bendaAktif.spesifikasiKurasi as spek}
+              <div class="twin-meta-cell">
+                <span>{spek.label}</span>
+                <strong>{spek.nilai}</strong>
+              </div>
+            {/each}
+          </div>
 
-            <div class="kotak-tanya" style="border-top: none; padding-top: 0;">
-              <h3 style="font-size: 1.1rem; margin-top: 0;">
-                Tanya Jawab Guru Budaya ({bendaAktif.nama.id})
-              </h3>
-              <p class="teks-redup" style="font-size: 0.88rem; margin-bottom: 0.5rem;">
-                Dijawab dari naskah kurasi bersumber (Gemini API / Meta Llama API / Pencocokan Lokal).
-                Pertanyaan di luar konteks budaya akan ditolak secara jujur.
-              </p>
+          <div class="titik-list">
+            {#each bendaAktif.titikInfo as t, idx}
+              <button
+                type="button"
+                class="titik-btn"
+                class:is-active={titikAktifId === t.id}
+                onclick={() => pilihTitikInfo(t)}
+              >
+                <div class="titik-btn-head">
+                  <span>0{idx + 1} · {teksSesuaiBahasa(t.judul.id, t.judul.jw)}</span>
+                  <span class="source-badge">{t.sumber.join(', ')}</span>
+                </div>
+                <div style="font-size: 0.82rem; color: var(--text-secondary);">
+                  {teksSesuaiBahasa(t.ringkasan.id, t.ringkasan.jw)}
+                </div>
+              </button>
+            {/each}
+          </div>
 
-              <div style="display: flex; flex-wrap: wrap; gap: 0.35rem; margin-bottom: 0.5rem;">
-                {#each CONTOH_PERTANYAAN[bendaAktif.id] as contoh, cIdx (contoh)}
+          {#if bendaAktif.id === 'saron'}
+            <div>
+              <div class="eyebrow-mono" style="margin-bottom: 8px;">KLIK WILAH SARON SLENDRO</div>
+              <div class="saron-keys-bar">
+                {#each NADA_SARON_SLENDRO as nada, nIdx}
                   <button
                     type="button"
-                    class="tombol"
-                    style="font-size: 0.82rem; padding: 0.38rem 0.72rem;"
-                    data-testid={`contoh-tanya-${cIdx}`}
-                    onclick={() => kirimPertanyaan(contoh)}
+                    class="wilah-key"
+                    onclick={() => {
+                      if (!audioAktif) {
+                        audioAktif = true;
+                        audioBudaya.aturAktif(true);
+                      }
+                      audioBudaya.bunyikanWilahSaron(nIdx);
+                      twinStage?.picuEfekKhusus3D();
+                    }}
                   >
-                    {contoh}
+                    {nada.angka}
                   </button>
                 {/each}
               </div>
-
-              <form
-                class="baris-input-tanya"
-                onsubmit={(e) => {
-                  e.preventDefault();
-                  kirimPertanyaan();
-                }}
-              >
-                <label for="input-tanya-pusaka" class="label-sr-only">
-                  Pertanyaan tentang {bendaAktif.nama.id}
-                </label>
-                <input
-                  id="input-tanya-pusaka"
-                  class="input-teks"
-                  type="text"
-                  data-testid="input-tanya"
-                  placeholder={`Tanyakan bagian atau sejarah ${bendaAktif.nama.id}...`}
-                  bind:value={inputPertanyaan}
-                />
-                <button type="submit" class="tombol tombol-utama" data-testid="kirim-tanya">
-                  Tanyakan
-                </button>
-              </form>
-
-              <div style="margin-top: 0.75rem;" aria-live="polite" data-testid="kotak-jawaban-tanya">
-                {#if statusTanya === 'kosong'}
-                  <p class="teks-redup" style="font-size: 0.88rem; margin: 0;">
-                    Pilih salah satu contoh pertanyaan di atas atau ketik pertanyaan Anda untuk menguji
-                    pemahaman tentang {bendaAktif.nama.id}.
-                  </p>
-                {:else if statusTanya === 'memuat'}
-                  <p style="margin: 0;">Memeriksa rujukan kurasi untuk menjawab pertanyaan Anda...</p>
-                {:else if statusTanya === 'galat'}
-                  <p class="penanda-draf" style="margin: 0;" data-testid="pesan-galat-tanya">
-                    {galatTanya}
-                  </p>
-                {:else if hasilTanya}
-                  <div class="kartu-anatomi-fokus">
-                    <p style="margin-bottom: 0.4rem;">{hasilTanya.jawaban}</p>
-                    <p class="teks-redup" style="font-size: 0.82rem; margin: 0;">
-                      Sumber rujukan: <strong>{hasilTanya.sumberKode.join(', ')}</strong> · Jalur
-                      penyedia: <strong>{hasilTanya.modePenyedia}</strong>
-                    </p>
-                  </div>
-                {/if}
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
-  {:else if layarAktif === 'panggung'}
-    {@const judulLakon = ambilTeks(LAKON_KIJANG_KENCANA.judul, bahasaAktif)}
-    {@const judulBabak = ambilTeks(babakAktif.judul, bahasaAktif)}
-    {@const narasiBabak = ambilTeks(babakAktif.narasi, bahasaAktif)}
-    <section aria-labelledby="judul-panggung" data-testid="layar-panggung">
-      <div class="header-bab-editorial anim-masuk">
-        <p class="mono-kecil teks-redup" style="margin-bottom: 0.25rem;">
-          BAB IV · SASTRA LISAN &amp; PAKELIRAN WAYANG 3D
-        </p>
-        <h1 id="judul-panggung" class={bahasaAktif === 'aksara' ? 'teks-aksara' : ''}>
-          <span class="baris-judul-reveal">{judulLakon.utama}</span>
-        </h1>
-        <p class="teks-redup" style="margin-bottom: 0;">
-          {LAKON_KIJANG_KENCANA.eposAsal} · Sumber rujukan: {LAKON_KIJANG_KENCANA.sumber.join(', ')}
-        </p>
-      </div>
-
-      <div class="navigasi-babak anim-masuk" role="group" aria-label="Pilih babak lakon Kijang Kencana">
-        {#each LAKON_KIJANG_KENCANA.babak as b, idx (b.nomor)}
-          <button
-            type="button"
-            class={indeksBabakAktif === idx ? 'tombol tombol-utama' : 'tombol'}
-            data-testid={`tombol-babak-${b.nomor}`}
-            aria-pressed={indeksBabakAktif === idx}
-            onclick={() => pilihBabak(idx)}
-          >
-            Babak {b.nomor}
-          </button>
-        {/each}
-      </div>
-
-      <div class="tata-panggung">
-        <div class="bingkai-kanvas-3d anim-masuk">
-          <div class="hud-atas-3d">
-            <span>KIRI: KIDANG KENCANA 3D &amp; SIMPINGAN</span>
-            <span>SERET LANGSUNG TUDING LENGAN, CEMPURIT, ATAU LATAR KELIR 3D</span>
-            <span>KANAN: SRI RAMA (GELUNG SUPIT URANG &amp; DODOT BOKONGAN)</span>
-          </div>
-          <div
-            class="kanvas-viewport"
-            bind:this={kanvasPanggungEl}
-            data-testid="kanvas-3d-panggung"
-            role="region"
-            aria-label="Panggung layar kelir menampilkan Sri Rama 3D di kanan dan Kidang Kencana 3D di kiri"
-          ></div>
-          {#if !webglPanggungTersedia}
-            <div style="padding: 1rem; background: var(--bg-permukaan);">
-              <p>
-                Tampilan WebGL tidak aktif pada perangkat ini. Anda tetap dapat membaca seluruh
-                empat babak lakon <em>Kijang Kencana</em> di bawah ini.
-              </p>
             </div>
           {/if}
 
-          <div
-            class="bilah-kendali-3d"
-            role="group"
-            aria-label="Aksi sabetan dalang, pose tuding wayang, panah Sri Rama, dan ketukan cempala keprak"
-          >
-            <div style="display: flex; flex-wrap: wrap; gap: 0.45rem;">
-              <button
-                type="button"
-                class="tombol tombol-utama"
-                data-testid="panggung-panah-rama"
-                onclick={() => stagePanggung?.lepaskanPanahRama()}
-              >
-                Lesatkan Panah Guwawijaya 3D
-              </button>
-              <button
-                type="button"
-                class="tombol"
-                data-testid="panggung-sabetan-kayon"
-                onclick={() => stagePanggung?.sabetanKayon()}
-              >
-                Sabetan Kayon &amp; Keprak Dalang
-              </button>
-              <button
-                type="button"
-                class="tombol"
-                data-testid="panggung-cempala-dalang"
-                onclick={() => audioBudaya.bunyikanCempalaKeprak('cempala')}
-              >
-                Dhodhogan Cempala Kotak
-              </button>
-              <button
-                type="button"
-                class="tombol"
-                data-testid="pose-dalang-sembah"
-                onclick={() => stagePanggung?.terapkanPoseSabetDalang('sembah')}
-              >
-                Pose Sembah Silo
-              </button>
-              <button
-                type="button"
-                class="tombol"
-                data-testid="pose-dalang-menthang"
-                onclick={() => stagePanggung?.terapkanPoseSabetDalang('menthang-gendewa')}
-              >
-                Pose Menthang Gendewa
-              </button>
-              <button
-                type="button"
-                class="tombol"
-                data-testid="pose-dalang-tuding"
-                onclick={() => stagePanggung?.terapkanPoseSabetDalang('tuding-menunjuk')}
-              >
-                Pose Tuding Sabda
-              </button>
-              <button
-                type="button"
-                class="tombol"
-                data-testid="pose-dalang-kiprah"
-                onclick={() => stagePanggung?.terapkanPoseSabetDalang('kiprah-sabetan')}
-              >
-                Pose Kiprah Sabetan
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <div class="kontrol-slider-wayang anim-masuk">
-          <div>
-            <label for="slider-kidang">
-              <strong>Tangan Kiri (Cempurit Kidang Kencana):</strong>
-              posisi {sliderKidangX.toFixed(2)}
-            </label>
-            <input
-              id="slider-kidang"
-              class="slider-input"
-              type="range"
-              min="-1"
-              max="1"
-              step="0.02"
-              data-testid="slider-kidang"
-              value={sliderKidangX}
-              oninput={(e) =>
-                ubahPosisiWayangManual(
-                  sliderRamaX,
-                  parseFloat((e.currentTarget as HTMLInputElement).value),
-                )}
-            />
+          <div style="padding-top: 10px; border-top: 1px solid var(--border-hairline); font-size: 0.84rem; color: var(--text-secondary);">
+            <strong style="color: var(--text-primary);">Filosofi Inti:</strong>
+            {teksSesuaiBahasa(bendaAktif.filosofi.id, bendaAktif.filosofi.jw)}
           </div>
 
-          <div>
-            <label for="slider-rama">
-              <strong>Tangan Kanan (Cempurit Sri Rama):</strong>
-              posisi {sliderRamaX.toFixed(2)}
-            </label>
-            <input
-              id="slider-rama"
-              class="slider-input"
-              type="range"
-              min="-1"
-              max="1"
-              step="0.02"
-              data-testid="slider-rama"
-              value={sliderRamaX}
-              oninput={(e) =>
-                ubahPosisiWayangManual(
-                  parseFloat((e.currentTarget as HTMLInputElement).value),
-                  sliderKidangX,
-                )}
-            />
+          <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+            <button
+              type="button"
+              class="util-pill"
+              onclick={() => bukaModalSuluk(DAFTAR_BENDA.findIndex((x) => x.id === bendaAktif.id))}
+            >
+              Dengarkan Suluk {ambilTeks(bendaAktif.nama, 'id')} ▶
+            </button>
+            {#if bendaAktif.id === 'wayang'}
+              <button
+                type="button"
+                class="nav-cta-white"
+                onclick={() => pindahHalaman('pakeliran')}
+              >
+                Mainkan di Panggung Kelir &#8594;
+              </button>
+            {/if}
           </div>
+        </aside>
+      </div>
 
-          <div>
-            <label for="slider-tuding-depan">
-              <strong>Tuding Lengan Depan (Busur &amp; Tangan Nyempurit):</strong>
-              sudut {sliderTudingDepan.toFixed(2)} rad
-            </label>
-            <input
-              id="slider-tuding-depan"
-              class="slider-input"
-              type="range"
-              min="-1.35"
-              max="0.35"
-              step="0.02"
-              data-testid="slider-tuding-depan"
-              value={sliderTudingDepan}
-              oninput={(e) => {
-                sliderTudingDepan = parseFloat((e.currentTarget as HTMLInputElement).value);
-                stagePanggung?.aturTudingDanCempuritRama({
-                  bahuDepan: sliderTudingDepan,
-                  sikuDepan: -0.65 + sliderTudingDepan * 0.45,
-                });
-              }}
-            />
-          </div>
-
-          <div>
-            <label for="slider-tuding-belakang">
-              <strong>Tuding Lengan Belakang &amp; Condhong Cempurit:</strong>
-              sudut {sliderTudingBelakang.toFixed(2)} rad
-            </label>
-            <input
-              id="slider-tuding-belakang"
-              class="slider-input"
-              type="range"
-              min="-0.35"
-              max="1.15"
-              step="0.02"
-              data-testid="slider-tuding-belakang"
-              value={sliderTudingBelakang}
-              oninput={(e) => {
-                sliderTudingBelakang = parseFloat((e.currentTarget as HTMLInputElement).value);
-                sliderCondhongRama = (sliderTudingBelakang - 0.35) * 0.32;
-                stagePanggung?.aturTudingDanCempuritRama({
-                  bahuBelakang: sliderTudingBelakang,
-                  sikuBelakang: -1.05 - sliderTudingBelakang * 0.42,
-                  condhongCempurit: sliderCondhongRama,
-                });
-              }}
-            />
-          </div>
-        </div>
-
-        <article
-          class="panel-detail anim-masuk"
-          bind:this={kartuBabakEl}
-          data-testid="narasi-babak-aktif"
-        >
-          <h2 class={bahasaAktif === 'aksara' ? 'teks-aksara' : ''}>
-            {judulBabak.utama}
-          </h2>
-          {#if judulBabak.pendampingLatin}
-            <p class="teks-redup" style="font-size: 0.9rem;">
-              {judulBabak.pendampingLatin}
-            </p>
-          {/if}
-
-          <p class={bahasaAktif === 'aksara' ? 'teks-aksara' : ''}>
-            {narasiBabak.utama}
+      <!-- Arsitektur Rekayasa 4-Baris di atas Grid Swiss -->
+      <div class="engineering-grid-panel">
+        <div class="engineering-sticky-col">
+          <span class="eyebrow-mono">ARSITEKTUR REKAYASA BUDAYA</span>
+          <h3 class="display-h2" style="font-size: clamp(1.75rem, 3vw, 2.5rem);">
+            {teksSesuaiBahasa(
+              'Mengintegrasikan Warisan Tradisi dengan Presisi 3D',
+              'Nyawijekake Warisan Tradhisi lan Presisi 3D',
+            )}
+          </h3>
+          <p style="color: var(--text-secondary); margin-top: 14px; line-height: 1.58;">
+            {teksSesuaiBahasa(
+              'Setiap aspek geometris, bunyi gamelan, dan kendali gestur tangan berjalan langsung di peramban demi performa tinggi dan perlindungan privasi pengguna.',
+              'Saben aspek geometri, swara gamelan, lan kendhali gestur asta lumaku langsung ing peramban kanggo njaga privasi saha kacepetan.',
+            )}
           </p>
-          {#if narasiBabak.pendampingLatin && bahasaAktif === 'aksara'}
-            <p class="teks-redup" style="font-size: 0.9rem;">
-              Latin: {narasiBabak.pendampingLatin}
-            </p>
-          {/if}
-
-          <div class="kotak-filosofi-ensiklopedia">
-            <strong>Panduan Olah Sabet Dalang:</strong> {babakAktif.petunjukDalang}
-          </div>
-
-          <div style="display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.75rem;">
-            <button
-              type="button"
-              class="tombol"
-              disabled={indeksBabakAktif === 0}
-              onclick={() => pilihBabak(Math.max(0, indeksBabakAktif - 1))}
-            >
-              Babak Sebelumnya
-            </button>
-            <button
-              type="button"
-              class="tombol tombol-utama"
-              data-testid="babak-berikutnya"
-              onclick={() =>
-                indeksBabakAktif < LAKON_KIJANG_KENCANA.babak.length - 1
-                  ? pilihBabak(indeksBabakAktif + 1)
-                  : pindahLayar('sumber')}
-            >
-              {indeksBabakAktif < LAKON_KIJANG_KENCANA.babak.length - 1
-                ? 'Babak Berikutnya →'
-                : 'Lanjut ke Sanggar Aksara & Pustaka →'}
-            </button>
-          </div>
-        </article>
-      </div>
-
-      <!-- Seksi Terpisah: Arsitektur 4 Babak Lakon Kijang Kencana (01..04) -->
-      <div class="seksi-terpisah" aria-label="Ringkasan terpisah 4 babak Lakon Kijang Kencana">
-        <div class="kepala-pane-townhouse">
-          <span>ARSITEKTUR DRAMATURGI PAKELIRAN · 01..04</span>
-          <span>SERAT RAMAYANA (ARANYA KANDA)</span>
         </div>
-        <div class="grid-babak-terpisah">
-          {#each LAKON_KIJANG_KENCANA.babak as b, idx (b.nomor)}
-            {@const jBabak = ambilTeks(b.judul, bahasaAktif)}
-            {@const nBabak = ambilTeks(b.narasi, bahasaAktif)}
-            <div
-              class={indeksBabakAktif === idx
-                ? 'pane-cerita-terpisah pane-cerita-aktif'
-                : 'pane-cerita-terpisah'}
-            >
-              <div class="kepala-pane-townhouse">
-                <span>BABAK 0{b.nomor}</span>
-                <span>RAMA {b.posisiAwalRama.toFixed(2)} · KIDANG {b.posisiAwalKidang.toFixed(2)}</span>
+
+        <div class="engineering-list">
+          {#each KEUNGGULAN_SISTEM as item}
+            <div class="engineering-row">
+              <div class="engineering-num">{item.nomor}</div>
+              <div>
+                <h4 style="margin: 0 0 6px; font-family: var(--font-display); font-size: 1.2rem;">
+                  {teksSesuaiBahasa(item.judul.id, item.judul.jw)}
+                </h4>
+                <p style="margin: 0; font-size: 0.92rem; color: var(--text-secondary); line-height: 1.56;">
+                  {teksSesuaiBahasa(item.teks.id, item.teks.jw)}
+                </p>
               </div>
-              <h3 style="font-size: 1.02rem; margin-top: 0;">{jBabak.utama}</h3>
-              <p style="font-size: 0.84rem;" class="teks-redup">{nBabak.utama}</p>
-              <button
-                type="button"
-                class={indeksBabakAktif === idx ? 'tombol tombol-utama' : 'tombol'}
-                style="font-size: 0.8rem; padding: 0.35rem 0.68rem; min-height: 36px;"
-                onclick={() => pilihBabak(idx)}
-              >
-                Mainkan Babak {b.nomor} di Kelir 3D
-              </button>
             </div>
           {/each}
         </div>
       </div>
+
+      <!-- 3 Kolom Manifesto Arsitektural Sejajar (Modern Minimalism) -->
+      <div class="editorial-pillars-grid">
+        {#each PILAR_NILAI as p}
+          <div class="editorial-pillar-card">
+            <div style="margin-bottom: 10px;">
+              <span class="eyebrow-mono">{p.nomor} · {teksSesuaiBahasa(p.sorot.id, p.sorot.jw)}</span>
+            </div>
+            <h4 style="margin: 0 0 8px; font-family: var(--font-display); font-size: 1.28rem;">
+              {teksSesuaiBahasa(p.judul.id, p.judul.jw)}
+            </h4>
+            <p style="margin: 0; color: var(--text-secondary); font-size: 0.9rem; line-height: 1.55;">
+              {teksSesuaiBahasa(p.teks.id, p.teks.jw)}
+            </p>
+          </div>
+        {/each}
+      </div>
     </section>
-  {:else if layarAktif === 'sumber'}
-    <section aria-labelledby="judul-sumber" data-testid="layar-sumber">
-      <div class="tata-sumber">
-        <div class="header-bab-editorial anim-masuk">
-          <p class="mono-kecil teks-redup" style="margin-bottom: 0.25rem;">
-            BAB V · SANGGAR LITERASI AKSARA JAWA (CARAKAN) &amp; PUSTAKA ILMIAH
-          </p>
-          <h1 id="judul-sumber">Belajar Aksara Jawa, Sumber Pustaka, &amp; Lisensi</h1>
-          <p class="teks-redup" style="margin-bottom: 0;">
-            Pelajari 20 aksara dasar <em>Dentawyanjana (Ha-Na-Ca-Ra-Ka)</em> beserta filosofi hidup
-            Jawa, uji alihaksara secara langsung, dan periksa daftar rujukan ilmiah yang menjadi
-            fondasi ensiklopedia ini.
-          </p>
+  {/if}
+
+  <!-- =======================================================================
+       HALAMAN 03: GALERI COVERFLOW 3D & REPERTOAR SULUK
+       ======================================================================= -->
+  {#if halamanAktif === 'koleksi'}
+    <section id="coverflow" class="archive-showcase-section" aria-label="Coverflow Koleksi Pusaka & Suluk">
+      <div class="archive-hero-head">
+        <h1 class="archive-wordmark">KELIR ARCHIVE</h1>
+        <div class="archive-subtitle">KAWRUH &amp; SULUK PAKELIRAN NUSANTARA</div>
+        <div style="display: inline-flex; align-items: center; gap: 8px; font-size: 0.85rem; color: var(--text-secondary);">
+          <span class="live-dot is-crimson" aria-hidden="true"></span>
+          <span>Halaman 03 · 5 Pelat Pusaka Kurasi S1–S7</span>
         </div>
+      </div>
 
-        <!-- Papan Belajar Interaktif 20 Aksara Dasar (Dentawyanjana) & 4 Filosofi Baris Carakan -->
-        <div class="panel-detail anim-masuk">
-          <h2>Papan Belajar 20 Aksara Jawa Dasar (Dentawyanjana / Carakan)</h2>
-          <p class="teks-redup">
-            Klik salah satu kartu aksara di bawah ini untuk melihat contoh kosakata budaya Jawa dan
-            mengujinya langsung di mesin alihaksara:
-          </p>
-
-          <div class="grid-filosofi-carakan" aria-label="Empat baris filosofi Ha-Na-Ca-Ra-Ka">
-            {#each FILOSOFI_BARIS_CARAKAN as baris (baris.nomor)}
-              <div class="kartu-filosofi-baris">
-                <div style="display: flex; justify-content: space-between; align-items: baseline; gap: 0.5rem;">
-                  <strong>Baris {baris.nomor}: {baris.bunyi}</strong>
-                  <span lang="jv" class="teks-aksara" style="color: var(--aksen-emas);">
-                    {baris.aksara}
-                  </span>
-                </div>
-                <p style="margin: 0.25rem 0 0 0; font-size: 0.86rem;" class="teks-redup">
-                  {baris.makna}
-                </p>
-              </div>
-            {/each}
-          </div>
-
-          <div class="grid-carakan-20" role="group" aria-label="20 kartu belajar aksara Carakan">
-            {#each DAFTAR_20_CARAKAN as item (item.latin)}
-              <button
-                type="button"
-                class="tombol-kartu-carakan"
-                onclick={(e) => pilihKartuCarakan(item, e.currentTarget as HTMLElement)}
-              >
-                <span lang="jv" class="aksara-besar-kartu">{item.aksara}</span>
-                <span class="latin-kartu-carakan">{item.latin}</span>
-                <span class="arti-kartu-carakan">{item.contohKata} ({item.artiContoh})</span>
-              </button>
-            {/each}
-          </div>
-
-          <div class="kotak-filosofi-ensiklopedia">
-            <strong>Aksara Terpilih:</strong>
-            <span lang="jv" class="teks-aksara">{carakanTerpilih.aksara}</span>
-            (<strong>{carakanTerpilih.latin}</strong>) · Contoh kosakata budaya:
-            <strong>{carakanTerpilih.contohKata}</strong>
-            (<span lang="jv" class="teks-aksara">{latinToAksara(carakanTerpilih.contohKata)}</span>)
-            yang berarti <em>{carakanTerpilih.artiContoh}</em>.
-          </div>
-        </div>
-
-        <!-- Alat Uji Transliterator Aksara Jawa Berbasis Aturan -->
-        <div class="panel-detail anim-masuk">
-          <h2>Laboratorium Alihaksara Latin ke Aksara Jawa (Berbasis Aturan)</h2>
-          <p class="teks-redup">
-            Mesin alihaksara ditulis dalam TypeScript murni (<code>src/lib/aksara.ts</code>)
-            mengikuti blok Unicode <code>U+A980..U+A9DF</code> tanpa memakai model AI agar hasilnya
-            konsisten dan dapat diuji. Gunakan <code>e</code> untuk pepet (<code>ꦼ</code>) dan
-            <code>é</code> untuk taling (<code>ꦺ</code>).
-          </p>
-
-          <div class="baris-input-tanya">
-            <label for="input-uji-aksara" class="label-sr-only">
-              Ketik kata Jawa dalam huruf Latin
-            </label>
-            <input
-              id="input-uji-aksara"
-              class="input-teks"
-              type="text"
-              data-testid="input-uji-aksara"
-              bind:value={inputUjiAksara}
-            />
-          </div>
-
+      <!-- 3D Curved Perspective Coverflow -->
+      <div class="coverflow-viewport" role="region" aria-label="Galeri Coverflow 3D Pusaka">
+        {#each DAFTAR_BENDA as benda, i}
           <div
-            style="margin-top: 0.75rem; padding: 0.95rem; border: 1px solid var(--garis-batas); background: var(--bg-utama); border-radius: var(--radius-kotak);"
+            class="coverflow-card"
+            style={hitungGayaKartuCoverflow(i)}
+            onclick={() => (i === coverflowIdx ? bukaModalSuluk(i) : (coverflowIdx = i))}
+            onkeydown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                i === coverflowIdx ? bukaModalSuluk(i) : (coverflowIdx = i);
+              }
+            }}
+            role="button"
+            tabindex="0"
+            aria-label="Pusaka {ambilTeks(benda.nama, bahasa)}"
           >
-            <p class="teks-redup" style="font-size: 0.85rem; margin-bottom: 0.25rem;">
-              Keluaran Aksara Jawa (Noto Sans Javanese):
-            </p>
-            <p
-              class="teks-aksara"
-              lang="jv"
-              style="font-size: 1.65rem; margin: 0;"
-              data-testid="keluaran-uji-aksara"
-            >
-              {hasilUjiAksara || '(kosong)'}
-            </p>
+            <div class="coverflow-card-inner">
+              <PusakaArtwork bendaId={benda.id} accent={benda.warnaAksen} />
+              <div class="coverflow-card-overlay">
+                <div class="coverflow-num">
+                  {benda.nomorUrut} · {benda.badgeStatus ?? 'KURASI'}
+                </div>
+                <div>
+                  <h2 class="coverflow-card-title">{ambilTeks(benda.nama, bahasa)}</h2>
+                  {#if i === coverflowIdx}
+                    <button
+                      type="button"
+                      class="pill-cta-white"
+                      style="padding: 9px 16px; font-size: 0.82rem;"
+                      onclick={(e) => {
+                        e.stopPropagation();
+                        bukaModalSuluk(i);
+                      }}
+                      data-testid="buka-modal-suluk"
+                    >
+                      ▶ Putar Suluk &amp; Bedah
+                    </button>
+                  {/if}
+                </div>
+              </div>
+            </div>
+          </div>
+        {/each}
+      </div>
+
+      <div class="coverflow-nav-bar">
+        <button
+          type="button"
+          class="circle-nav-btn"
+          onclick={() => geserCoverflow(-1)}
+          aria-label="Kartu Sebelumnya"
+          data-testid="coverflow-prev"
+        >
+          &lt;
+        </button>
+        <span>0{coverflowIdx + 1} / 0{DAFTAR_BENDA.length}</span>
+        <button
+          type="button"
+          class="circle-nav-btn"
+          onclick={() => geserCoverflow(1)}
+          aria-label="Kartu Berikutnya"
+          data-testid="coverflow-next"
+        >
+          &gt;
+        </button>
+      </div>
+
+      <!-- Split Album-Style Index Showcase -->
+      <div class="archive-split-index">
+        <div class="archive-plate-frame">
+          <PusakaArtwork bendaId={DAFTAR_BENDA[coverflowIdx].id} accent="#b33025" />
+          <div class="archive-plate-caption">
+            <div style="font-family: var(--font-mono); font-size: 0.72rem; letter-spacing: 0.14em; color: #f5b4a8; margin-bottom: 4px;">
+              KELIR ARCHIVE · VOL. I
+            </div>
+            <div style="font-family: var(--font-display); font-size: 1.18rem; font-weight: 700;">
+              {ambilTeks(DAFTAR_BENDA[coverflowIdx].subjudul, bahasa)}
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <div class="eyebrow-mono">INDEKS KURASI PUSAKA TERVERIFIKASI</div>
+          <h3 class="display-h2" style="font-size: clamp(2rem, 3.6vw, 3rem); margin-top: 8px;">
+            {teksSesuaiBahasa('Khazanah Budaya Jawa', 'Khazanah Budaya Jawi')}
+          </h3>
+          <div style="margin: 10px 0 22px; font-size: 0.88rem; color: var(--text-secondary);">
+            Kurasi Kelir · Arsip S1–S7 · 5 Artefak Utama
           </div>
 
-          <div style="margin-top: 0.85rem; display: flex; flex-wrap: wrap; gap: 0.45rem;">
-            {#each CONTOH_TERUJI as item (item.latin)}
-              <button
-                type="button"
-                class="tombol"
-                onclick={() => {
-                  inputUjiAksara = item.latin;
-                }}
-              >
-                {item.latin} (<span lang="jv" class="teks-aksara">{item.aksara}</span>)
+          <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+            <button type="button" class="pill-cta-crimson" onclick={toggleSuasanaGending}>
+              {suasanaPendopoAktif ? 'Jeda Gending Pendopo' : 'Putar Suasana Gending ▶'}
+            </button>
+            <button
+              type="button"
+              class="pill-cta-outline"
+              onclick={() => pilihPusaka(DAFTAR_BENDA[coverflowIdx].id, true)}
+            >
+              Bedah 3D {ambilTeks(DAFTAR_BENDA[coverflowIdx].nama, 'id')} &#8594;
+            </button>
+          </div>
+
+          <div class="archive-repertoire-list">
+            {#each DAFTAR_BENDA as b, bIdx}
+              <button type="button" class="track-row" onclick={() => bukaModalSuluk(bIdx)}>
+                <span class="track-num">{b.nomorUrut}</span>
+                <span class="track-title-wrap">
+                  <span>{ambilTeks(b.nama, bahasa)}</span>
+                  {#if bIdx === 0 || bIdx === 4}
+                    <span class="single-badge">KURATOR</span>
+                  {/if}
+                </span>
+                <span class="track-action">Suluk ▶</span>
               </button>
             {/each}
-          </div>
-        </div>
-
-        <!-- Tabel Sumber Rujukan -->
-        <div class="anim-masuk">
-          <h2>Daftar Sumber Rujukan Ilmiah Terverifikasi (S1..S7)</h2>
-          <div class="bungkus-tabel">
-            <table class="tabel-data" data-testid="tabel-sumber">
-              <thead>
-                <tr>
-                  <th>Kode</th>
-                  <th>Judul &amp; Lembaga</th>
-                  <th>Tahun</th>
-                  <th>Ringkasan Fakta Pendidikan yang Dipakai</th>
-                  <th>Tautan Resmi</th>
-                </tr>
-              </thead>
-              <tbody>
-                {#each DAFTAR_SUMBER as s (s.kode)}
-                  <tr>
-                    <td><strong>{s.kode}</strong></td>
-                    <td>
-                      <strong>{s.judul}</strong><br />
-                      <span class="teks-redup">{s.lembaga}</span>
-                    </td>
-                    <td>{s.tahun}</td>
-                    <td>{s.ringkasan}</td>
-                    <td>
-                      <a
-                        class="tautan-sumber"
-                        href={s.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                      >
-                        Buka Sumber {s.kode}
-                      </a>
-                    </td>
-                  </tr>
-                {/each}
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        <!-- Tabel Register Lisensi Aset -->
-        <div class="anim-masuk">
-          <h2>Register Lisensi Geometri 3D, Tekstur PBR, &amp; Tipografi</h2>
-          <div class="bungkus-tabel">
-            <table class="tabel-data" data-testid="tabel-lisensi">
-              <thead>
-                <tr>
-                  <th>ID</th>
-                  <th>Aset / Komponen</th>
-                  <th>Dipakai di</th>
-                  <th>Pembuat</th>
-                  <th>Lisensi</th>
-                </tr>
-              </thead>
-              <tbody>
-                {#each DAFTAR_LISENSI as lis (lis.id)}
-                  <tr>
-                    <td><strong>{lis.id}</strong></td>
-                    <td>{lis.nama}</td>
-                    <td>{lis.dipakaiDi}</td>
-                    <td>{lis.pembuat}</td>
-                    <td>{lis.lisensi}</td>
-                  </tr>
-                {/each}
-              </tbody>
-            </table>
           </div>
         </div>
       </div>
     </section>
   {/if}
+
+  <!-- =======================================================================
+       HALAMAN 04: PANGGUNG PAKELIRAN WAYANG KULIT 3D (LAKON KIJANG KENCANA)
+       ======================================================================= -->
+  {#if halamanAktif === 'pakeliran'}
+    <section id="pakeliran" class="band-section" aria-label="Panggung Pakeliran Ramayana 3D">
+      <div class="band-header">
+        <div>
+          <span class="eyebrow-mono">HALAMAN 04 · PANGGUNG WAYANG KULIT · LAKON ARANYA KANDA</span>
+          <h1 class="display-h2">
+            {teksSesuaiBahasa('Lakon Kijang Kencana 3D', 'Lakon Kidang Kencana 3D')}
+          </h1>
+        </div>
+
+        <div class="artifact-tab-row">
+          {#each LAKON_KIJANG_KENCANA.daftarBabak as bab, bI}
+            <button
+              type="button"
+              class="tab-chip"
+              class:is-active={babakIdx === bI}
+              onclick={() => pilihBabak(bI)}
+              data-testid="babak-{bI}"
+            >
+              Babak {bab.nomor}
+            </button>
+          {/each}
+        </div>
+      </div>
+
+      <div class="pakeliran-theatre-box">
+        <div class="pakeliran-canvas-host" use:mountWayangStage></div>
+
+        <div class="pakeliran-console">
+          <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 16px;">
+            <div>
+              <div class="eyebrow-mono">
+                ADEGAN {babakAktif.nomor} / {LAKON_KIJANG_KENCANA.daftarBabak.length} · {ambilTeks(babakAktif.lokasi, bahasa)} · SUMBER {babakAktif.sumber.join(', ')}
+              </div>
+              <h2 style="margin: 6px 0; font-family: var(--font-display); font-size: 1.45rem;">
+                {ambilTeks(babakAktif.judul, bahasa)}
+              </h2>
+              <p style="margin: 0; color: var(--text-secondary); max-width: 720px; font-size: 0.94rem;">
+                {ambilTeks(babakAktif.narasiDalang, bahasa)}
+              </p>
+              <p class="pakeliran-suluk-quote">
+                Suluk Dalang: "{babakAktif.suluk}"
+              </p>
+            </div>
+
+            <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+              <button
+                type="button"
+                class="pill-cta-outline"
+                onclick={() => {
+                  wayangStage?.picuSabetanWayang();
+                  if (audioAktif) audioBudaya.bunyikanCempalaKeprak();
+                }}
+              >
+                Sabetan &amp; Keprak
+              </button>
+              <button
+                type="button"
+                class="pill-cta-crimson"
+                onclick={() => {
+                  wayangStage?.picuPanahRama();
+                  if (audioAktif) audioBudaya.bunyikanLesatanPanah();
+                }}
+                data-testid="btn-panah-rama"
+              >
+                Lepaskan Panah Rama &#8594;
+              </button>
+            </div>
+          </div>
+
+          <div class="two-col-editorial" style="margin-top: 4px;">
+            <label class="pakeliran-slider-label">
+              <span>KIDANG KENCANA (POSISI {posKidang.toFixed(2)})</span>
+              <input
+                type="range"
+                min="-0.85"
+                max="0.85"
+                step="0.02"
+                value={posKidang}
+                oninput={(e) => {
+                  posKidang = Number((e.currentTarget as HTMLInputElement).value);
+                  wayangStage?.aturPosisiTokoh(posRama, posKidang);
+                }}
+              />
+            </label>
+            <label class="pakeliran-slider-label">
+              <span>SRI RAMA (POSISI {posRama.toFixed(2)})</span>
+              <input
+                type="range"
+                min="-0.85"
+                max="0.85"
+                step="0.02"
+                value={posRama}
+                oninput={(e) => {
+                  posRama = Number((e.currentTarget as HTMLInputElement).value);
+                  wayangStage?.aturPosisiTokoh(posRama, posKidang);
+                }}
+              />
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <!-- Detail Anatomi Tatahan Wayang & Panduan Gestur Dalang -->
+      <div class="two-col-editorial" style="margin-top: 28px;">
+        <div class="editorial-pillar-card">
+          <span class="eyebrow-mono">ANATOMI TATAHAN &amp; SUNGGINGAN</span>
+          <h3 style="margin: 8px 0; font-family: var(--font-display); font-size: 1.28rem;">
+            Gelung Supit Urang, Bokongan &amp; Cempurit Tanduk
+          </h3>
+          <p style="margin: 0; font-size: 0.88rem; color: var(--text-secondary);">
+            Figur 3D Sri Rama dibangun mengikuti pakem wayang kulit alusan Keraton: wajah hitam tenang, mahkota Gelung Supit Urang berlubang krawangan, kain kampuh polikrom dengan bokongan melengkung, serta tangkai cempurit tanduk kerbau dan tuding ganda.
+          </p>
+        </div>
+
+        <div class="editorial-pillar-card">
+          <span class="eyebrow-mono">KENDALI GESTUR TANGAN 21-TITIK</span>
+          <h3 style="margin: 8px 0; font-family: var(--font-display); font-size: 1.28rem;">
+            Simulasi Sabetan Dalang via Kamera Lokal
+          </h3>
+          <p style="margin: 0 0 14px; font-size: 0.88rem; color: var(--text-secondary);">
+            Aktifkan tombol <strong>Gestur 21-Titik</strong> di bilah atas: tangan kanan menggerakkan Sri Rama &amp; kemiringan busur, tangan kiri menggerakkan Kidang Kencana, dan gestur mengepal memicu sabetan keprak.
+          </p>
+          <button
+            type="button"
+            class="util-pill"
+            onclick={() => pilihPusaka('wayang', true)}
+          >
+            Bedah Anatomi Wayang di Digital Twin &#8594;
+          </button>
+        </div>
+      </div>
+    </section>
+  {/if}
+
+  <!-- =======================================================================
+       HALAMAN 05: LAB AKSARA HANACARAKA, PAMOMONG AI ORB & PUSTAKA S1-S7
+       ======================================================================= -->
+  {#if halamanAktif === 'kawruh'}
+    <KawruhOrbSection
+      {bahasa}
+      {teksSesuaiBahasa}
+      {bendaAktif}
+      bind:pertanyaanInput
+      {sediaTanya}
+      {jawabanPamomong}
+      onKirimTanya={kirimTanyaPamomong}
+      onPilihContohPertanyaan={(contohQ) => {
+        pertanyaanInput = contohQ;
+        void kirimTanyaPamomong();
+      }}
+      {mountOrbStage}
+      bind:inputAksaraLatin
+      {aksaraTerkonversi}
+      {kartuCarakanTerpilih}
+      onPilihCarakan={(c) => {
+        kartuCarakanTerpilih = c;
+        inputAksaraLatin = c.contohKata;
+        if (audioAktif) audioBudaya.bunyikanWilahSaron(Math.floor(Math.random() * 6), 0.14);
+      }}
+      {formatSumberLabel}
+    />
+  {/if}
+
+  <!-- =======================================================================
+       PORTAL TRANSISI ANTAR-HALAMAN MINIMALIS
+       ======================================================================= -->
+  <section class="next-page-bridge" aria-label="Navigasi Halaman Berikutnya">
+    <div class="next-page-bridge-inner">
+      <button
+        type="button"
+        class="bridge-card"
+        onclick={() => pindahHalaman(halamanSebelumnya.id)}
+      >
+        <span class="eyebrow-mono">&#8592; SEBELUMNYA ({halamanSebelumnya.nomor}/05)</span>
+        <div class="bridge-card-title">{halamanSebelumnya.label}</div>
+      </button>
+
+      <div class="bridge-status-center">
+        <span>HALAMAN {infoHalamanAktif.nomor} / 05</span>
+        <span lang="jv" style="font-family: var(--font-jawa); color: var(--accent-ember);">
+          {infoHalamanAktif.aksara}
+        </span>
+      </div>
+
+      <button
+        type="button"
+        class="bridge-card is-primary"
+        onclick={() => pindahHalaman(halamanBerikutnya.id)}
+        data-testid="next-page-btn"
+      >
+        <span class="eyebrow-mono">SELANJUTNYA ({halamanBerikutnya.nomor}/05) &#8594;</span>
+        <div class="bridge-card-title">{halamanBerikutnya.label}</div>
+      </button>
+    </div>
+  </section>
 </main>
 
-<footer class="kaki-halaman">
-  <div class="kaki-dalam">
-    <div>
-      <strong>Kelir</strong> (<span lang="jv" class="teks-aksara">ꦏꦼꦭꦶꦂ</span>) · Ensiklopedia
-      Pendidikan Budaya Jawa &amp; Nusantara 3D · Kategori Software Development · Tema:
-      <em>From Ideas to Innovation</em>.
+<FooterSection
+  daftarHalaman={DAFTAR_HALAMAN}
+  onPindahHalaman={(id) => pindahHalaman(id as HalamanId)}
+  onPilihPusaka={pilihPusaka}
+/>
+
+<!-- =========================================================================
+     MODAL SULUK LAYAR PENUH TERPISAH
+     ========================================================================= -->
+{#if modalSulukBuka}
+  <div
+    class="modal-suluk-backdrop"
+    role="dialog"
+    aria-modal="true"
+    aria-label="Modal Suluk & Bedah {ambilTeks(modalTrackBenda.nama, bahasa)}"
+    data-testid="modal-suluk"
+  >
+    <button
+      type="button"
+      class="modal-close-btn"
+      onclick={() => (modalSulukBuka = false)}
+      data-testid="close-modal-suluk"
+    >
+      Tutup ✕
+    </button>
+
+    <div class="modal-art-panel">
+      <PusakaArtwork bendaId={modalTrackBenda.id} accent={modalTrackBenda.warnaAksen} />
     </div>
-    <div>
-      Sumber Ilmiah: UNESCO (00063, 00112, 00170, 01760), Museum Negeri Sonobudoyo Yogyakarta,
-      Poly Haven CC0, Encyclopaedia Britannica.
+
+    <div class="modal-lyrics-col">
+      <div>
+        <div class="eyebrow-mono">
+          PUSAKA {modalTrackBenda.nomorUrut} DARI 05 · LARIK 0{sulukLarikAktif + 1}/0{modalTrackBenda.sulukLarik.length} · SUMBER {modalTrackBenda.sumber.join(', ')}
+        </div>
+        <h2 style="margin: 8px 0 0; font-family: var(--font-display); font-size: clamp(2rem, 4vw, 3.2rem); line-height: 1.02;">
+          {ambilTeks(modalTrackBenda.nama, bahasa)}
+        </h2>
+      </div>
+
+      <div class="suluk-lines" aria-label="Larik Suluk & Kawruh Sinkron">
+        {#each modalTrackBenda.sulukLarik as larik, lIdx}
+          <button
+            type="button"
+            class="suluk-line-btn"
+            class:is-active={sulukLarikAktif === lIdx}
+            onclick={() => {
+              sulukLarikAktif = lIdx;
+              if (audioAktif) audioBudaya.bunyikanWilahSaron(lIdx % 6, 0.18);
+            }}
+          >
+            {ambilTeks(larik, bahasa)}
+          </button>
+        {/each}
+      </div>
+
+      <div class="crimson-player-bar">
+        <div>
+          <div style="font-weight: 700; font-size: 1rem;">{ambilTeks(modalTrackBenda.nama, bahasa)}</div>
+          <div style="font-size: 0.78rem; opacity: 0.9;">
+            {ambilTeks(modalTrackBenda.subjudul, bahasa)}
+          </div>
+        </div>
+
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <button
+            type="button"
+            class="pill-cta-white"
+            style="padding: 8px 14px; font-size: 0.8rem;"
+            onclick={toggleSuasanaGending}
+          >
+            {suasanaPendopoAktif ? 'Jeda Gending' : 'Putar Gending ▶'}
+          </button>
+          <button
+            type="button"
+            class="circle-nav-btn"
+            style="width: 38px; height: 38px; border-color: rgba(255,255,255,0.4); color: #ffffff;"
+            onclick={() => bukaModalSuluk(modalSulukTrackIdx - 1)}
+            aria-label="Pusaka Sebelumnya"
+          >
+            &lt;
+          </button>
+          <button
+            type="button"
+            class="circle-nav-btn"
+            style="width: 38px; height: 38px; border-color: rgba(255,255,255,0.4); color: #ffffff;"
+            onclick={() => bukaModalSuluk(modalSulukTrackIdx + 1)}
+            aria-label="Pusaka Berikutnya"
+          >
+            &gt;
+          </button>
+        </div>
+      </div>
     </div>
   </div>
-</footer>
+{/if}
+
+<!-- Umpan Kamera MediaPipe 21-Titik Lokal (Tersembunyi jika nonaktif) -->
+<div class="webcam-pip" style:display={statusKamera === 'nonaktif' ? 'none' : 'block'}>
+  <video bind:this={videoKameraEl} autoplay muted playsinline></video>
+  <div style="padding: 8px 10px; display: flex; justify-content: space-between;">
+    <span>Tangan: {jumlahTanganTerdeteksi}</span>
+    <span>Gestur: {gesturTerkini}</span>
+  </div>
+</div>

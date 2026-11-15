@@ -76,11 +76,43 @@ function apiTanyaLocalPlugin(): Plugin {
 
 export default defineConfig({
   plugins: [svelte(), apiTanyaLocalPlugin()],
+  build: {
+    rolldownOptions: {
+      output: {
+        codeSplitting: {
+          groups: [
+            {
+              name: 'vendor-three-core',
+              test: /[\\/]node_modules[\\/]three[\\/](?!examples)/,
+              priority: 30,
+              maxSize: 380000,
+            },
+            {
+              name: 'vendor-three-addons',
+              test: /[\\/]node_modules[\\/]three[\\/]examples[\\/]/,
+              priority: 25,
+            },
+            {
+              name: 'vendor-gsap',
+              test: /[\\/]node_modules[\\/]gsap[\\/]/,
+              priority: 20,
+            },
+            {
+              name: 'vendor-mediapipe',
+              test: /[\\/]node_modules[\\/]@mediapipe[\\/]/,
+              priority: 20,
+            },
+          ],
+        },
+      },
+    },
+  },
   server: {
     port: 5173,
     strictPort: false,
   },
   preview: {
+    host: '127.0.0.1',
     port: 4173,
     strictPort: false,
   },

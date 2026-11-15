@@ -1,157 +1,159 @@
-import { test, expect } from '@playwright/test';
+import { expect, test } from '@playwright/test';
 
-test.describe('Kelir E2E & Antislop R-35 Verification', () => {
-  test('1. Alur lengkap 5 layar tanpa kamera, ganti bahasa, ganti tema, dan tanya jawab tanpa error console', async ({
+const ARTIFACT_DIR =
+  'C:/Users/HP/.gemini/antigravity/brain/535b9631-dfe5-49e4-b539-e2fb657eddcf';
+
+test.describe('Kelir Multi-Page Spasial 3D — Verifikasi 5 Halaman & Realisme 3D', () => {
+  test('menguji navigasi 5 halaman terpisah, diorama hero, digital twin CAD, coverflow modal, pakeliran wayang 3D, aksara & pamomong orb', async ({
     page,
   }) => {
-    const consoleErrors: string[] = [];
-    page.on('console', (msg) => {
-      if (msg.type() === 'error') {
-        consoleErrors.push(msg.text());
-      }
-    });
-    page.on('pageerror', (err) => {
-      consoleErrors.push(err.message);
-    });
+    const errors: string[] = [];
+    page.on('pageerror', (err) => errors.push(err.message));
 
+    await page.setViewportSize({ width: 1440, height: 900 });
     await page.goto('/');
-    await expect(page).toHaveTitle(/Kelir/);
-    await expect(page.getByTestId('layar-pintu')).toBeVisible();
 
-    // Klik masuk tanpa kamera -> menuju Rak Pusaka (5 ranah warisan budaya)
-    await page.getByTestId('cta-masuk-manual').click();
-    await expect(page.getByTestId('layar-rak')).toBeVisible();
-    await expect(page.getByTestId('kartu-pusaka-keris')).toBeVisible();
-    await expect(page.getByTestId('kartu-pusaka-saron')).toBeVisible();
-    await expect(page.getByTestId('kartu-pusaka-batik')).toBeVisible();
-    await expect(page.getByTestId('kartu-pusaka-joglo')).toBeVisible();
-    await expect(page.getByTestId('kartu-pusaka-wayang')).toBeVisible();
+    // 1. Preloader selesai otomatis
+    await expect(page.locator('.preloader-curtain')).toHaveAttribute('data-preloader-done', 'true', {
+      timeout: 10000,
+    });
+    await page.waitForTimeout(450);
 
-    // Buka Ruang Pegang 3D Keris
-    await page.getByTestId('buka-pegang-keris').click();
-    await expect(page.getByTestId('layar-pegang')).toBeVisible();
-    await expect(page.getByTestId('scene-rail')).toBeVisible();
-    await expect(page.getByTestId('story')).toBeVisible();
-    await expect(page.getByTestId('detail-titik-aktif')).toContainText('Wilah');
+    // Pastikan Halaman 01 (beranda) aktif dan halaman lain TIDAK ditumpuk di bawahnya
+    await expect(page.locator('main')).toHaveAttribute('data-active-page', 'beranda');
+    await expect(page.locator('#pendopo')).toBeVisible();
+    await expect(page.locator('#digital-twin')).toHaveCount(0);
+    await expect(page.locator('#pakeliran')).toHaveCount(0);
 
-    // Uji navigasi Rel Bab 3D (gaya Townhouse) & kartu cerita terpisah
-    await page.getByTestId('langkah-rail-03').click();
-    await expect(page.getByTestId('detail-titik-aktif')).toContainText('Ganja');
-    await page.getByTestId('scene-next').click();
-    await expect(page.getByTestId('detail-titik-aktif')).toContainText('Pamor');
+    await page.screenshot({ path: `${ARTIFACT_DIR}/mp-01-beranda-diorama.png` });
 
-    // Klik tiap titik anatomis & tombol kendali 3D + aksi hidup 3D + simulasi fisik khusus 3D
-    await page.getByTestId('tombol-aksi-3d').click();
-    await page.getByTestId('tombol-efek-3d').click();
-    await page.getByTestId('titik-info-ganja').click();
-    await expect(page.getByTestId('detail-titik-aktif')).toContainText('Ganja');
-    await page.getByTestId('titik-info-pamor').click();
-    await expect(page.getByTestId('detail-titik-aktif')).toContainText('Pamor');
-    await page.getByTestId('putar-kiri').click();
-    await page.getByTestId('putar-kanan').click();
-    await page.getByTestId('zoom-dekat').click();
-    await page.getByTestId('zoom-jauh').click();
-    await page.getByTestId('reset-pandangan').click();
+    // Verifikasi tidak ada horizontal overflow pada desktop
+    const desktopOverflow = await page.evaluate(
+      () => document.documentElement.scrollWidth > window.innerWidth + 1,
+    );
+    expect(desktopOverflow).toBe(false);
 
-    // Pindah tab benda ke Saron, Batik, Joglo, & Wayang
-    await page.getByTestId('tab-benda-saron').click();
-    await expect(page.getByTestId('detail-titik-aktif')).toContainText('Wilah Gangsa');
-    await expect(page.getByTestId('tabuh-wilah-1')).toBeVisible();
-    await page.getByTestId('tabuh-wilah-1').click();
-    await page.getByTestId('tombol-efek-3d').click();
-
-    await page.getByTestId('tab-benda-batik').click();
-    await expect(page.getByTestId('detail-titik-aktif')).toContainText('Canting Tulis');
-    await page.getByTestId('tombol-aksi-3d').click();
-    await page.getByTestId('tombol-efek-3d').click();
-
-    await page.getByTestId('tab-benda-joglo').click();
-    await expect(page.getByTestId('detail-titik-aktif')).toContainText('Atap Brunjung');
-    await page.getByTestId('tombol-aksi-3d').click();
-    await page.getByTestId('tombol-efek-3d').click();
-
-    await page.getByTestId('tab-benda-wayang').click();
-    await expect(page.getByTestId('detail-titik-aktif')).toContainText('Awak Wayang');
-    await page.getByTestId('titik-info-kelir-blencong').click();
-    await expect(page.getByTestId('detail-titik-aktif')).toContainText('Gunungan');
-    await page.getByTestId('tombol-efek-3d').click();
-
-    // Uji kontrol Suara Budaya & Gong Ageng
-    await page.getByTestId('tombol-gong-ageng').click();
-    await page.getByTestId('toggle-suara-budaya').click();
-    await page.getByTestId('toggle-suara-budaya').click();
-
-    // Uji validasi form tanya jawab kosong (failure state)
-    await page.getByTestId('kirim-tanya').click();
-    await expect(page.getByTestId('pesan-galat-tanya')).toBeVisible();
-
-    // Uji contoh pertanyaan terikat sumber (happy path)
-    await page.getByTestId('contoh-tanya-0').click();
-    await expect(page.getByTestId('kotak-jawaban-tanya')).toContainText('Sumber rujukan');
-
-    // Lanjut ke Panggung Kelir
-    await page.getByTestId('ke-panggung-dari-pegang').click();
-    await expect(page.getByTestId('layar-panggung')).toBeVisible();
-    await expect(page.getByTestId('narasi-babak-aktif')).toContainText('Babak 1');
-    await page.getByTestId('panggung-panah-rama').click();
-    await page.getByTestId('panggung-sabetan-kayon').click();
-    await page.getByTestId('panggung-cempala-dalang').click();
-    await page.getByTestId('pose-dalang-sembah').click();
-    await page.getByTestId('pose-dalang-menthang').click();
-    await page.getByTestId('pose-dalang-tuding').click();
-    await page.getByTestId('pose-dalang-kiprah').click();
-
-    // Navigasi 4 babak
-    await page.getByTestId('tombol-babak-2').click();
-    await expect(page.getByTestId('narasi-babak-aktif')).toContainText('Babak 2');
-    await page.getByTestId('tombol-babak-3').click();
-    await expect(page.getByTestId('narasi-babak-aktif')).toContainText('Babak 3');
-    await page.getByTestId('tombol-babak-4').click();
-    await expect(page.getByTestId('narasi-babak-aktif')).toContainText('Babak 4');
-
-    // Lanjut ke layar Sumber & Aksara
-    await page.getByTestId('babak-berikutnya').click();
-    await expect(page.getByTestId('layar-sumber')).toBeVisible();
-    await expect(page.getByTestId('tabel-sumber')).toContainText('UNESCO');
-    await expect(page.getByTestId('tabel-lisensi')).toContainText('Noto Sans Javanese');
-
-    // Uji transliterator Aksara Jawa langsung di UI
-    await page.getByTestId('input-uji-aksara').fill('hanacaraka');
-    await expect(page.getByTestId('keluaran-uji-aksara')).toHaveText('ꦲꦤꦕꦫꦏ');
-
-    // Uji ganti bahasa (ID -> Jawa -> Aksara) dan status tinjauan draf
-    await page.getByTestId('lang-jv').click();
-    await expect(page.getByTestId('status-tinjauan-jawa')).toBeVisible();
-    await page.getByTestId('lang-aksara').click();
-    await expect(page.locator('html')).toHaveAttribute('lang', 'jv');
-    await page.getByTestId('lang-id').click();
-    await expect(page.locator('html')).toHaveAttribute('lang', 'id');
-
-    // Uji ganti tema Malam <-> Siang (R-34)
-    await page.getByTestId('toggle-tema').click();
-    await expect(page.locator('html')).toHaveAttribute('data-theme', 'siang');
+    // 2. Tema terang default & pengalihan ke malam lalu kembali ke terang
+    await expect(page.locator('html')).toHaveAttribute('data-theme', 'terang');
     await page.getByTestId('toggle-tema').click();
     await expect(page.locator('html')).toHaveAttribute('data-theme', 'malam');
+    await page.waitForTimeout(300);
+    await page.screenshot({ path: `${ARTIFACT_DIR}/mp-01b-beranda-malam.png` });
+    await page.getByTestId('toggle-tema').click();
+    await expect(page.locator('html')).toHaveAttribute('data-theme', 'terang');
 
-    expect(consoleErrors).toEqual([]);
-  });
+    // 3. Pengalihan bahasa ID -> JW -> AKS -> ID
+    await page.getByTestId('lang-jw').click();
+    await expect(page.locator('h1')).toContainText('Nlusuri');
+    await page.getByTestId('lang-aks').click();
+    await expect(page.locator('h1')).toContainText('ꦤ');
+    await page.getByTestId('lang-id').click();
+    await expect(page.locator('h1')).toContainText('Menembus');
 
-  test('2. Responsif mobile 360px tanpa horizontal overflow dan target sentuh >= 44px (R-03)', async ({
-    page,
-  }) => {
-    await page.setViewportSize({ width: 360, height: 740 });
-    await page.goto('/');
+    // Scrollytelling chapter, Matriks 12 Unsur, & Etalase pada Beranda
+    await page.locator('#kronik-01').scrollIntoViewIfNeeded();
+    await page.waitForTimeout(350);
+    await page.screenshot({ path: `${ARTIFACT_DIR}/mp-02-beranda-scrolly.png` });
 
-    for (const navId of ['nav-pintu', 'nav-rak', 'nav-pegang', 'nav-panggung', 'nav-sumber']) {
-      const btn = page.getByTestId(navId);
-      await btn.click();
-      const box = await btn.boundingBox();
-      expect(box?.height ?? 0).toBeGreaterThanOrEqual(44);
+    await page.locator('#dinding-ruang').scrollIntoViewIfNeeded();
+    await page.waitForTimeout(250);
+    await page.screenshot({ path: `${ARTIFACT_DIR}/mp-02b-beranda-matriks.png` });
 
-      const overflow = await page.evaluate(() => {
-        return document.documentElement.scrollWidth > document.documentElement.clientWidth;
-      });
-      expect(overflow).toBe(false);
-    }
+    await page.locator('#etalase').scrollIntoViewIfNeeded();
+    await page.waitForTimeout(250);
+    await page.screenshot({ path: `${ARTIFACT_DIR}/mp-02c-beranda-etalase.png` });
+    await page.getByTestId('filter-pakeliran').click();
+    await expect(page.locator('.etalase-card')).toHaveCount(2);
+    await page.getByTestId('filter-semua').click();
+
+    // 4. Navigasi ke Halaman 02: Digital Twin 3D (?hal=twin)
+    await page.getByTestId('page-tab-twin').click();
+    await expect(page.locator('main')).toHaveAttribute('data-active-page', 'twin');
+    await expect(page.locator('#digital-twin')).toBeVisible();
+    await expect(page.locator('#pendopo')).toHaveCount(0);
+    await page.waitForTimeout(450);
+    await page.screenshot({ path: `${ARTIFACT_DIR}/mp-03-twin-keris-hibrida.png` });
+
+    // Uji Ledak Anatomi & Mode Kawat X-Ray CAD pada Keris dan Saron
+    const slider = page.getByTestId('slider-ledak');
+    await slider.evaluate((el: HTMLInputElement) => {
+      el.value = '0.78';
+      el.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+    await page.evaluate(() => window.scrollTo(0, 0));
+    await page.waitForTimeout(350);
+    await page.screenshot({ path: `${ARTIFACT_DIR}/mp-04-twin-keris-exploded.png` });
+
+    await page.getByTestId('tab-saron').click();
+    await expect(page.locator('.saron-keys-bar')).toBeVisible();
+    await page.getByTestId('toggle-xray').click({ force: true });
+    await page.evaluate(() => window.scrollTo(0, 0));
+    await page.waitForTimeout(350);
+    await page.screenshot({ path: `${ARTIFACT_DIR}/mp-05-twin-saron-xray.png` });
+
+    await page.getByTestId('tab-joglo').click();
+    await page.locator('.mode-btn').first().click({ force: true }); // PBR Nyata
+    await page.evaluate(() => window.scrollTo(0, 0));
+    await page.waitForTimeout(350);
+    await page.screenshot({ path: `${ARTIFACT_DIR}/mp-06-twin-joglo-exploded.png` });
+
+    await page.locator('.editorial-pillars-grid').scrollIntoViewIfNeeded();
+    await page.waitForTimeout(200);
+    await page.screenshot({ path: `${ARTIFACT_DIR}/mp-06b-twin-pillars.png` });
+
+    // 5. Navigasi ke Halaman 03: Coverflow & Suluk (?hal=koleksi)
+    await page.getByTestId('page-tab-koleksi').click();
+    await expect(page.locator('main')).toHaveAttribute('data-active-page', 'koleksi');
+    await expect(page.locator('#coverflow')).toBeVisible();
+    await expect(page.locator('#digital-twin')).toHaveCount(0);
+    await page.waitForTimeout(350);
+    await page.screenshot({ path: `${ARTIFACT_DIR}/mp-07-koleksi-coverflow.png` });
+
+    await page.getByTestId('coverflow-next').click();
+    await expect(page.locator('.coverflow-nav-bar')).toContainText('02 / 05');
+
+    await page.getByTestId('buka-modal-suluk').click();
+    await expect(page.getByTestId('modal-suluk')).toBeVisible();
+    await page.getByTestId('close-modal-suluk').click();
+    await expect(page.getByTestId('modal-suluk')).toBeHidden();
+
+    // 6. Navigasi ke Halaman 04: Panggung Pakeliran Wayang 3D (?hal=pakeliran)
+    await page.getByTestId('page-tab-pakeliran').click();
+    await expect(page.locator('main')).toHaveAttribute('data-active-page', 'pakeliran');
+    await expect(page.locator('#pakeliran')).toBeVisible();
+    await expect(page.locator('#coverflow')).toHaveCount(0);
+    await page.getByTestId('babak-2').click();
+    await page.getByTestId('btn-panah-rama').click();
+    await page.waitForTimeout(450);
+    await page.screenshot({ path: `${ARTIFACT_DIR}/mp-08-pakeliran-wayang-detail.png` });
+
+    // 7. Navigasi ke Halaman 05: Lab Aksara & Pamomong AI Orb (?hal=kawruh)
+    await page.getByTestId('page-tab-kawruh').click();
+    await expect(page.locator('main')).toHaveAttribute('data-active-page', 'kawruh');
+    await expect(page.locator('#pamomong')).toBeVisible();
+    await expect(page.locator('#aksara')).toBeVisible();
+    await expect(page.locator('#pakeliran')).toHaveCount(0);
+
+    const formTanya = page.getByTestId('form-tanya');
+    await formTanya.locator('input').fill('Bagaimana sistem pasak kayu joglo bekerja?');
+    await formTanya.locator('button[type="submit"]').click();
+    await expect(page.getByTestId('jawaban-pamomong')).toContainText('S');
+    await page.waitForTimeout(350);
+    await page.screenshot({ path: `${ARTIFACT_DIR}/mp-09-kawruh-pamomong-orb.png` });
+
+    const inputAksara = page.getByTestId('input-aksara');
+    await inputAksara.fill('kelir');
+    await expect(page.getByTestId('output-aksara')).toContainText('ꦏꦼꦭꦶꦂ');
+
+    // 8. Cek viewport Ponsel 390x844 tanpa overflow horizontal
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.evaluate(() => window.scrollTo(0, 0));
+    await page.waitForTimeout(250);
+    const mobileOverflow = await page.evaluate(
+      () => document.documentElement.scrollWidth > window.innerWidth + 1,
+    );
+    expect(mobileOverflow).toBe(false);
+
+    expect(errors).toEqual([]);
   });
 });

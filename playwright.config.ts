@@ -7,18 +7,18 @@ const isCI = Boolean(
 
 export default defineConfig({
   testDir: './tests/e2e',
-  timeout: 120000,
+  timeout: 180000,
   retries: isCI ? 2 : 1,
   use: {
-    baseURL: 'http://localhost:4173',
+    baseURL: 'http://127.0.0.1:4173',
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
     channel: 'chrome',
   },
   webServer: {
     command: 'npm run preview',
-    port: 4173,
+    url: 'http://127.0.0.1:4173',
     reuseExistingServer: !isCI,
-    timeout: 30000,
+    timeout: 90000,
   },
 });

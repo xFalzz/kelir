@@ -1,48 +1,89 @@
-# Kelir (`ꦏꦼꦭꦶꦂ`)
+# Kelir (`ꦏꦼꦭꦶꦂ`) — Eksibisi Spasial 3D Pusaka Jawa & Panggung Wayang Kulit (Edisi 5 Halaman)
 
-Aplikasi web interaktif untuk mempelajari struktur tiga dimensi volumetrik dari **5 ranah warisan budaya Jawa & Nusantara** (**Keris Jawa Luk 5**, **Saron Gamelan Slendro**, **Batik Tulis & Canting Tembaga**, **Arsitektur Pendopo Joglo**, serta **Wayang & Gunungan 3D Berartikulasi**) dan memainkan panggung wayang 3D (*Lakon Ramayana: Kijang Kencana*) menggunakan gestur tangan di browser (*MediaPipe Hand Landmarker*) atau kendali manual penuh (mouse, layar sentuh, dan keyboard).
+[![Svelte 5](https://img.shields.io/badge/Svelte-5-ff3e00?style=flat-square)](#arsitektur-teknis)
+[![Three.js](https://img.shields.io/badge/Three.js-0.187-000000?style=flat-square)](#arsitektur-3d)
+[![MediaPipe](https://img.shields.io/badge/MediaPipe-21_Titik_Lokal-0f9d58?style=flat-square)](#kontrol-gestur-tangan)
 
-Karya untuk **Innovation Competition 2026**, kategori **Software Development**, tema *"From Ideas to Innovation"*.
+**Kelir** adalah platform eksplorasi warisan budaya Jawa interaktif berbasis WebGL/Three.js, Web Audio API prosedural, pelacakan tangan 21 titik MediaPipe secara lokal, transliterasi Aksara Jawa *Hanacaraka*, dan tanya-jawab terikat sumber akademis (`S1–S7`), yang diorganisasikan dalam **5 Halaman Tematik Selaras**.
 
-## Menjalankan Proyek Secara Lokal
+---
+
+## Arsitektur 5 Halaman Utama
+
+1. **Halaman 01 — `Beranda & Diorama` (`?hal=beranda`)**
+   - **Diorama Suaka Budaya Hidup (`LivingPendopoStage`)**: Kompleks tiga dimensi bertekstur kayu jati, genteng terakota, batu andesit, dan pencahayaan HDR studio (`studio_small_08_1k.hdr`) yang menampilkan **Pendopo Joglo Agung** (atap trapesium Brunjung-Penanggap, 16 tiang, tumpang sari, lampu robyong), **Besalen Empu Keris** (prapen bata, pompa ububan kembar, paron, keris melayang), **Bale Karawitan** (gayor gong ageng, saron, kendang), **Gazebo Wastra Batik** (2 gawangan berkibar & kompor anglo), **Panggung Kelir Wayang**, gapura **Candi Bentar**, jembatan kanal air, dan pohon beringin multi-kanopi.
+   - **Scrollytelling 5 Bab (`01–05`)** dengan angka piksel SVG, kartu telemetri HUD kaca, **Matriks 12 Anatomi Pusaka** perspektif 3D beraksara Jawa, dan **Etalase Pita Horizontal (`PUSAKA JAWA`)**.
+2. **Halaman 02 — `Digital Twin 3D` (`?hal=twin`)**
+   - **Studio Kembaran Digital CAD & PBR (`DigitalTwinStage`)**: Inspeksi anatomi 5 pusaka (*Keris Luk 5*, *Saron Slendro*, *Batik Kawung*, *Pendopo Joglo*, *Wayang Kulit*) dengan 6–12 sub-komponen per artefak yang dapat diurai melalui penggeser **Ledak Anatomi (`0%–100%`)**, sakelar mode `PBR Nyata`, `Hibrida`, dan `Kawat X-Ray CAD`, papan bilah Saron interaktif, 4 baris keunggulan rekayasa di atas grid wireframe, dan 3 kolom manifesto arsitektural.
+3. **Halaman 03 — `Coverflow & Suluk` (`?hal=koleksi`)**
+   - Korsel kartu perspektif 3D melengkung (`< 01 / 05 >`), **Modal Layar Penuh Terpisah** dengan lirik suluk sinkron dan bilah pemutar gending merah crimson, serta indeks daftar pusaka bergaya album (`KELIR VOL. I`).
+4. **Halaman 04 — `Panggung Wayang` (`?hal=pakeliran`)**
+   - **Teater Bayangan Lakon Kijang Kencana 3D (`WayangStage`)**: Layar kain blacu berplisir merah-emas, gawangan jati berukir, dua batang gedebog pisang, jajaran wayang *Simpingan* kanan-kiri, lampu minyak *Blencong* berkerucut volumetrik, Gunungan Kayon krawangan, Sri Rama (wajah hitam alusan, Gelung Supit Urang, kain dodot polikrom ber-bokongan, cempurit tanduk kerbau, lengan berartikulasi ganda, busur Gendewa), dan Kidang Kencana berkaki sendi ganda.
+5. **Halaman 05 — `Aksara & AI Orb` (`?hal=kawruh`)**
+   - **Pamomong AI Orb (`PamomongOrbStage`)**: Bola metalik 3D reflektif (*Chrome-Obsidian*) dengan visor kaca gelap, sepasang ear-node bercincin `#ff5a1f`, dan cincin gyroskopik yang terhubung dengan mesin temu-balik **BM25 + sinonim budaya Jawa** serta penolakan luar-korpus terkalibrasi berbasis pustaka `S1–S7` via `/api/tanya`, dilengkapi konverter instan Latin ke Aksara Jawa (`Noto Sans Javanese`) dan 20 kartu *Carakan*.
+
+---
+
+## Struktur Proyek Terbaru
+
+```text
+kelir/
+├── api/
+│   └── tanya.ts                 # Endpoint serverless Vercel untuk kurasi tanya-jawab S1–S7
+├── docs/
+│   ├── ARSITEKTUR.md            # Dokumentasi arsitektur 5 halaman, stage 3D, dan alur data
+│   └── PANDUAN-PENGEMBANGAN.md  # Panduan menjalankan, menguji, dan memperluas pusaka
+├── public/
+│   ├── mediapipe/               # Model hand_landmarker.task & biner WASM offline
+│   ├── textures/                # Tekstur kayu, kulit, & HDR studio lighting (.hdr)
+│   └── favicon.svg
+├── src/
+│   ├── content/pusaka.ts        # Basis data terkurasi 5 pusaka, kronik scroll, lakon, S1–S7
+│   ├── lib/
+│   │   ├── aksara.ts            # Mesin transliterasi Aksara Jawa & tabel carakan
+│   │   ├── audioBudaya.ts       # Mesin sintesis suara gamelan & budaya via Web Audio API
+│   │   ├── handTracker.ts       # Pengelola kamera & gestur 21 titik MediaPipe lokal
+│   │   └── tanya.ts             # Mesin retrieval BM25 + ekspansi sinonim Jawa & sitasi S1–S7
+│   ├── scenes/
+│   │   ├── livingPendopoStage.ts # Diorama 3D suaka budaya, Batik Kawung kanvas, beringin & pin 3D
+│   │   ├── digitalTwinStage.ts   # Inspeksi pusaka 3D PBR, X-Ray wireframe, & explode CAD
+│   │   ├── pamomongOrbStage.ts   # Bola metalik 3D reflektif interaktif Pamomong AI
+│   │   ├── wayang3DBuilder.ts    # Pembangun geometri 3D wayang kulit tatahan krawangan
+│   │   └── wayangStage.ts        # Panggung Pakeliran Ramayana, simpingan & efek blencong
+│   ├── ui/
+│   │   ├── components/
+│   │   │   ├── BerandaWallEtalase.svelte # Matriks 12 Anatomi Pusaka & Etalase Specimen
+│   │   │   ├── KawruhOrbSection.svelte   # Pamomong AI Orb, panel bukti BM25 & kurasi S1–S7
+│   │   │   └── FooterSection.svelte      # Kolofon navigasi multi-halaman & wordmark Kelir
+│   │   ├── PusakaArtwork.svelte  # Ilustrasi ortografis SVG presisi (varian paper & dark)
+│   │   └── App.svelte            # Router & komposisi 5 halaman + lazy import modul 3D/WASM
+│   ├── app.css                   # Sistem desain, tata letak 3D CSS, tema terang & malam
+│   └── main.ts                   # Titik masuk aplikasi & impor fon lokal
+├── tests/
+│   ├── unit/                     # Uji Vitest untuk Aksara, BM25 retrieval, & pustaka S1–S7
+│   └── e2e/kelir.spec.ts         # Uji Playwright 5 halaman, modal, 3D, dan responsivitas
+├── DESIGN.md                     # Panduan desain spasial & sistem visual
+└── vite.config.ts                # Konfigurasi Vite + Rolldown codeSplitting + /api/tanya
+```
+
+---
+
+## Menjalankan Proyek
 
 ```bash
-cd d:\Kompetisi-UBSI\kelir
-npm run dev          # Menjalankan server pengembangan di http://localhost:5173
-npm run check        # Memeriksa tipe TypeScript & Svelte (svelte-check)
-npm run test:unit    # Menjalankan 9 pengujian unit Vitest (Aksara Jawa & validasi sumber)
-npm run build        # Membangun bundel produksi ke folder dist/
-npm run test:e2e:ci  # Menjalankan pengujian end-to-end Playwright di Chrome
+# 1. Pasang ketergantungan (dependencies)
+npm install
+
+# 2. Jalankan server pengembangan di http://localhost:5173
+npm run dev
+
+# 3. Verifikasi tipe TypeScript & Svelte
+npm run check
+
+# 4. Jalankan uji unit (Vitest)
+npm run test:unit
+
+# 5. Bangun berkas produksi & jalankan uji E2E (Playwright)
+npm run build
+npm run test:e2e:ci
 ```
-
-## Konfigurasi Kunci API AI (Opsional)
-
-Secara bawaan, fitur Tanya Jawab Terikat Sumber sudah langsung berfungsi 100% memakai pencocokan kurasi lokal deterministik (`src/lib/tanya.ts`). Jika ingin mengaktifkan penyedia LLM eksternal di fungsi serverless `api/tanya.ts`, salin `.env.example` menjadi `.env.local` lalu isi sendiri:
-
-```ini
-GEMINI_API_KEY=isi_kunci_google_ai_studio_anda
-GEMINI_MODEL=gemini-2.5-flash
-META_API_KEY=isi_kunci_meta_llama_api_jika_aktif
-```
-
-## Peta Dokumen Kompetisi
-
-| Berkas | Isi |
-|---|---|
-| `DESIGN.md` | Identitas visual, rasio kontras WCAG AA, tipografi OFL, dial `ENERGY 3 / RHYTHM 3 / MOTION 3` |
-| `AGENTS.md` | Aturan kerja dan penjaga kualitas antislop (`during`) |
-| `docs/00-ringkasan-keputusan.md` | Ringkasan ketentuan lomba dan mitigasi risiko |
-| `docs/01-proposal-proyek.md` | Naskah proposal lengkap siap ekspor PDF (sumber UNESCO, Britannica, Sonobudoyo) |
-| `docs/02-spesifikasi-produk.md` | Cakupan MVP, 4 gestur tangan, keadaan layar, dan kriteria penerimaan |
-| `docs/03-arsitektur-teknis.md` | Arsitektur Vite + Svelte 5 + Three.js + MediaPipe + GSAP |
-| `docs/04-konten-dan-sumber.md` | Inventaris 5 warisan budaya, 20 titik info anatomis, lakon 4 babak, dan 7 sumber resmi (`S1`..`S7`) |
-| `docs/05-register-lisensi-aset.md` | Register lisensi geometri prosedural, font OFL, dan pustaka terbuka |
-| `docs/06-kebijakan-ai.md` | Kebijakan anti-halusinasi AI (Gemini utama, Meta cadangan, Kurasi lokal) |
-| `docs/07-bahasa-dan-aksara.md` | Dokumentasi transliterator Aksara Jawa berbasis aturan (`U+A980–U+A9DF`) |
-| `docs/08-jadwal-18-hari.md` | Rencana kerja menuju batas akhir 28 November 2026 |
-| `docs/09-alur-kerja.md` | Standar Conventional Commits, debugging, pembersihan kode, dan pengujian E2E |
-| `docs/10-checklist-pengumpulan.md` | Daftar periksa berkas Google Drive `SD_NamaTim_NamaInstitusi` |
-| `docs/11-presentasi-demo-qa.md` | Kerangka slide, naskah live demo 3 menit, dan bank jawaban tanya jawab juri |
-| `docs/12-skema-erd-prd-uml-ddl-dml.md` | Skema alur lengkap PRD, ERD, UML/EML, DDL, dan DML |
-| `docs/sql/schema.sql` | Berkas SQL DDL pembuatan tabel & constraint |
-| `docs/sql/seed_and_queries.sql` | Berkas SQL DML pengisian data kurasi & query operasional |
