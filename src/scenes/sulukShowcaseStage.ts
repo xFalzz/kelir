@@ -4,6 +4,7 @@ import {
   createSafeWebGLRenderer,
   disposeSceneObject,
   hitungFovResponsif,
+  isMobileGpuProfile,
   pasangObservasiPanggung,
 } from './threeHelpers.ts';
 import {
@@ -118,6 +119,8 @@ export class SulukShowcaseStage {
     this.keySpot = new THREE.SpotLight(0xfff1d6, 44, 24, Math.PI * 0.28, 0.52, 1.35);
     this.keySpot.position.set(2.2, 5.2, 4.6);
     this.keySpot.castShadow = true;
+    const shadowSize = isMobileGpuProfile() ? 512 : 1024;
+    this.keySpot.shadow.mapSize.set(shadowSize, shadowSize);
     this.scene.add(this.keySpot);
 
     this.coolFill = new THREE.DirectionalLight(0xcbd5e1, 1.18);

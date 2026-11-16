@@ -2,18 +2,14 @@ import path from 'node:path';
 import { defineConfig, loadEnv, type Connect, type Plugin } from 'vite';
 import { svelte } from '@sveltejs/vite-plugin-svelte';
 import {
-  DAFTAR_BEDAH_TWIN,
   DAFTAR_BENDA,
   KOLEKSI_COVERFLOW,
   type BahasaAktif,
   type BendaPusaka,
   type SpesimenBedahId,
 } from './src/content/pusaka.ts';
-import {
-  hasilkanKomparasiGemini,
-  hasilkanPujanggaGemini,
-  hasilkanSuaraDalangBabak,
-} from './src/server/aiStudioGemini.ts';
+import { periksaBatasLajuAI } from './src/lib/aiGuardrail.ts';
+import { eksekusiPermintaanAiStudio } from './src/server/aiStudioGemini.ts';
 import {
   MODEL_GEMINI_TETAP,
   bacaKonfigurasiGemini,
@@ -22,6 +18,7 @@ import {
 import { hasilkanSuaraSulukGemini } from './src/server/sulukVoiceGemini.ts';
 
 const BAHASA_VALID = new Set<BahasaAktif>(['id', 'en', 'jw', 'aks']);
+const BATAS_BODY_BYTES = 16_384;
 
 function apiTanyaLocalPlugin(serverEnv: Record<string, string | undefined>): Plugin {
   const konf = bacaKonfigurasiGemini(serverEnv, [
@@ -35,6 +32,7 @@ function apiTanyaLocalPlugin(serverEnv: Record<string, string | undefined>): Plu
     const httpReq = req as unknown as {
       url?: string;
       method?: string;
+      socket?: { remoteAddress?: string };
       on: (ev: string, cb: (chunk?: Uint8Array | string) => void) => void;
     };
     const httpRes = res as unknown as {
@@ -50,6 +48,9 @@ function apiTanyaLocalPlugin(serverEnv: Record<string, string | undefined>): Plu
       next();
       return;
     }
+    httpRes.setHeader('X-Content-Type-Options', 'nosniff');
+    httpRes.setHeader('Cache-Control', 'no-store');
+
     if (httpReq.method !== 'POST') {
       httpRes.statusCode = 405;
       httpRes.setHeader('Content-Type', 'application/json');
@@ -57,21 +58,50 @@ function apiTanyaLocalPlugin(serverEnv: Record<string, string | undefined>): Plu
       return;
     }
 
+    const clientKey = `${httpReq.url?.split('?')[0] ?? 'api'}:${httpReq.socket?.remoteAddress ?? 'local'}`;
+    const limit = periksaBatasLajuAI(clientKey, 120);
+    if (!limit.diizinkan) {
+      httpRes.statusCode = 429;
+      httpRes.setHeader('Retry-After', '60');
+      httpRes.setHeader('Content-Type', 'application/json');
+      httpRes.end(JSON.stringify({ error: 'Terlalu banyak permintaan. Coba kembali sesaat lagi.' }));
+      return;
+    }
+
     let rawBody = '';
+    let terlaluBesar = false;
     const decoder = new TextDecoder();
 
     httpReq.on('data', (chunk?: Uint8Array | string) => {
+      if (terlaluBesar) return;
       if (typeof chunk === 'string') {
         rawBody += chunk;
       } else if (chunk) {
         rawBody += decoder.decode(chunk, { stream: true });
       }
+      if (rawBody.length > BATAS_BODY_BYTES) {
+        terlaluBesar = true;
+        rawBody = '';
+      }
     });
     httpReq.on('end', () => {
+      if (terlaluBesar) {
+        httpRes.statusCode = 413;
+        httpRes.setHeader('Content-Type', 'application/json');
+        httpRes.end(JSON.stringify({ error: 'Ukuran payload melebihi batas aman 16 KB.' }));
+        return;
+      }
       void (async () => {
         try {
+          const parsedRaw = JSON.parse(rawBody || '{}') as unknown;
+          if (!parsedRaw || typeof parsedRaw !== 'object' || Array.isArray(parsedRaw)) {
+            httpRes.statusCode = 400;
+            httpRes.setHeader('Content-Type', 'application/json');
+            httpRes.end(JSON.stringify({ error: 'Format tubuh permintaan harus berupa objek JSON.' }));
+            return;
+          }
           if (isSulukSuara) {
-            const body = JSON.parse(rawBody || '{}') as {
+            const body = parsedRaw as {
               artefakId?: SpesimenBedahId;
               bahasa?: BahasaAktif;
             };
@@ -94,56 +124,22 @@ function apiTanyaLocalPlugin(serverEnv: Record<string, string | undefined>): Plu
           }
 
           if (isAiStudio) {
-            const body = JSON.parse(rawBody || '{}') as {
-              tugas?: 'banding' | 'pujangga' | 'dalang-suara';
-              idA?: string;
-              idB?: string;
-              tema?: string;
-              babakIdx?: number;
-              bahasa?: BahasaAktif;
-            };
-            const bahasa: BahasaAktif =
-              body.bahasa && BAHASA_VALID.has(body.bahasa) ? body.bahasa : 'id';
-            const validId = (raw: unknown, fallback: SpesimenBedahId): SpesimenBedahId =>
-              typeof raw === 'string' && DAFTAR_BEDAH_TWIN.some((b) => b.id === raw)
-                ? (raw as SpesimenBedahId)
-                : fallback;
-
-            let hasilStudio: unknown;
-            if (body.tugas === 'pujangga') {
-              hasilStudio = await hasilkanPujanggaGemini({
-                tema: typeof body.tema === 'string' ? body.tema : '',
-                bahasa,
-                apiKey: apiKeyServer,
-                timeoutMs,
-              });
-            } else if (body.tugas === 'dalang-suara') {
-              const babakIdx =
-                typeof body.babakIdx === 'number' && Number.isFinite(body.babakIdx)
-                  ? Math.max(0, Math.floor(body.babakIdx))
-                  : 0;
-              hasilStudio = await hasilkanSuaraDalangBabak({
-                babakIdx,
-                bahasa,
-                apiKey: apiKeyServer,
-                timeoutMs,
-              });
-            } else {
-              hasilStudio = await hasilkanKomparasiGemini({
-                idA: validId(body.idA, 'keris'),
-                idB: validId(body.idB, 'joglo'),
-                bahasa,
-                apiKey: apiKeyServer,
-                timeoutMs,
-              });
-            }
+            const bodyObj = parsedRaw as Record<string, unknown>;
+            const rawLang = bodyObj.bahasa as BahasaAktif | undefined;
+            const bahasa: BahasaAktif = rawLang && BAHASA_VALID.has(rawLang) ? rawLang : 'id';
+            const hasilStudio = await eksekusiPermintaanAiStudio({
+              body: bodyObj,
+              bahasa,
+              apiKey: apiKeyServer,
+              timeoutMs,
+            });
             httpRes.statusCode = 200;
             httpRes.setHeader('Content-Type', 'application/json');
             httpRes.end(JSON.stringify(hasilStudio));
             return;
           }
 
-          const body = JSON.parse(rawBody || '{}') as {
+          const body = parsedRaw as {
             bendaId?: BendaPusaka['id'];
             pertanyaan?: string;
             bahasa?: BahasaAktif;
@@ -156,7 +152,7 @@ function apiTanyaLocalPlugin(serverEnv: Record<string, string | undefined>): Plu
 
           const hasil = await jawabDenganGemini38Flash({
             bendaId,
-            pertanyaan: typeof body.pertanyaan === 'string' ? body.pertanyaan : '',
+            pertanyaan: typeof body.pertanyaan === 'string' ? body.pertanyaan.slice(0, 640) : '',
             bahasa,
             apiKey: apiKeyServer,
             timeoutMs,

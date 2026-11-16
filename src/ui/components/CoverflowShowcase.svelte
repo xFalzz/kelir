@@ -6,6 +6,7 @@
     ambilTeks,
     type BahasaAktif,
     type ItemCoverflow,
+    type SpesimenBedahId,
   } from '../../content/pusaka.ts';
   import { latinKeAksaraJawa } from '../../lib/aksara.ts';
   import { tI18n } from '../../lib/i18n.ts';
@@ -17,11 +18,13 @@
     tema: 'malam' | 'terang';
     bahasa: BahasaAktif;
     suasanaPendopoAktif: boolean;
+    favoritIds: SpesimenBedahId[];
     mountStage: (node: HTMLDivElement) => { destroy?: () => void };
     onSelectIndex: (idx: number) => void;
     onGeser: (delta: number) => void;
     onBukaModalSuluk: (idx: number) => void;
     onToggleSuasanaGending: () => void;
+    onToggleFavorit: (id: SpesimenBedahId) => void;
     onBukaItem: (item: ItemCoverflow) => void;
     onFokusAnatomi?: (item: ItemCoverflow, titikId?: string) => void;
     onParalaks: (nx: number, ny: number) => void;
@@ -34,11 +37,13 @@
     tema,
     bahasa,
     suasanaPendopoAktif,
+    favoritIds,
     mountStage,
     onSelectIndex,
     onGeser,
     onBukaModalSuluk,
     onToggleSuasanaGending,
+    onToggleFavorit,
     onBukaItem,
     onFokusAnatomi,
     onParalaks,
@@ -69,8 +74,10 @@
       const vh = Math.max(window.innerHeight, 480);
       const totalTravel = Math.max(sectionEl.scrollHeight - vh * 0.55, 340);
       const p = Math.min(1, Math.max(0, -rect.top / totalTravel));
-      scrollProgress = p;
-      onScrollProgres(p);
+      if (Math.abs(p - scrollProgress) >= 0.001) {
+        scrollProgress = p;
+        onScrollProgres(p);
+      }
     };
 
     const onScroll = () => {
@@ -217,6 +224,17 @@
             data-testid="buka-modal-suluk"
           >
             {tI18n(bahasa, 'coverflow.ctaSuluk')}
+          </button>
+          <button
+            type="button"
+            class="util-pill"
+            class:is-active={favoritIds.includes(aktif.artefakId)}
+            onclick={() => onToggleFavorit(aktif.artefakId)}
+            data-testid="coverflow-favorit-btn"
+          >
+            {favoritIds.includes(aktif.artefakId)
+              ? tI18n(bahasa, 'coverflow.savedFav')
+              : tI18n(bahasa, 'coverflow.saveFav')}
           </button>
           <button
             type="button"

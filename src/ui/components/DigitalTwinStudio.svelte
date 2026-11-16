@@ -5,6 +5,7 @@
     ambilAksenBenda,
     ambilTeks,
     type BahasaAktif,
+    type BendaPusaka,
     type MultiTeks,
     type SpesimenBedahId,
     type SpesimenBedahTwin,
@@ -12,6 +13,7 @@
   } from '../../content/pusaka.ts';
   import { tI18n } from '../../lib/i18n.ts';
   import { NADA_SARON_SLENDRO } from '../../lib/audioBudaya.ts';
+  import { tanyakanKeAsisten, type HasilTanya } from '../../lib/tanya.ts';
   import type { ModeVisualTwin, ProyeksiPinTwin } from '../../scenes/digitalTwinStage.ts';
 
   interface KeunggulanItem {
@@ -51,6 +53,9 @@
     onToggleAksiHidup: () => void;
     onBunyikanWilah: (idx: number) => void;
     onBukaSulukSpesimen: (id: SpesimenBedahId) => void;
+    isFavorit: boolean;
+    onToggleFavorit: () => void;
+    onTangkapPotret: () => string | null;
     onPindahHalaman: (halaman: 'koleksi' | 'pakeliran' | 'kawruh', anchor?: string) => void;
     onScrollProgres: (progres: number) => void;
   }
@@ -79,6 +84,9 @@
     onToggleAksiHidup,
     onBunyikanWilah,
     onBukaSulukSpesimen,
+    isFavorit,
+    onToggleFavorit,
+    onTangkapPotret,
     onPindahHalaman,
     onScrollProgres,
   }: Props = $props();
@@ -116,8 +124,10 @@
       const vh = Math.max(window.innerHeight, 480);
       const maxTravel = Math.max(sectionEl.scrollHeight - vh * 0.55, 360);
       const p = Math.min(1, Math.max(0, -rect.top / maxTravel));
-      scrollProgress = p;
-      onScrollProgres(p);
+      if (Math.abs(p - scrollProgress) >= 0.001) {
+        scrollProgress = p;
+        onScrollProgres(p);
+      }
     };
 
     const onScroll = () => {
@@ -154,7 +164,58 @@
 
   let turOtomatisAktif = $state(false);
   let tautanTersalin = $state(false);
+  let potretTersimpan = $state(false);
   let salinTimer: ReturnType<typeof setTimeout> | null = null;
+  let potretTimer: ReturnType<typeof setTimeout> | null = null;
+  let partAiQuery = $state('');
+  let partAiBusy = $state(false);
+  let partAiResult: HasilTanya | null = $state(null);
+
+  $effect(() => {
+    const _bId = bendaAktif.id;
+    const _tId = titikAktif.id;
+    const _lang = bahasa;
+    partAiResult = null;
+    partAiQuery = '';
+    void _bId;
+    void _tId;
+    void _lang;
+  });
+
+  async function tanyaKuratorUnsur(e?: SubmitEvent): Promise<void> {
+    if (e) e.preventDefault();
+    const namaBenda = ambilTeks(bendaAktif.nama, bahasa);
+    const judulPart = ambilTeks(titikAktif.judul, bahasa);
+    const kueri = partAiQuery.trim() || `${namaBenda} ${judulPart}`;
+    const targetBendaId: BendaPusaka['id'] =
+      bendaAktif.id === 'kidang'
+        ? 'wayang'
+        : bendaAktif.id === 'saron' ||
+            bendaAktif.id === 'batik' ||
+            bendaAktif.id === 'joglo' ||
+            bendaAktif.id === 'wayang'
+          ? bendaAktif.id
+          : 'keris';
+    partAiBusy = true;
+    partAiResult = await tanyakanKeAsisten(targetBendaId, kueri, bahasa);
+    partAiBusy = false;
+  }
+
+  function simpanPotret3D(): void {
+    const dataUrl = onTangkapPotret();
+    if (!dataUrl || typeof document === 'undefined') return;
+    const a = document.createElement('a');
+    a.href = dataUrl;
+    a.download = `kelir-3d-${bendaAktif.id}.png`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    potretTersimpan = true;
+    if (potretTimer) clearTimeout(potretTimer);
+    potretTimer = setTimeout(() => {
+      potretTersimpan = false;
+    }, 1800);
+  }
 
   $effect(() => {
     const _aktif = bendaAktif.id;
@@ -497,6 +558,52 @@
             {/if}
           </div>
         {/if}
+
+        <div class="twin-part-ai-box">
+          <div class="twin-part-ai-head">
+            <span class="eyebrow-mono">{tI18n(bahasa, 'twin.partAiTitle')}</span>
+            <button
+              type="button"
+              class="util-pill"
+              disabled={partAiBusy}
+              onclick={() => void tanyaKuratorUnsur()}
+              data-testid="twin-ask-part-ai-btn"
+            >
+              {partAiBusy ? tI18n(bahasa, 'twin.partAiLoading') : tI18n(bahasa, 'twin.partAiQuick')}
+            </button>
+          </div>
+          <form onsubmit={(e) => void tanyaKuratorUnsur(e)} class="twin-part-ai-form">
+            <input
+              type="text"
+              maxlength="240"
+              class="pamomong-query-input twin-part-ai-input"
+              bind:value={partAiQuery}
+              placeholder={tI18n(bahasa, 'twin.partAiPlaceholder')}
+              data-testid="twin-part-ai-input"
+            />
+            <button type="submit" class="util-pill" disabled={partAiBusy}>
+              {tI18n(bahasa, 'twin.partAiSubmit')}
+            </button>
+          </form>
+          {#if partAiResult}
+            <div class="twin-part-ai-answer" data-testid="twin-part-ai-result">
+              <div class="rag-telemetry-bar">
+                <span
+                  class="rag-status-tag"
+                  class:is-abstain={partAiResult.statusGrounding === 'luar-korpus'}
+                >
+                  {partAiResult.statusGrounding === 'luar-korpus'
+                    ? tI18n(bahasa, 'kawruh.statusAbstain')
+                    : partAiResult.mode === 'gemini-3.8-live'
+                      ? tI18n(bahasa, 'kawruh.statusGemini')
+                      : tI18n(bahasa, 'kawruh.statusVerified')}
+                </span>
+                <span class="rag-model-pill">{partAiResult.modelNama}</span>
+              </div>
+              <p class="twin-part-ai-copy">{partAiResult.jawaban}</p>
+            </div>
+          {/if}
+        </div>
       </div>
 
       <!-- Daftar Seluruh Unsur Anatomi -->
@@ -564,6 +671,24 @@
           onclick={() => onPindahHalaman('koleksi')}
         >
           {tI18n(bahasa, 'twin.viewCoverflow')}
+        </button>
+        <button
+          type="button"
+          class="util-pill"
+          class:is-active={isFavorit}
+          onclick={onToggleFavorit}
+          data-testid="twin-favorit-btn"
+        >
+          {isFavorit ? tI18n(bahasa, 'twin.savedFav') : tI18n(bahasa, 'twin.saveFav')}
+        </button>
+        <button
+          type="button"
+          class="util-pill"
+          class:is-active={potretTersimpan}
+          onclick={simpanPotret3D}
+          data-testid="twin-snapshot-btn"
+        >
+          {potretTersimpan ? tI18n(bahasa, 'twin.snapshotSaved') : tI18n(bahasa, 'twin.snapshotBtn')}
         </button>
         <button
           type="button"

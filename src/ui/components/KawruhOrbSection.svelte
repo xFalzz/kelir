@@ -17,10 +17,19 @@
     BANK_KUIS_S1_S7,
     bandingkanPusakaLokal,
     mintaKomparasiAI,
+    mintaKramaAI,
     mintaPujanggaAI,
+    mintaRuteTurAI,
+    susunKramaLokal,
     susunPujanggaLokal,
+    susunRuteTurLokal,
+    type DurasiTurId,
     type KomparasiResult,
+    type KramaAksaraResult,
+    type LangkahRuteTur,
+    type MinatTurId,
     type PujanggaResult,
+    type RuteTurResult,
   } from '../../lib/aiStudio.ts';
   import { tI18n } from '../../lib/i18n.ts';
   import { pasangReveal } from '../../lib/revealAnim.ts';
@@ -46,6 +55,7 @@
     onPilihCarakan: (c: KartuCarakan) => void;
     formatSumberLabel: (s: KodeSumber) => string;
     onSimpanSkorKuis?: (skor: number) => void;
+    onMasukLangkahTur?: (step: LangkahRuteTur) => void;
   }
 
   let {
@@ -63,14 +73,50 @@
     onPilihCarakan,
     formatSumberLabel,
     onSimpanSkorKuis,
+    onMasukLangkahTur,
   }: Props = $props();
 
   let aksaraTersalin = $state(false);
   let copyTimer: ReturnType<typeof setTimeout> | null = null;
+  let answerBoxEl: HTMLDivElement | undefined = $state();
+  let justUpdated = $state(false);
+  let wasBusy = false;
+  let flashTimer: ReturnType<typeof setTimeout> | null = null;
+  let jawabanTersalin = $state(false);
+  let jawabanCopyTimer: ReturnType<typeof setTimeout> | null = null;
 
   // Multi-Mode AI Studio State
-  let modeStudio: 'tanya' | 'banding' | 'pujangga' | 'kuis' = $state('tanya');
+  let modeStudio: 'tanya' | 'banding' | 'pujangga' | 'krama' | 'tur' | 'kuis' = $state('tanya');
   let studioBusy = $state(false);
+
+  $effect(() => {
+    const busyNow = sediaTanya || studioBusy;
+    if (wasBusy && !busyNow) {
+      justUpdated = true;
+      if (flashTimer) clearTimeout(flashTimer);
+      flashTimer = setTimeout(() => {
+        justUpdated = false;
+      }, 1500);
+      if (typeof window !== 'undefined' && answerBoxEl) {
+        answerBoxEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
+    }
+    wasBusy = busyNow;
+  });
+
+  async function salinTeksJawaban(teks: string): Promise<void> {
+    if (!teks) return;
+    try {
+      await navigator.clipboard?.writeText(teks);
+      jawabanTersalin = true;
+      if (jawabanCopyTimer) clearTimeout(jawabanCopyTimer);
+      jawabanCopyTimer = setTimeout(() => {
+        jawabanTersalin = false;
+      }, 1600);
+    } catch {
+      jawabanTersalin = false;
+    }
+  }
 
   // Mode 2: Komparator Dua Pusaka AI
   let bandingIdA: SpesimenBedahId = $state('keris');
@@ -80,11 +126,23 @@
   // Mode 3: Asisten Pujangga & Suara Jawa AI
   let temaPujangga = $state('Harmoni pendopo dan alam');
   let hasilPujangga: PujanggaResult = $state(susunPujanggaLokal('Harmoni pendopo dan alam', 'id'));
-  let pujanggaSuaraAktif = $state(false);
-  let pujanggaAudioEl: HTMLAudioElement | null = null;
-  let pujanggaAudioUrl: string | null = null;
+  let suaraStudioAktif: 'pujangga' | 'krama' | null = $state(null);
+  let studioAudioEl: HTMLAudioElement | null = null;
+  let studioAudioUrl: string | null = null;
 
-  // Mode 4: Kuis Kuratorial S1-S7
+  // Mode 4: Pemandu Tata Krama & Aksara Jawa AI
+  let frasaKrama = $state('Permisi, saya ingin belajar gamelan pendopo');
+  let hasilKrama: KramaAksaraResult = $state(
+    susunKramaLokal('Permisi, saya ingin belajar gamelan pendopo', 'id'),
+  );
+
+  // Mode 5: Perencana Rute Tur Spasial AI
+  let minatTur: MinatTurId = $state('semua');
+  let durasiTur: DurasiTurId = $state('mendalam');
+  let catatanTur = $state('');
+  let hasilTur: RuteTurResult = $state(susunRuteTurLokal('semua', 'mendalam', '', 'id'));
+
+  // Mode 6: Kuis Kuratorial S1-S7
   let kuisIdx = $state(0);
   let kuisSkor = $state(0);
   let kuisPilihan: number | null = $state(null);
@@ -94,26 +152,30 @@
     const b = bahasa;
     hasilKomparasi = bandingkanPusakaLokal(bandingIdA, bandingIdB, b);
     hasilPujangga = susunPujanggaLokal(temaPujangga, b);
+    hasilKrama = susunKramaLokal(frasaKrama, b);
+    hasilTur = susunRuteTurLokal(minatTur, durasiTur, catatanTur, b);
   });
 
-  function hentikanSuaraPujangga(): void {
+  function hentikanSuaraStudio(): void {
     hentikanWebSpeech();
     audioBudaya.aturVolumeLatar(false);
-    if (pujanggaAudioEl) {
-      pujanggaAudioEl.pause();
-      pujanggaAudioEl.src = '';
-      pujanggaAudioEl = null;
+    if (studioAudioEl) {
+      studioAudioEl.pause();
+      studioAudioEl.src = '';
+      studioAudioEl = null;
     }
-    if (pujanggaAudioUrl) {
-      URL.revokeObjectURL(pujanggaAudioUrl);
-      pujanggaAudioUrl = null;
+    if (studioAudioUrl) {
+      URL.revokeObjectURL(studioAudioUrl);
+      studioAudioUrl = null;
     }
-    pujanggaSuaraAktif = false;
+    suaraStudioAktif = null;
   }
 
   onDestroy(() => {
-    hentikanSuaraPujangga();
+    hentikanSuaraStudio();
     if (copyTimer) clearTimeout(copyTimer);
+    if (flashTimer) clearTimeout(flashTimer);
+    if (jawabanCopyTimer) clearTimeout(jawabanCopyTimer);
   });
 
   async function jalankanKomparasiAI(): Promise<void> {
@@ -124,58 +186,68 @@
 
   async function jalankanPujanggaAI(e?: SubmitEvent): Promise<void> {
     if (e) e.preventDefault();
-    hentikanSuaraPujangga();
+    hentikanSuaraStudio();
     studioBusy = true;
     const res = await mintaPujanggaAI(temaPujangga, bahasa);
     hasilPujangga = res;
     studioBusy = false;
-    putarkanSuaraPujangga(res);
+    putarkanSuaraStudio(res, 'pujangga');
   }
 
-  function putarkanSuaraPujangga(target: PujanggaResult = hasilPujangga): void {
-    hentikanSuaraPujangga();
+  async function jalankanKramaAI(e?: SubmitEvent): Promise<void> {
+    if (e) e.preventDefault();
+    hentikanSuaraStudio();
+    studioBusy = true;
+    const res = await mintaKramaAI(frasaKrama, bahasa);
+    hasilKrama = res;
+    studioBusy = false;
+    putarkanSuaraStudio(res, 'krama');
+  }
+
+  async function jalankanRuteTurAI(e?: SubmitEvent): Promise<void> {
+    if (e) e.preventDefault();
+    studioBusy = true;
+    hasilTur = await mintaRuteTurAI(minatTur, durasiTur, catatanTur, bahasa);
+    studioBusy = false;
+  }
+
+  function putarkanSuaraStudio(
+    target: {
+      naskahSuara: string;
+      kodeBcp47: 'id-ID' | 'en-US' | 'jv-ID';
+      audioBase64: string | null;
+      mimeType: string | null;
+    },
+    sumberAktif: 'pujangga' | 'krama',
+  ): void {
+    hentikanSuaraStudio();
+    const onMulai = () => {
+      suaraStudioAktif = sumberAktif;
+      audioBudaya.aturVolumeLatar(true);
+    };
+    const onSelesai = () => {
+      suaraStudioAktif = null;
+      audioBudaya.aturVolumeLatar(false);
+    };
     if (target.audioBase64 && target.mimeType && typeof Audio !== 'undefined') {
       try {
         const blobUrl = base64AudioKeBlobUrl(target.audioBase64, target.mimeType);
-        pujanggaAudioUrl = blobUrl;
+        studioAudioUrl = blobUrl;
         const audio = new Audio(blobUrl);
-        pujanggaAudioEl = audio;
-        pujanggaSuaraAktif = true;
-        audioBudaya.aturVolumeLatar(true);
-        audio.onended = () => hentikanSuaraPujangga();
-        audio.onerror = () => hentikanSuaraPujangga();
+        studioAudioEl = audio;
+        onMulai();
+        audio.onended = () => hentikanSuaraStudio();
+        audio.onerror = () => hentikanSuaraStudio();
         void audio.play().catch(() => {
-          hentikanSuaraPujangga();
-          putarkanWebSpeech(
-            target.naskahSuara,
-            target.kodeBcp47,
-            () => {
-              pujanggaSuaraAktif = true;
-              audioBudaya.aturVolumeLatar(true);
-            },
-            () => {
-              pujanggaSuaraAktif = false;
-              audioBudaya.aturVolumeLatar(false);
-            },
-          );
+          hentikanSuaraStudio();
+          putarkanWebSpeech(target.naskahSuara, target.kodeBcp47, onMulai, onSelesai);
         });
         return;
       } catch {
         // Lanjut ke Web Speech API
       }
     }
-    putarkanWebSpeech(
-      target.naskahSuara,
-      target.kodeBcp47,
-      () => {
-        pujanggaSuaraAktif = true;
-        audioBudaya.aturVolumeLatar(true);
-      },
-      () => {
-        pujanggaSuaraAktif = false;
-        audioBudaya.aturVolumeLatar(false);
-      },
-    );
+    putarkanWebSpeech(target.naskahSuara, target.kodeBcp47, onMulai, onSelesai);
   }
 
   function pilihJawabanKuis(optIdx: number): void {
@@ -279,6 +351,28 @@
         <button
           type="button"
           role="tab"
+          aria-selected={modeStudio === 'krama'}
+          class="util-pill"
+          class:is-active={modeStudio === 'krama'}
+          onclick={() => (modeStudio = 'krama')}
+          data-testid="studio-tab-krama"
+        >
+          {tI18n(bahasa, 'aiStudio.tabKrama')}
+        </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={modeStudio === 'tur'}
+          class="util-pill"
+          class:is-active={modeStudio === 'tur'}
+          onclick={() => (modeStudio = 'tur')}
+          data-testid="studio-tab-tur"
+        >
+          {tI18n(bahasa, 'aiStudio.tabTur')}
+        </button>
+        <button
+          type="button"
+          role="tab"
           aria-selected={modeStudio === 'kuis'}
           class="util-pill"
           class:is-active={modeStudio === 'kuis'}
@@ -318,6 +412,7 @@
         >
           <input
             type="text"
+            maxlength="280"
             class="pamomong-query-input"
             bind:value={pertanyaanInput}
             placeholder={tI18n(bahasa, 'kawruh.placeholder', { nama: ambilTeks(bendaAktif.nama, bahasa) })}
@@ -327,23 +422,65 @@
           </button>
         </form>
 
-        <div class="pamomong-answer-box" data-testid="jawaban-pamomong">
-          <div class="rag-telemetry-bar">
+        <div
+          bind:this={answerBoxEl}
+          class="pamomong-answer-box is-hero-answer"
+          class:is-abstain-box={jawabanPamomong.statusGrounding === 'luar-korpus'}
+          class:is-just-updated={justUpdated}
+          data-testid="jawaban-pamomong"
+        >
+          <div class="ai-answer-hero-head">
+            <span class="ai-answer-title">
+              <span
+                class="ai-answer-dot"
+                class:is-abstain={jawabanPamomong.statusGrounding === 'luar-korpus'}
+                aria-hidden="true"
+              ></span>
+              {tI18n(bahasa, 'kawruh.answerHeading')}
+            </span>
+            <div class="ai-answer-head-actions">
+              <span class="rag-model-pill" data-testid="pamomong-model-badge">
+                {tI18n(bahasa, 'kawruh.modelBadge', { model: jawabanPamomong.modelNama })}
+              </span>
+              <button
+                type="button"
+                class="util-pill"
+                onclick={() => void salinTeksJawaban(jawabanPamomong.jawaban)}
+                data-testid="pamomong-copy-answer"
+              >
+                {jawabanTersalin ? tI18n(bahasa, 'kawruh.copiedAnswer') : tI18n(bahasa, 'kawruh.copyAnswer')}
+              </button>
+            </div>
+          </div>
+
+          {#if sediaTanya}
+            <div class="ai-answer-loading" role="status">
+              <span class="ai-answer-spinner" aria-hidden="true"></span>
+              <span>{tI18n(bahasa, 'kawruh.loadingBanner')}</span>
+            </div>
+          {/if}
+
+          <div class="ai-answer-primary-surface">
+            <div class="pamomong-answer-prose">
+              {#each jawabanPamomong.jawaban.split('\n\n') as paragraf}
+                <p>{paragraf}</p>
+              {/each}
+            </div>
+          </div>
+
+          <div class="rag-telemetry-bar is-footer">
             <span
               class="rag-status-tag"
               class:is-abstain={jawabanPamomong.statusGrounding === 'luar-korpus'}
             >
               {statusLabel}
             </span>
-            <span class="rag-model-pill" data-testid="pamomong-model-badge">
-              {tI18n(bahasa, 'kawruh.modelBadge', { model: jawabanPamomong.modelNama })}
-            </span>
             <span class="rag-metric">
               {tI18n(bahasa, 'kawruh.confidence')} <strong>{jawabanPamomong.skorKeyakinan}%</strong> · {jawabanPamomong.latensiMs} ms
             </span>
           </div>
 
-          <div style="display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px;">
+          <div style="display: flex; flex-wrap: wrap; gap: 6px;">
             {#each jawabanPamomong.sumber as ks}
               <span class="source-badge">{formatSumberLabel(ks)}</span>
             {/each}
@@ -352,27 +489,23 @@
             {/each}
           </div>
 
-          <div class="pamomong-answer-prose">
-            {#each jawabanPamomong.jawaban.split('\n\n') as paragraf}
-              <p>{paragraf}</p>
-            {/each}
-          </div>
-
           {#if jawabanPamomong.butirBukti.length > 0}
-            <div class="rag-evidence-list" aria-label={tI18n(bahasa, 'kawruh.retrievedEyebrow', { count: jawabanPamomong.butirBukti.length })}>
-              <div class="eyebrow-mono" style="font-size: 0.66rem; margin-bottom: 6px;">
-                {tI18n(bahasa, 'kawruh.retrievedEyebrow', { count: jawabanPamomong.butirBukti.length })}
-              </div>
-              {#each jawabanPamomong.butirBukti as bukti}
-                <div class="rag-evidence-row">
-                  <div class="rag-evidence-head">
-                    <strong>{bukti.judul}</strong>
-                    <span>{tI18n(bahasa, 'kawruh.relevance', { pct: bukti.skorRelatif, src: bukti.sumber.join(', ') })}</span>
+            <details class="rag-evidence-details">
+              <summary class="rag-evidence-summary">
+                {tI18n(bahasa, 'kawruh.toggleEvidence', { count: jawabanPamomong.butirBukti.length })}
+              </summary>
+              <div class="rag-evidence-list" aria-label={tI18n(bahasa, 'kawruh.retrievedEyebrow', { count: jawabanPamomong.butirBukti.length })}>
+                {#each jawabanPamomong.butirBukti as bukti}
+                  <div class="rag-evidence-row">
+                    <div class="rag-evidence-head">
+                      <strong>{bukti.judul}</strong>
+                      <span>{tI18n(bahasa, 'kawruh.relevance', { pct: bukti.skorRelatif, src: bukti.sumber.join(', ') })}</span>
+                    </div>
+                    <p class="rag-evidence-quote">{bukti.kutipan}</p>
                   </div>
-                  <p class="rag-evidence-quote">{bukti.kutipan}</p>
-                </div>
-              {/each}
-            </div>
+                {/each}
+              </div>
+            </details>
           {/if}
         </div>
       {:else if modeStudio === 'banding'}
@@ -406,17 +539,30 @@
             </button>
           </div>
 
-          <div class="pamomong-answer-box" data-testid="studio-comp-result">
-            <div class="rag-telemetry-bar">
-              <span class="rag-model-pill">
-                {tI18n(bahasa, 'kawruh.modelBadge', { model: hasilKomparasi.modelNama })}
+          <div
+            bind:this={answerBoxEl}
+            class="pamomong-answer-box is-hero-answer"
+            class:is-just-updated={justUpdated}
+            data-testid="studio-comp-result"
+          >
+            <div class="ai-answer-hero-head">
+              <span class="ai-answer-title">
+                <span class="ai-answer-dot" aria-hidden="true"></span>
+                {tI18n(bahasa, 'kawruh.compHeading')}
               </span>
-              <span class="rag-metric">{hasilKomparasi.latensiMs} ms</span>
-              {#each hasilKomparasi.sumber as ks}
-                <span class="source-badge">{ks}</span>
-              {/each}
+              <div class="ai-answer-head-actions">
+                <span class="rag-model-pill">
+                  {tI18n(bahasa, 'kawruh.modelBadge', { model: hasilKomparasi.modelNama })}
+                </span>
+                <span class="rag-metric">{hasilKomparasi.latensiMs} ms</span>
+              </div>
             </div>
-
+            {#if studioBusy}
+              <div class="ai-answer-loading" role="status">
+                <span class="ai-answer-spinner" aria-hidden="true"></span>
+                <span>{tI18n(bahasa, 'kawruh.loadingBanner')}</span>
+              </div>
+            {/if}
             <div class="studio-card-stack">
               <div class="studio-info-card">
                 <div class="eyebrow-mono">{tI18n(bahasa, 'aiStudio.compSim')}</div>
@@ -431,6 +577,15 @@
                 <p>{hasilKomparasi.titikTemuFilosofi}</p>
               </div>
             </div>
+
+            <div class="rag-telemetry-bar is-footer">
+              <div style="display: flex; flex-wrap: wrap; gap: 6px;">
+                {#each hasilKomparasi.sumber as ks}
+                  <span class="source-badge">{ks}</span>
+                {/each}
+              </div>
+              <span class="rag-metric">{hasilKomparasi.latensiMs} ms</span>
+            </div>
           </div>
         </div>
       {:else if modeStudio === 'pujangga'}
@@ -442,6 +597,7 @@
           >
             <input
               type="text"
+              maxlength="120"
               class="pamomong-query-input"
               bind:value={temaPujangga}
               placeholder={tI18n(bahasa, 'aiStudio.poetPlaceholder')}
@@ -457,28 +613,54 @@
             </button>
           </form>
 
-          <div class="pamomong-answer-box" data-testid="studio-poet-result">
-            <div class="rag-telemetry-bar">
-              <span class="rag-model-pill">
-                {tI18n(bahasa, 'kawruh.modelBadge', { model: hasilPujangga.modelNama })}
+          <div
+            bind:this={answerBoxEl}
+            class="pamomong-answer-box is-hero-answer"
+            class:is-abstain-box={hasilPujangga.statusAman === false}
+            class:is-just-updated={justUpdated}
+            data-testid="studio-poet-result"
+          >
+            <div class="ai-answer-hero-head">
+              <span class="ai-answer-title">
+                <span
+                  class="ai-answer-dot"
+                  class:is-abstain={hasilPujangga.statusAman === false}
+                  aria-hidden="true"
+                ></span>
+                {tI18n(bahasa, 'kawruh.poetHeading')}
               </span>
-              {#each hasilPujangga.sumber as ks}
-                <span class="source-badge">{ks}</span>
-              {/each}
-              <button
-                type="button"
-                class="util-pill"
-                class:is-active={pujanggaSuaraAktif}
-                onclick={() => (pujanggaSuaraAktif ? hentikanSuaraPujangga() : putarkanSuaraPujangga())}
-                data-testid="studio-poet-play-voice"
-              >
-                {pujanggaSuaraAktif
-                  ? tI18n(bahasa, 'aiStudio.poetStopVoice')
-                  : tI18n(bahasa, 'aiStudio.poetPlayVoice')}
-              </button>
+              <div class="ai-answer-head-actions">
+                <span class="rag-model-pill">
+                  {tI18n(bahasa, 'kawruh.modelBadge', { model: hasilPujangga.modelNama })}
+                </span>
+                <button
+                  type="button"
+                  class="util-pill"
+                  class:is-active={suaraStudioAktif === 'pujangga'}
+                  onclick={() =>
+                    suaraStudioAktif === 'pujangga'
+                      ? hentikanSuaraStudio()
+                      : putarkanSuaraStudio(hasilPujangga, 'pujangga')}
+                  data-testid="studio-poet-play-voice"
+                >
+                  {suaraStudioAktif === 'pujangga'
+                    ? tI18n(bahasa, 'aiStudio.poetStopVoice')
+                    : tI18n(bahasa, 'aiStudio.poetPlayVoice')}
+                </button>
+              </div>
             </div>
-
+            {#if studioBusy}
+              <div class="ai-answer-loading" role="status">
+                <span class="ai-answer-spinner" aria-hidden="true"></span>
+                <span>{tI18n(bahasa, 'kawruh.loadingBanner')}</span>
+              </div>
+            {/if}
             <div class="studio-card-stack">
+              {#if hasilPujangga.statusAman === false && hasilPujangga.pesanKeamanan}
+                <div class="studio-info-card" data-testid="studio-poet-guardrail-note">
+                  <p class="studio-poet-note">{hasilPujangga.pesanKeamanan}</p>
+                </div>
+              {/if}
               <div class="studio-info-card">
                 <div class="eyebrow-mono">{tI18n(bahasa, 'aiStudio.poetVerseLabel')}</div>
                 <p class="studio-poet-verse">{hasilPujangga.guritJawa}</p>
@@ -491,6 +673,236 @@
                 <div class="eyebrow-mono">{tI18n(bahasa, 'aiStudio.poetMeaningLabel')}</div>
                 <p>{hasilPujangga.terjemahan}</p>
                 <p class="studio-poet-note">{hasilPujangga.catatanMakna}</p>
+              </div>
+            </div>
+
+            <div class="rag-telemetry-bar is-footer">
+              {#if hasilPujangga.statusAman === false}
+                <span class="rag-status-tag is-abstain" data-testid="studio-poet-guardrail-badge">
+                  {tI18n(bahasa, 'kawruh.statusAbstain')}
+                </span>
+              {/if}
+              <div style="display: flex; flex-wrap: wrap; gap: 6px;">
+                {#each hasilPujangga.sumber as ks}
+                  <span class="source-badge">{ks}</span>
+                {/each}
+              </div>
+            </div>
+          </div>
+        </div>
+      {:else if modeStudio === 'krama'}
+        <div class="studio-panel" data-testid="studio-panel-krama">
+          <p class="studio-panel-lead">{tI18n(bahasa, 'aiStudio.kramaLead')}</p>
+          <form onsubmit={(e) => void jalankanKramaAI(e)} class="pamomong-query-form">
+            <input
+              type="text"
+              maxlength="140"
+              class="pamomong-query-input"
+              bind:value={frasaKrama}
+              placeholder={tI18n(bahasa, 'aiStudio.kramaPlaceholder')}
+              data-testid="studio-krama-input"
+            />
+            <button
+              type="submit"
+              class="pill-cta-white"
+              disabled={studioBusy}
+              data-testid="studio-krama-submit"
+            >
+              {studioBusy ? tI18n(bahasa, 'aiStudio.kramaLoading') : tI18n(bahasa, 'aiStudio.kramaSubmit')}
+            </button>
+          </form>
+
+          <div
+            bind:this={answerBoxEl}
+            class="pamomong-answer-box is-hero-answer"
+            class:is-abstain-box={hasilKrama.statusAman === false}
+            class:is-just-updated={justUpdated}
+            data-testid="studio-krama-result"
+          >
+            <div class="ai-answer-hero-head">
+              <span class="ai-answer-title">
+                <span
+                  class="ai-answer-dot"
+                  class:is-abstain={hasilKrama.statusAman === false}
+                  aria-hidden="true"
+                ></span>
+                {tI18n(bahasa, 'kawruh.kramaHeading')}
+              </span>
+              <div class="ai-answer-head-actions">
+                <span class="rag-model-pill">
+                  {tI18n(bahasa, 'kawruh.modelBadge', { model: hasilKrama.modelNama })}
+                </span>
+                <button
+                  type="button"
+                  class="util-pill"
+                  class:is-active={suaraStudioAktif === 'krama'}
+                  onclick={() =>
+                    suaraStudioAktif === 'krama'
+                      ? hentikanSuaraStudio()
+                      : putarkanSuaraStudio(hasilKrama, 'krama')}
+                  data-testid="studio-krama-play-voice"
+                >
+                  {suaraStudioAktif === 'krama'
+                    ? tI18n(bahasa, 'aiStudio.kramaStopVoice')
+                    : tI18n(bahasa, 'aiStudio.kramaPlayVoice')}
+                </button>
+              </div>
+            </div>
+            {#if studioBusy}
+              <div class="ai-answer-loading" role="status">
+                <span class="ai-answer-spinner" aria-hidden="true"></span>
+                <span>{tI18n(bahasa, 'kawruh.loadingBanner')}</span>
+              </div>
+            {/if}
+            <div class="studio-card-stack">
+              {#if hasilKrama.statusAman === false && hasilKrama.pesanKeamanan}
+                <div class="studio-info-card" data-testid="studio-krama-guardrail-note">
+                  <p class="studio-poet-note">{hasilKrama.pesanKeamanan}</p>
+                </div>
+              {/if}
+              <div class="studio-info-card">
+                <div class="eyebrow-mono">{tI18n(bahasa, 'aiStudio.kramaKramaLabel')}</div>
+                <p class="studio-poet-verse">{hasilKrama.kramaInggil}</p>
+              </div>
+              <div class="studio-info-card">
+                <div class="eyebrow-mono">{tI18n(bahasa, 'aiStudio.kramaNgokoLabel')}</div>
+                <p>{hasilKrama.ngoko}</p>
+              </div>
+              <div class="studio-info-card">
+                <div class="eyebrow-mono">{tI18n(bahasa, 'aiStudio.kramaScriptLabel')}</div>
+                <p class="studio-poet-aksara" lang="jv">{hasilKrama.aksaraJawa}</p>
+              </div>
+              <div class="studio-info-card">
+                <div class="eyebrow-mono">{tI18n(bahasa, 'aiStudio.kramaEtikaLabel')}</div>
+                <p class="studio-poet-note">{hasilKrama.catatanEtika}</p>
+              </div>
+            </div>
+
+            <div class="rag-telemetry-bar is-footer">
+              {#if hasilKrama.statusAman === false}
+                <span class="rag-status-tag is-abstain" data-testid="studio-krama-guardrail-badge">
+                  {tI18n(bahasa, 'kawruh.statusAbstain')}
+                </span>
+              {/if}
+              <div style="display: flex; flex-wrap: wrap; gap: 6px;">
+                {#each hasilKrama.sumber as ks}
+                  <span class="source-badge">{ks}</span>
+                {/each}
+              </div>
+            </div>
+          </div>
+        </div>
+      {:else if modeStudio === 'tur'}
+        <div class="studio-panel" data-testid="studio-panel-tur">
+          <p class="studio-panel-lead">{tI18n(bahasa, 'aiStudio.turLead')}</p>
+          <form onsubmit={(e) => void jalankanRuteTurAI(e)} class="studio-comp-controls">
+            <label class="studio-select-wrap">
+              <span>{tI18n(bahasa, 'aiStudio.turInterestLabel')}</span>
+              <select bind:value={minatTur} class="studio-select" data-testid="studio-tur-minat">
+                <option value="semua">{tI18n(bahasa, 'aiStudio.turMinat.semua')}</option>
+                <option value="tosan">{tI18n(bahasa, 'aiStudio.turMinat.tosan')}</option>
+                <option value="arsitektur">{tI18n(bahasa, 'aiStudio.turMinat.arsitektur')}</option>
+                <option value="karawitan">{tI18n(bahasa, 'aiStudio.turMinat.karawitan')}</option>
+                <option value="pakeliran">{tI18n(bahasa, 'aiStudio.turMinat.pakeliran')}</option>
+              </select>
+            </label>
+            <label class="studio-select-wrap">
+              <span>{tI18n(bahasa, 'aiStudio.turDurationLabel')}</span>
+              <select bind:value={durasiTur} class="studio-select" data-testid="studio-tur-durasi">
+                <option value="mendalam">{tI18n(bahasa, 'aiStudio.turDurasi.mendalam')}</option>
+                <option value="kilat">{tI18n(bahasa, 'aiStudio.turDurasi.kilat')}</option>
+              </select>
+            </label>
+            <button
+              type="submit"
+              class="pill-cta-white"
+              disabled={studioBusy}
+              data-testid="studio-tur-submit"
+            >
+              {studioBusy ? tI18n(bahasa, 'aiStudio.turLoading') : tI18n(bahasa, 'aiStudio.turSubmit')}
+            </button>
+          </form>
+
+          <input
+            type="text"
+            maxlength="100"
+            class="pamomong-query-input"
+            style="width: 100%; margin-bottom: 12px;"
+            bind:value={catatanTur}
+            placeholder={tI18n(bahasa, 'aiStudio.turNotePlaceholder')}
+            data-testid="studio-tur-note"
+          />
+
+          <div
+            bind:this={answerBoxEl}
+            class="pamomong-answer-box is-hero-answer"
+            class:is-abstain-box={hasilTur.statusAman === false}
+            class:is-just-updated={justUpdated}
+            data-testid="studio-tur-result"
+          >
+            <div class="ai-answer-hero-head">
+              <span class="ai-answer-title">
+                <span
+                  class="ai-answer-dot"
+                  class:is-abstain={hasilTur.statusAman === false}
+                  aria-hidden="true"
+                ></span>
+                {tI18n(bahasa, 'kawruh.turHeading')}
+              </span>
+              <div class="ai-answer-head-actions">
+                <span class="rag-model-pill">
+                  {tI18n(bahasa, 'kawruh.modelBadge', { model: hasilTur.modelNama })}
+                </span>
+              </div>
+            </div>
+            {#if studioBusy}
+              <div class="ai-answer-loading" role="status">
+                <span class="ai-answer-spinner" aria-hidden="true"></span>
+                <span>{tI18n(bahasa, 'kawruh.loadingBanner')}</span>
+              </div>
+            {/if}
+            {#if hasilTur.statusAman === false && hasilTur.pesanKeamanan}
+              <div class="studio-info-card" data-testid="studio-tur-guardrail-note" style="margin-bottom: 10px;">
+                <p class="studio-poet-note">{hasilTur.pesanKeamanan}</p>
+              </div>
+            {/if}
+
+            <p style="margin: 0 0 12px; font-weight: 500;">{hasilTur.ringkasanRute}</p>
+
+            <div class="studio-card-stack">
+              {#each hasilTur.langkah as step, sIdx}
+                <div class="studio-info-card studio-tur-step-card">
+                  <div class="studio-tur-step-head">
+                    <strong>0{sIdx + 1} · {step.judul}</strong>
+                    <div style="display: flex; gap: 6px; align-items: center;">
+                      {#each step.sumber as ks}
+                        <span class="source-badge">{ks}</span>
+                      {/each}
+                      <button
+                        type="button"
+                        class="util-pill"
+                        onclick={() => onMasukLangkahTur?.(step)}
+                        data-testid="studio-tur-step-go-{sIdx}"
+                      >
+                        {tI18n(bahasa, 'aiStudio.turOpenRoom')}
+                      </button>
+                    </div>
+                  </div>
+                  <p class="studio-poet-note" style="margin-top: 6px;">{step.alasan}</p>
+                </div>
+              {/each}
+            </div>
+
+            <div class="rag-telemetry-bar is-footer">
+              {#if hasilTur.statusAman === false}
+                <span class="rag-status-tag is-abstain" data-testid="studio-tur-guardrail-badge">
+                  {tI18n(bahasa, 'kawruh.statusAbstain')}
+                </span>
+              {/if}
+              <div style="display: flex; flex-wrap: wrap; gap: 6px;">
+                {#each hasilTur.sumber as ks}
+                  <span class="source-badge">{ks}</span>
+                {/each}
               </div>
             </div>
           </div>

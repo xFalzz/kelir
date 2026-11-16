@@ -14,18 +14,50 @@
 
   interface Props {
     bahasa: BahasaAktif;
+    tema: 'malam' | 'terang';
     terbuka: boolean;
     jejak: JejakKurasi;
+    skalaTeks: 'normal' | 'besar';
+    onUbahSkalaTeks: (skala: 'normal' | 'besar') => void;
     onClose: () => void;
     onEksekusiAksi: (aksi: AksiNavigasiPencarian) => void;
   }
 
-  let { bahasa, terbuka, jejak, onClose, onEksekusiAksi }: Props = $props();
+  let {
+    bahasa,
+    tema,
+    terbuka,
+    jejak,
+    skalaTeks,
+    onUbahSkalaTeks,
+    onClose,
+    onEksekusiAksi,
+  }: Props = $props();
 
   let kueri = $state('');
   let kategoriAktif: KategoriPencarian = $state('semua');
   let indeksSorot = $state(0);
   let inputEl: HTMLInputElement | undefined = $state();
+  let namaPiagam = $state('');
+
+  async function unduhPiagam(): Promise<void> {
+    if (typeof document === 'undefined') return;
+    const { buatDataUrlPiagamKurator } = await import('../../lib/piagamKurator.ts');
+    const hasil = buatDataUrlPiagamKurator({
+      namaPengunjung: namaPiagam,
+      bahasa,
+      tema,
+      jejak,
+      totalKuis: BANK_KUIS_S1_S7.length,
+    });
+    if (!hasil) return;
+    const a = document.createElement('a');
+    a.href = hasil.dataUrl;
+    a.download = hasil.filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+  }
 
   let indeksLengkap = $derived(bangunIndeksPencarian(bahasa));
   let hasilCari = $derived(cariDalamArsip(indeksLengkap, kueri, kategoriAktif, 20));
@@ -143,11 +175,62 @@
           </span>
           <span>·</span>
           <span>
+            {tI18n(bahasa, 'search.favoritesMetric', {
+              done: (jejak.favoritIds ?? []).length,
+              total: 7,
+            })}
+          </span>
+          <span>·</span>
+          <span>
             {tI18n(bahasa, 'search.quizBest', {
               done: jejak.skorKuisTertinggi,
               total: BANK_KUIS_S1_S7.length,
             })}
           </span>
+        </div>
+      </div>
+
+      <!-- Cetak Piagam Kurator Lokal & Kontrol Keterbacaan -->
+      <div class="cert-export-bar">
+        <div class="cert-input-group">
+          <input
+            type="text"
+            maxlength="42"
+            class="cert-name-input"
+            bind:value={namaPiagam}
+            placeholder={tI18n(bahasa, 'search.certNamePlaceholder')}
+            data-testid="cert-name-input"
+          />
+          <button
+            type="button"
+            class="util-pill"
+            onclick={() => void unduhPiagam()}
+            data-testid="btn-download-cert"
+          >
+            {tI18n(bahasa, 'search.certDownload')}
+          </button>
+        </div>
+
+        <div class="search-a11y-group">
+          <span class="eyebrow-mono">{tI18n(bahasa, 'search.fontScaleLabel')}</span>
+          <button
+            type="button"
+            class="util-pill"
+            class:is-active={skalaTeks === 'normal'}
+            onclick={() => onUbahSkalaTeks('normal')}
+            data-testid="btn-scale-normal"
+          >
+            A
+          </button>
+          <button
+            type="button"
+            class="util-pill"
+            class:is-active={skalaTeks === 'besar'}
+            onclick={() => onUbahSkalaTeks('besar')}
+            data-testid="btn-scale-large"
+          >
+            A+
+          </button>
         </div>
       </div>
 
@@ -197,12 +280,19 @@
                 <p class="search-result-sub">{item.subjudul}</p>
               </div>
               <div class="search-result-meta">
+                {#if item.aksi.jenis === 'twin' && (jejak.favoritIds ?? []).includes(item.aksi.bendaId)}
+                  <span class="source-badge is-fav-mark">★</span>
+                {/if}
                 <span class="source-badge">{labelKategori(item.kategori)}</span>
                 <span class="search-result-code">{item.meta}</span>
               </div>
             </button>
           {/each}
         {/if}
+      </div>
+
+      <div class="search-footer-bar">
+        <span class="eyebrow-mono">{tI18n(bahasa, 'search.shortcutsHint')}</span>
       </div>
     </div>
   </div>

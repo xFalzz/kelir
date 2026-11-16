@@ -20,7 +20,7 @@
     type TitikInfoPusaka,
   } from '../content/pusaka.ts';
   import { DAFTAR_CARAKAN, latinKeAksaraJawa, type KartuCarakan } from '../lib/aksara.ts';
-  import { mintaSuaraDalangBabak } from '../lib/aiStudio.ts';
+  import { mintaSuaraDalangBabak, type LangkahRuteTur } from '../lib/aiStudio.ts';
   import { audioBudaya } from '../lib/audioBudaya.ts';
   import { type GendingId } from '../lib/gendingJawa.ts';
   import type { FrameTangan, PengelolaTangan, StatusKamera } from '../lib/handTracker.ts';
@@ -133,9 +133,17 @@
   let dalangAudioEl: HTMLAudioElement | null = null;
   let dalangAudioUrl: string | null = null;
 
-  // Pencarian Global & Paspor Jejak Kurasi
+  // Pencarian Global, Paspor Jejak Kurasi & Skala Keterbacaan
   let searchModalBuka = $state(false);
   let jejakKurasi: JejakKurasi = $state(jejakKurasiKosong());
+  let skalaTeks: 'normal' | 'besar' = $state('normal');
+
+  function aturSkalaTeks(skala: 'normal' | 'besar'): void {
+    skalaTeks = skala;
+    if (typeof document !== 'undefined') {
+      document.documentElement.style.fontSize = skala === 'besar' ? '112.5%' : '';
+    }
+  }
 
   // Lab Aksara Jawa & Pamomong AI State (Halaman 05)
   let inputAksaraLatin = $state('Kelir warisan budaya Jawa nusantara.');
@@ -409,6 +417,34 @@
       skorKuisTertinggi: skor,
     };
     simpanJejakKurasi(jejakKurasi);
+  }
+
+  function toggleFavoritSpesimen(id: SpesimenBedahId): void {
+    const daftar = jejakKurasi.favoritIds ?? [];
+    const ada = daftar.includes(id);
+    jejakKurasi = {
+      ...jejakKurasi,
+      favoritIds: ada ? daftar.filter((item) => item !== id) : [...daftar, id],
+    };
+    simpanJejakKurasi(jejakKurasi);
+  }
+
+  function bukaLangkahTur(step: LangkahRuteTur): void {
+    if (step.ruang === 'twin') {
+      pilihPusaka(step.bendaId ?? 'keris', true, step.titikId);
+      return;
+    }
+    if (step.ruang === 'koleksi') {
+      const idx = KOLEKSI_COVERFLOW.findIndex((c) => c.artefakId === step.bendaId);
+      bukaModalSuluk(step.trackIdx ?? (idx >= 0 ? idx : 0));
+      return;
+    }
+    if (step.ruang === 'pakeliran') {
+      pilihBabak(step.babakIdx ?? 0);
+      pindahHalaman('pakeliran');
+      return;
+    }
+    pindahHalaman('kawruh', 'aksara');
   }
 
   function hentikanSuaraDalang(): void {
@@ -781,11 +817,23 @@
     );
   }
 
+  let mouseMoveRaf: number | null = null;
+  let lastMouseX = 0;
+  let lastMouseY = 0;
+
   function handleMouseMoveGlobal(e: MouseEvent): void {
-    const nx = (e.clientX / Math.max(window.innerWidth, 1)) * 2 - 1;
-    const ny = (e.clientY / Math.max(window.innerHeight, 1)) * 2 - 1;
-    dioramaStage?.aturParalaks(nx, ny);
-    orbStage?.aturArahKursor(nx, ny);
+    if (!canUseHoverPointer()) return;
+    if (halamanAktif !== 'beranda' && halamanAktif !== 'kawruh') return;
+    lastMouseX = e.clientX;
+    lastMouseY = e.clientY;
+    if (mouseMoveRaf !== null) return;
+    mouseMoveRaf = window.requestAnimationFrame(() => {
+      mouseMoveRaf = null;
+      const nx = (lastMouseX / Math.max(window.innerWidth, 1)) * 2 - 1;
+      const ny = (lastMouseY / Math.max(window.innerHeight, 1)) * 2 - 1;
+      if (halamanAktif === 'beranda') dioramaStage?.aturParalaks(nx, ny);
+      if (halamanAktif === 'kawruh') orbStage?.aturArahKursor(nx, ny);
+    });
   }
 
   function handleWallMouseMove(e: MouseEvent): void {
@@ -865,13 +913,18 @@
     window.addEventListener('popstate', onPopState);
 
     // Preload malas modul 3D sub-halaman ketika idle agar perpindahan halaman bebas jeda
-    const prefetchTimer = window.setTimeout(() => {
+    const muatSubPanggungIdle = () => {
       void import('../scenes/digitalTwinStage.ts');
       void import('../scenes/coverflowStage.ts');
       void import('../scenes/sulukShowcaseStage.ts');
       void import('../scenes/wayangStage.ts');
       void import('../scenes/pamomongOrbStage.ts');
-    }, 320);
+    };
+    const prefetchTimer = window.setTimeout(() => {
+      const idleCb = (window as unknown as { requestIdleCallback?: (cb: () => void, opts?: { timeout: number }) => void }).requestIdleCallback;
+      if (idleCb) idleCb(muatSubPanggungIdle, { timeout: 1600 });
+      else muatSubPanggungIdle();
+    }, 950);
 
     const reduceMotion =
       typeof window !== 'undefined' &&
@@ -902,6 +955,10 @@
   });
 
   onDestroy(() => {
+    if (mouseMoveRaf !== null && typeof window !== 'undefined') {
+      window.cancelAnimationFrame(mouseMoveRaf);
+      mouseMoveRaf = null;
+    }
     hentikanSuaraDalang();
     pengelolaTangan?.matikan();
     audioBudaya.hentikanSuasanaPendopo();
@@ -930,6 +987,24 @@
       if (searchModalBuka) searchModalBuka = false;
       if (modalSulukBuka) modalSulukBuka = false;
       if (langMenuBuka) langMenuBuka = false;
+      return;
+    }
+    const tgt = e.target as HTMLElement | null;
+    const isInput =
+      tgt &&
+      (tgt.tagName === 'INPUT' ||
+        tgt.tagName === 'TEXTAREA' ||
+        tgt.tagName === 'SELECT' ||
+        tgt.isContentEditable);
+    if (isInput || e.ctrlKey || e.metaKey || e.altKey) return;
+    const lowKey = e.key.toLowerCase();
+    if (e.key === '?') {
+      e.preventDefault();
+      searchModalBuka = true;
+    } else if (lowKey === 't') {
+      toggleTema();
+    } else if (lowKey === 'm') {
+      toggleAudio();
     }
   }}
 />
@@ -1404,6 +1479,9 @@
       }}
       onBunyikanWilah={bunyikanWilahTwin}
       onBukaSulukSpesimen={bukaSulukSpesimen}
+      isFavorit={(jejakKurasi.favoritIds ?? []).includes(bendaAktif.id)}
+      onToggleFavorit={() => toggleFavoritSpesimen(bendaAktif.id)}
+      onTangkapPotret={() => twinStage?.tangkapPotretPng() ?? null}
       onPindahHalaman={(hal, anchor) => pindahHalaman(hal, anchor)}
       onScrollProgres={(p) => twinStage?.aturProgresGulir(p)}
     />
@@ -1419,11 +1497,13 @@
       {tema}
       {bahasa}
       {suasanaPendopoAktif}
+      favoritIds={jejakKurasi.favoritIds ?? []}
       mountStage={mountCoverflowStage}
       onSelectIndex={pilihIndeksCoverflow}
       onGeser={geserCoverflow}
       onBukaModalSuluk={bukaModalSuluk}
       onToggleSuasanaGending={toggleSuasanaGending}
+      onToggleFavorit={toggleFavoritSpesimen}
       onBukaItem={bukaItemCoverflow}
       onFokusAnatomi={(item, titikId) => pilihPusaka(item.artefakId, true, titikId ?? item.titikId)}
       onParalaks={(nx, ny) => coverflowStage?.aturParalaks(nx, ny)}
@@ -1639,6 +1719,7 @@
       }}
       {formatSumberLabel}
       onSimpanSkorKuis={catatSkorKuis}
+      onMasukLangkahTur={bukaLangkahTur}
     />
   {/if}
 
@@ -1729,8 +1810,11 @@
 
 <SearchModal
   {bahasa}
+  {tema}
   terbuka={searchModalBuka}
   jejak={jejakKurasi}
+  {skalaTeks}
+  onUbahSkalaTeks={aturSkalaTeks}
   onClose={() => (searchModalBuka = false)}
   onEksekusiAksi={eksekusiAksiPencarian}
 />

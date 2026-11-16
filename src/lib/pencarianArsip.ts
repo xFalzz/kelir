@@ -42,6 +42,7 @@ export interface JejakKurasi {
   spesimenDiteliti: SpesimenBedahId[];
   sulukDidengar: SpesimenBedahId[];
   babakPakeliran: number[];
+  favoritIds: SpesimenBedahId[];
   skorKuisTertinggi: number;
 }
 
@@ -52,6 +53,7 @@ export function jejakKurasiKosong(): JejakKurasi {
     spesimenDiteliti: [],
     sulukDidengar: [],
     babakPakeliran: [],
+    favoritIds: [],
     skorKuisTertinggi: 0,
   };
 }
@@ -67,6 +69,7 @@ export function bacaJejakKurasi(): JejakKurasi {
       spesimenDiteliti: Array.isArray(parsed.spesimenDiteliti) ? parsed.spesimenDiteliti : [],
       sulukDidengar: Array.isArray(parsed.sulukDidengar) ? parsed.sulukDidengar : [],
       babakPakeliran: Array.isArray(parsed.babakPakeliran) ? parsed.babakPakeliran : [],
+      favoritIds: Array.isArray(parsed.favoritIds) ? parsed.favoritIds : [],
       skorKuisTertinggi:
         typeof parsed.skorKuisTertinggi === 'number' ? parsed.skorKuisTertinggi : 0,
     };

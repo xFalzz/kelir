@@ -534,6 +534,17 @@ export class DigitalTwinStage {
     this.proyeksikanTitik();
   };
 
+  /** Mengambil potret PNG sesaat dari frame WebGL aktif tanpa mengaktifkan preserveDrawingBuffer permanen. */
+  public tangkapPotretPng(): string | null {
+    if (!this.renderer) return null;
+    try {
+      this.renderer.render(this.scene, this.camera);
+      return this.renderer.domElement.toDataURL('image/png');
+    } catch {
+      return null;
+    }
+  }
+
   public destroy(): void {
     this.loopAktif = false;
     this.stopObservasi?.();

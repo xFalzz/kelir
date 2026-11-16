@@ -4,6 +4,7 @@ import {
   createSafeWebGLRenderer,
   disposeSceneObject,
   hitungFovResponsif,
+  isMobileGpuProfile,
   pasangObservasiPanggung,
 } from './threeHelpers.ts';
 import {
@@ -143,7 +144,8 @@ export class CoverflowStage {
     this.keySpot.position.set(1.9, 6.8, 6.2);
     this.keySpot.target.position.set(0, 0.1, 2.0);
     this.keySpot.castShadow = true;
-    this.keySpot.shadow.mapSize.set(1024, 1024);
+    const shadowRes = isMobileGpuProfile() ? 512 : 1024;
+    this.keySpot.shadow.mapSize.set(shadowRes, shadowRes);
     this.keySpot.shadow.bias = -0.0005;
     this.scene.add(this.keySpot, this.keySpot.target);
 
@@ -187,7 +189,8 @@ export class CoverflowStage {
     this.scene.add(this.focusHaloMesh);
 
     // Partikel debu museum tipis melayang
-    const count = 42;
+    const mobileGpu = isMobileGpuProfile();
+    const count = mobileGpu ? 22 : 42;
     const posArr = new Float32Array(count * 3);
     for (let i = 0; i < count; i++) {
       posArr[i * 3] = (Math.random() - 0.5) * 12;
@@ -455,21 +458,35 @@ export class CoverflowStage {
     let shortestDelta = this.activeIdx - this.continuousIdx;
     if (shortestDelta > len / 2) shortestDelta -= len;
     if (shortestDelta < -len / 2) shortestDelta += len;
-    this.continuousIdx = (this.continuousIdx + shortestDelta * 0.12 + len) % len;
-
-    this.sinkronkanTargetSlot(false);
+    const settlingCarousel = Math.abs(shortestDelta) > 0.0005;
+    if (settlingCarousel) {
+      this.continuousIdx = (this.continuousIdx + shortestDelta * 0.12 + len) % len;
+      this.sinkronkanTargetSlot(false);
+    }
 
     for (const slot of this.slots) {
-      slot.root.position.x += (slot.targetX - slot.root.position.x) * 0.14;
-      slot.root.position.y += (slot.targetY - slot.root.position.y) * 0.14;
-      slot.root.position.z += (slot.targetZ - slot.root.position.z) * 0.14;
-      slot.root.rotation.y += (slot.targetRotY - slot.root.rotation.y) * 0.14;
-      const curScale = slot.root.scale.x + (slot.targetScale - slot.root.scale.x) * 0.14;
-      slot.root.scale.setScalar(curScale);
+      if (Math.abs(slot.targetX - slot.root.position.x) > 0.0005) {
+        slot.root.position.x += (slot.targetX - slot.root.position.x) * 0.14;
+      }
+      if (Math.abs(slot.targetY - slot.root.position.y) > 0.0005) {
+        slot.root.position.y += (slot.targetY - slot.root.position.y) * 0.14;
+      }
+      if (Math.abs(slot.targetZ - slot.root.position.z) > 0.0005) {
+        slot.root.position.z += (slot.targetZ - slot.root.position.z) * 0.14;
+      }
+      if (Math.abs(slot.targetRotY - slot.root.rotation.y) > 0.0005) {
+        slot.root.rotation.y += (slot.targetRotY - slot.root.rotation.y) * 0.14;
+      }
+      if (Math.abs(slot.targetScale - slot.root.scale.x) > 0.0005) {
+        const curScale = slot.root.scale.x + (slot.targetScale - slot.root.scale.x) * 0.14;
+        slot.root.scale.setScalar(curScale);
+      }
 
       const isActive = slot.indeks === this.activeIdx;
       const targetRimIntensity = isActive ? 0.24 : 0.04;
-      slot.rimMat.emissiveIntensity += (targetRimIntensity - slot.rimMat.emissiveIntensity) * 0.1;
+      if (Math.abs(targetRimIntensity - slot.rimMat.emissiveIntensity) > 0.002) {
+        slot.rimMat.emissiveIntensity += (targetRimIntensity - slot.rimMat.emissiveIntensity) * 0.1;
+      }
 
       const targetPivotRot = isActive
         ? t * 0.32 + this.pointerX * 0.22

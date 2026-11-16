@@ -6,10 +6,14 @@ import {
   createSafeWebGLRenderer,
   disposeSceneObject,
   hitungFovResponsif,
+  isMobileGpuProfile,
   loadBudayaTextures,
   pasangObservasiPanggung,
   pinProyeksiBerubah,
 } from './threeHelpers.ts';
+
+let cacheGentengCanvas: { diff: HTMLCanvasElement; bump: HTMLCanvasElement } | null = null;
+let cacheAndesitCanvas: HTMLCanvasElement | null = null;
 
 export interface ProyeksiPinDiorama {
   bendaId: BendaPusaka['id'];
@@ -30,55 +34,58 @@ function buatTeksturGentengTerakota(): {
   bump: THREE.CanvasTexture | null;
 } {
   if (typeof document === 'undefined') return { diffuse: null, bump: null };
-  const canvas = document.createElement('canvas');
-  canvas.width = 512;
-  canvas.height = 512;
-  const ctx = canvas.getContext('2d');
+  if (!cacheGentengCanvas) {
+    const size = 256;
+    const canvas = document.createElement('canvas');
+    canvas.width = size;
+    canvas.height = size;
+    const ctx = canvas.getContext('2d');
 
-  const bumpCanvas = document.createElement('canvas');
-  bumpCanvas.width = 512;
-  bumpCanvas.height = 512;
-  const bctx = bumpCanvas.getContext('2d');
-  if (!ctx || !bctx) return { diffuse: null, bump: null };
+    const bumpCanvas = document.createElement('canvas');
+    bumpCanvas.width = size;
+    bumpCanvas.height = size;
+    const bctx = bumpCanvas.getContext('2d');
+    if (!ctx || !bctx) return { diffuse: null, bump: null };
 
-  ctx.fillStyle = '#7c2d12';
-  ctx.fillRect(0, 0, 512, 512);
-  bctx.fillStyle = '#808080';
-  bctx.fillRect(0, 0, 512, 512);
+    ctx.fillStyle = '#7c2d12';
+    ctx.fillRect(0, 0, size, size);
+    bctx.fillStyle = '#808080';
+    bctx.fillRect(0, 0, size, size);
 
-  // Baris susunan genteng kodok tanah liat tradisional Jawa
-  const rowH = 32;
-  const colW = 32;
-  for (let y = 0; y < 512; y += rowH) {
-    const grad = ctx.createLinearGradient(0, y, 0, y + rowH);
-    grad.addColorStop(0, '#a64322');
-    grad.addColorStop(0.7, '#7e2f16');
-    grad.addColorStop(1, '#3f1508');
-    ctx.fillStyle = grad;
-    ctx.fillRect(0, y, 512, rowH);
+    const rowH = 16;
+    const colW = 16;
+    for (let y = 0; y < size; y += rowH) {
+      const grad = ctx.createLinearGradient(0, y, 0, y + rowH);
+      grad.addColorStop(0, '#a64322');
+      grad.addColorStop(0.7, '#7e2f16');
+      grad.addColorStop(1, '#3f1508');
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, y, size, rowH);
 
-    for (let x = 0; x < 512; x += colW) {
-      const offset = (y / rowH) % 2 === 0 ? 0 : colW / 2;
-      ctx.strokeStyle = 'rgba(35, 10, 4, 0.55)';
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      ctx.arc(x + offset, y + rowH - 4, colW * 0.48, Math.PI, 0, false);
-      ctx.stroke();
+      for (let x = 0; x < size; x += colW) {
+        const offset = (y / rowH) % 2 === 0 ? 0 : colW / 2;
+        ctx.strokeStyle = 'rgba(35, 10, 4, 0.55)';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.arc(x + offset, y + rowH - 2, colW * 0.48, Math.PI, 0, false);
+        ctx.stroke();
 
-      bctx.fillStyle = '#dcdcdc';
-      bctx.fillRect(x + offset, y + 4, colW - 4, rowH - 8);
-      bctx.fillStyle = '#262626';
-      bctx.fillRect(x + offset, y + rowH - 4, colW, 4);
+        bctx.fillStyle = '#dcdcdc';
+        bctx.fillRect(x + offset, y + 2, colW - 2, rowH - 4);
+        bctx.fillStyle = '#262626';
+        bctx.fillRect(x + offset, y + rowH - 2, colW, 2);
+      }
     }
+    cacheGentengCanvas = { diff: canvas, bump: bumpCanvas };
   }
 
-  const diffuse = new THREE.CanvasTexture(canvas);
+  const diffuse = new THREE.CanvasTexture(cacheGentengCanvas.diff);
   diffuse.wrapS = THREE.RepeatWrapping;
   diffuse.wrapT = THREE.RepeatWrapping;
   diffuse.repeat.set(3, 3);
   diffuse.colorSpace = THREE.SRGBColorSpace;
 
-  const bump = new THREE.CanvasTexture(bumpCanvas);
+  const bump = new THREE.CanvasTexture(cacheGentengCanvas.bump);
   bump.wrapS = THREE.RepeatWrapping;
   bump.wrapT = THREE.RepeatWrapping;
   bump.repeat.set(3, 3);
@@ -88,25 +95,29 @@ function buatTeksturGentengTerakota(): {
 
 function buatTeksturLantaiAndesit(): THREE.CanvasTexture | null {
   if (typeof document === 'undefined') return null;
-  const canvas = document.createElement('canvas');
-  canvas.width = 512;
-  canvas.height = 512;
-  const ctx = canvas.getContext('2d');
-  if (!ctx) return null;
+  if (!cacheAndesitCanvas) {
+    const size = 256;
+    const canvas = document.createElement('canvas');
+    canvas.width = size;
+    canvas.height = size;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return null;
 
-  ctx.fillStyle = '#333742';
-  ctx.fillRect(0, 0, 512, 512);
+    ctx.fillStyle = '#333742';
+    ctx.fillRect(0, 0, size, size);
 
-  const tile = 64;
-  for (let y = 0; y < 512; y += tile) {
-    for (let x = 0; x < 512; x += tile) {
-      const shade = 48 + ((x * 7 + y * 13) % 18);
-      ctx.fillStyle = `rgb(${shade}, ${shade + 3}, ${shade + 10})`;
-      ctx.fillRect(x + 2, y + 2, tile - 4, tile - 4);
+    const tile = 32;
+    for (let y = 0; y < size; y += tile) {
+      for (let x = 0; x < size; x += tile) {
+        const shade = 48 + ((x * 7 + y * 13) % 18);
+        ctx.fillStyle = `rgb(${shade}, ${shade + 3}, ${shade + 10})`;
+        ctx.fillRect(x + 1, y + 1, tile - 2, tile - 2);
+      }
     }
+    cacheAndesitCanvas = canvas;
   }
 
-  const tex = new THREE.CanvasTexture(canvas);
+  const tex = new THREE.CanvasTexture(cacheAndesitCanvas);
   tex.wrapS = THREE.RepeatWrapping;
   tex.wrapT = THREE.RepeatWrapping;
   tex.repeat.set(4, 4);
@@ -288,8 +299,9 @@ export class LivingPendopoStage {
     this.sunLight = new THREE.DirectionalLight(0xffe9c7, 2.45);
     this.sunLight.position.set(11, 15, 10);
     this.sunLight.castShadow = true;
-    this.sunLight.shadow.mapSize.width = 1024;
-    this.sunLight.shadow.mapSize.height = 1024;
+    const shadowDim = isMobileGpuProfile() ? 512 : 1024;
+    this.sunLight.shadow.mapSize.width = shadowDim;
+    this.sunLight.shadow.mapSize.height = shadowDim;
     this.sunLight.shadow.camera.near = 2;
     this.sunLight.shadow.camera.far = 38;
     this.sunLight.shadow.camera.left = -9;
@@ -1024,7 +1036,7 @@ export class LivingPendopoStage {
     });
 
     // Partikel Kunang-Kunang & Bara Emas Suaka
-    const jumlahPartikel = 110;
+    const jumlahPartikel = isMobileGpuProfile() ? 54 : 110;
     const pos = new Float32Array(jumlahPartikel * 3);
     for (let i = 0; i < jumlahPartikel; i++) {
       pos[i * 3] = (Math.random() - 0.5) * 10.4;
@@ -1163,16 +1175,19 @@ export class LivingPendopoStage {
       this.gongAgengMesh.rotation.y = Math.sin(t * 1.5) * 0.05;
     }
 
-    // Animasi kain batik melambai tertiup angin
-    for (const item of this.batikClothMeshes) {
-      const attr = item.mesh.geometry.attributes.position as THREE.BufferAttribute;
-      for (let i = 0; i < attr.count; i++) {
-        const bx = item.basePos[i * 3];
-        const by = item.basePos[i * 3 + 1];
-        const wave = Math.sin(t * 2.4 + bx * 2.6 + by * 1.5 + item.phase) * (by < 0.35 ? 0.085 : 0.015);
-        attr.setZ(i, wave);
+    // Animasi kain batik melambai tertiup angin (dibatasi separuh frame di GPU seluler)
+    const updateBatikWave = !isMobileGpuProfile() || ((Math.floor(t * 60) & 1) === 0);
+    if (updateBatikWave) {
+      for (const item of this.batikClothMeshes) {
+        const attr = item.mesh.geometry.attributes.position as THREE.BufferAttribute;
+        for (let i = 0; i < attr.count; i++) {
+          const bx = item.basePos[i * 3];
+          const by = item.basePos[i * 3 + 1];
+          const wave = Math.sin(t * 2.4 + bx * 2.6 + by * 1.5 + item.phase) * (by < 0.35 ? 0.085 : 0.015);
+          attr.setZ(i, wave);
+        }
+        attr.needsUpdate = true;
       }
-      attr.needsUpdate = true;
     }
 
     if (this.lampApiKelir) {
@@ -1192,7 +1207,9 @@ export class LivingPendopoStage {
       const aktif = id === this.hoveredId || id === this.selectedId;
       for (const m of b.emissiveMeshes) {
         const targetInt = aktif ? 1.18 : id === 'keris' ? 0.75 : id === 'wayang' ? 0.58 : 0.18;
-        m.emissiveIntensity += (targetInt - m.emissiveIntensity) * 0.12;
+        if (Math.abs(targetInt - m.emissiveIntensity) > 0.004) {
+          m.emissiveIntensity += (targetInt - m.emissiveIntensity) * 0.12;
+        }
         if (aktif && m.emissive.getHex() === 0) {
           m.emissive.setHex(0xff5a1f);
         }

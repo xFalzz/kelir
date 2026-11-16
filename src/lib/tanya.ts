@@ -12,6 +12,13 @@ import {
   type MultiTeks,
   type TeksLokal,
 } from '../content/pusaka.ts';
+import {
+  BATAS_KARAKTER_TANYA,
+  auditDanBersihkanOutputAI,
+  bersihkanInputPengguna,
+  deteksiSeranganAtauLuarTopik,
+  pesanPenolakanKeamanan,
+} from './aiGuardrail.ts';
 
 export const MODEL_AI_PAMOMONG = 'gemini-3.8-live' as const;
 
@@ -328,9 +335,26 @@ export function jawabDariKurasiLokal(
 ): HasilTanya {
   const mulai = typeof performance !== 'undefined' ? performance.now() : Date.now();
   const benda = DAFTAR_BENDA.find((item) => item.id === bendaId) ?? DAFTAR_BENDA[0];
-  const pertanyaan = pertanyaanRaw.trim();
   const selesai = () =>
     Math.max(0.2, Number((((typeof performance !== 'undefined' ? performance.now() : Date.now()) - mulai)).toFixed(2)));
+
+  const pemeriksaan = deteksiSeranganAtauLuarTopik(pertanyaanRaw, BATAS_KARAKTER_TANYA);
+  if (!pemeriksaan.aman && pemeriksaan.kategori !== 'kosong') {
+    return {
+      jawaban: pesanPenolakanKeamanan(pemeriksaan.kategori, bahasa),
+      sumber: benda.sumber,
+      mode: 'bm25-kurasi-lokal',
+      modelNama: MODEL_AI_PAMOMONG,
+      statusGrounding: 'luar-korpus',
+      skorKeyakinan: 0,
+      kataKunciCocok: [],
+      latensiMs: selesai(),
+      butirBukti: [],
+      rujukan: bangunDaftarRujukan(benda.sumber),
+    };
+  }
+
+  const pertanyaan = pemeriksaan.inputBersih;
 
   if (!pertanyaan) {
     return {
@@ -386,7 +410,7 @@ export function jawabDariKurasiLokal(
         const tfNorm = (termFreq * (BM25_K1 + 1)) / (termFreq + BM25_K1 * (1 - BM25_B + BM25_B * (dl / KORPUS_INDEKS.avgDocLen)));
         skor += idf * tfNorm * w;
         cocokSet.add(term);
-      } else if (term.length >= 4 && doc.teksNormal.includes(term)) {
+      } else if (term.length >= 5 && doc.teksNormal.includes(term)) {
         const idf = KORPUS_INDEKS.idf.get(term) ?? 0.9;
         skor += idf * 0.48 * w;
         cocokSet.add(term);
@@ -417,14 +441,7 @@ export function jawabDariKurasiLokal(
 
   if (!lolosValidasiKorpus) {
     return {
-      jawaban: ambilTeks(
-        {
-          id: `Pertanyaan "${pertanyaan}" berada di luar cakupan korpus terverifikasi S1–S7. Untuk menjaga akurasi tanpa halusinasi, ajukan topik seputar Keris, Gamelan Saron, Batik Kawung, Pendopo Joglo, Lakon Wayang Kulit, atau Aksara Hanacaraka.`,
-          en: `The query "${pertanyaan}" lies outside our verified S1–S7 curatorial corpus. To preserve strict zero-hallucination accuracy, ask about the Keris blade, Saron Slendro gamelan, Batik Kawung, Joglo architecture, Shadow Puppetry, or the Hanacaraka script.`,
-          jw: `Pitakonan "${pertanyaan}" dumunung ing njaba cakupan korpus S1–S7. Kangge njagi leresipun katrangan tanpa pangira-ira, mangga tanglet babagan Dhuwung, Saron Slendro, Batik Kawung, Pendhapa Joglo, Pakeliran Wayang, utawa Aksara Hanacaraka.`,
-        },
-        bahasa,
-      ),
+      jawaban: pesanPenolakanKeamanan('luar-topik', bahasa),
       sumber: benda.sumber,
       mode: 'bm25-kurasi-lokal',
       modelNama: MODEL_AI_PAMOMONG,
@@ -491,25 +508,39 @@ export async function tanyakanKeAsisten(
   pertanyaan: string,
   bahasa: BahasaAktif = 'id',
 ): Promise<HasilTanya> {
+  const pemeriksaan = deteksiSeranganAtauLuarTopik(pertanyaan, BATAS_KARAKTER_TANYA);
+  if (!pemeriksaan.aman && pemeriksaan.kategori !== 'kosong') {
+    return jawabDariKurasiLokal(bendaId, pertanyaan, bahasa);
+  }
+  const pertanyaanBersih = bersihkanInputPengguna(pertanyaan, BATAS_KARAKTER_TANYA);
+
   try {
     const resp = await fetch('/api/tanya', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ bendaId, pertanyaan, bahasa }),
+      body: JSON.stringify({ bendaId, pertanyaan: pertanyaanBersih, bahasa }),
     });
     if (resp.ok) {
       const data = (await resp.json()) as Partial<HasilTanya>;
       if (data && typeof data.jawaban === 'string' && Array.isArray(data.butirBukti)) {
-        return {
-          ...(data as HasilTanya),
-          mode: data.mode === 'gemini-3.8-live' ? 'gemini-3.8-live' : 'bm25-api-terverifikasi',
-          modelNama: MODEL_AI_PAMOMONG,
-        };
+        const audited = auditDanBersihkanOutputAI(data.jawaban, {
+          minKarakter: 18,
+          maxKarakter: 1100,
+          wajibJangkarBudaya: data.statusGrounding !== 'luar-korpus',
+        });
+        if (audited) {
+          return {
+            ...(data as HasilTanya),
+            jawaban: audited,
+            mode: data.mode === 'gemini-3.8-live' ? 'gemini-3.8-live' : 'bm25-api-terverifikasi',
+            modelNama: MODEL_AI_PAMOMONG,
+          };
+        }
       }
     }
   } catch {
     // Mode pratinjau statis atau luring: gunakan indeks BM25 lokal tanpa mengganti model AI
   }
 
-  return jawabDariKurasiLokal(bendaId, pertanyaan, bahasa);
+  return jawabDariKurasiLokal(bendaId, pertanyaanBersih, bahasa);
 }

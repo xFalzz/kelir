@@ -9,6 +9,15 @@ import {
   type SpesimenBedahTwin,
 } from '../content/pusaka.ts';
 import { latinKeAksaraJawa } from './aksara.ts';
+import {
+  auditDanBersihkanOutputAI,
+  bersihkanInputPengguna,
+  memilikiJangkarBudaya,
+  validasiCatatanTur,
+  validasiInputKrama,
+  validasiTemaPujangga,
+  BATAS_KARAKTER_TUR,
+} from './aiGuardrail.ts';
 import { tentukanBahasaSuara } from './sulukNarasi.ts';
 
 export const MODEL_AI_STUDIO = 'gemini-3.8-live' as const;
@@ -43,6 +52,8 @@ export interface PujanggaResult {
   sumber: KodeSumber[];
   modelNama: typeof MODEL_AI_STUDIO;
   latensiMs: number;
+  statusAman?: boolean;
+  pesanKeamanan?: string;
 }
 
 export interface DalangSuaraResult {
@@ -55,6 +66,55 @@ export interface DalangSuaraResult {
   modePenyedia: 'gemini-3.8-live-audio' | 'web-speech-fallback';
   modelNama: typeof MODEL_AI_STUDIO;
   sumber: KodeSumber[];
+}
+
+export interface KramaAksaraResult {
+  kalimatAsal: string;
+  bahasa: BahasaAktif;
+  ngoko: string;
+  kramaInggil: string;
+  aksaraJawa: string;
+  catatanEtika: string;
+  naskahSuara: string;
+  kodeBcp47: 'id-ID' | 'en-US' | 'jv-ID';
+  audioBase64: string | null;
+  mimeType: string | null;
+  modePenyedia: 'gemini-3.8-live-audio' | 'web-speech-fallback';
+  sumber: KodeSumber[];
+  modelNama: typeof MODEL_AI_STUDIO;
+  latensiMs: number;
+  statusAman?: boolean;
+  pesanKeamanan?: string;
+}
+
+export type MinatTurId = 'semua' | 'tosan' | 'arsitektur' | 'karawitan' | 'pakeliran';
+export type DurasiTurId = 'kilat' | 'mendalam';
+
+export interface LangkahRuteTur {
+  judul: string;
+  ruang: 'twin' | 'koleksi' | 'pakeliran' | 'kawruh';
+  bendaId?: SpesimenBedahId;
+  titikId?: string;
+  trackIdx?: number;
+  babakIdx?: number;
+  alasan: string;
+  sumber: KodeSumber[];
+}
+
+export interface RuteTurResult {
+  minat: MinatTurId;
+  durasi: DurasiTurId;
+  catatan: string;
+  bahasa: BahasaAktif;
+  ringkasanRute: string;
+  estimasiMenit: number;
+  langkah: LangkahRuteTur[];
+  sumber: KodeSumber[];
+  modelNama: typeof MODEL_AI_STUDIO;
+  mode: 'gemini-3.8-live' | 'kurasi-lokal';
+  latensiMs: number;
+  statusAman?: boolean;
+  pesanKeamanan?: string;
 }
 
 export interface SoalKuisKurasi {
@@ -347,7 +407,8 @@ export function bandingkanPusakaLokal(
 
 /** Pembuat bait puitik Jawa, konversi aksara U+A980, dan naskah suara deterministik S1-S7. */
 export function susunPujanggaLokal(temaInput: string, bahasa: BahasaAktif): PujanggaResult {
-  const temaBersih = temaInput.trim() || 'Harmoni Pendopo & Pusaka';
+  const validasi = validasiTemaPujangga(temaInput, bahasa);
+  const temaBersih = validasi.temaBersih;
   const low = temaBersih.toLowerCase();
 
   let guritJawa =
@@ -433,6 +494,8 @@ export function susunPujanggaLokal(temaInput: string, bahasa: BahasaAktif): Puja
     sumber,
     modelNama: MODEL_AI_STUDIO,
     latensiMs: 12,
+    statusAman: validasi.aman,
+    pesanKeamanan: validasi.pesanKeamanan,
   };
 }
 
@@ -499,9 +562,22 @@ export async function mintaKomparasiAI(
     idB,
     bahasa,
   });
-  if (data && data.persamaan && data.perbedaanMaterial) {
+  const persClean = data
+    ? auditDanBersihkanOutputAI(data.persamaan, { minKarakter: 12, wajibJangkarBudaya: false })
+    : null;
+  const diffClean = data
+    ? auditDanBersihkanOutputAI(data.perbedaanMaterial, { minKarakter: 12, wajibJangkarBudaya: false })
+    : null;
+  if (
+    data &&
+    persClean &&
+    diffClean &&
+    memilikiJangkarBudaya(`${persClean} ${diffClean} ${data.titikTemuFilosofi ?? ''}`)
+  ) {
     return {
       ...data,
+      persamaan: persClean,
+      perbedaanMaterial: diffClean,
       latensiMs: Math.max(12, Math.round((typeof performance !== 'undefined' ? performance.now() : Date.now()) - start)),
     };
   }
@@ -513,18 +589,28 @@ export async function mintaPujanggaAI(
   tema: string,
   bahasa: BahasaAktif,
 ): Promise<PujanggaResult> {
+  const validasi = validasiTemaPujangga(tema, bahasa);
+  if (!validasi.aman) {
+    return susunPujanggaLokal(tema, bahasa);
+  }
   const start = typeof performance !== 'undefined' ? performance.now() : Date.now();
   const data = await panggilEndpointStudio<PujanggaResult>(
     {
       tugas: 'pujangga',
-      tema,
+      tema: validasi.temaBersih,
       bahasa,
     },
     28000,
   );
-  if (data && data.guritJawa && data.aksaraJawa) {
+  if (
+    data &&
+    auditDanBersihkanOutputAI(data.guritJawa, { minKarakter: 8, wajibJangkarBudaya: false }) &&
+    auditDanBersihkanOutputAI(data.catatanMakna, { minKarakter: 8, wajibJangkarBudaya: true }) &&
+    data.aksaraJawa
+  ) {
     return {
       ...data,
+      statusAman: data.statusAman ?? true,
       latensiMs: Math.max(12, Math.round((typeof performance !== 'undefined' ? performance.now() : Date.now()) - start)),
     };
   }
@@ -559,4 +645,461 @@ export async function mintaSuaraDalangBabak(
     modelNama: MODEL_AI_STUDIO,
     sumber: fallback.sumber,
   };
+}
+
+/** Panduan tata krama Ngoko ↔ Krama Inggil + Hanacaraka S5/S7 deterministik saat luring. */
+export function susunKramaLokal(
+  frasaInput: string,
+  bahasa: BahasaAktif,
+): KramaAksaraResult {
+  const validasi = validasiInputKrama(frasaInput, bahasa);
+  const kalimatAsal = validasi.temaBersih;
+  const low = kalimatAsal.toLowerCase();
+
+  let ngoko = 'Aku arep sinau tata krama lan gamelan pendhapa.';
+  let kramaInggil = 'Kula badhe nyinau unggah-ungguh saha karawitan pendhapa.';
+  let etikaId =
+    'Unggah-ungguh Krama Inggil mengekspresikan hormat timbal-balik dan kerendahan hati ketika berguru di lingkungan Pendopo (S5, S7).';
+  let etikaEn =
+    'Polite Krama Inggil speech conveys mutual respect and humility when entering the Pendopo arts tradition (S5, S7).';
+  let etikaJw =
+    'Basa Krama Inggil nedahaken raos ajrih-asih lan tepa salira wonten ing pasinaon kabudayan karaton (S5, S7).';
+  let sumber: KodeSumber[] = ['S5', 'S7'];
+
+  if (low.includes('terima kasih') || low.includes('thank') || low.includes('matur')) {
+    ngoko = 'Matur nuwun banget ya kanggo ilmune.';
+    kramaInggil = 'Matur sembah nuwun sanget awit piwulangipun.';
+    etikaId =
+      'Ungkapan terima kasih bertingkat memperhalus hubungan murid, empu, maupun sesepuh karawitan (S5, S7).';
+    etikaEn =
+      'Matur sembah nuwun elevates gratitude toward elders, master artisans, and puppeteers (S5, S7).';
+    etikaJw =
+      'Tembung matur sembah nuwun ngurmati para empu lan sesepuh seni tradisi (S5, S7).';
+  } else if (low.includes('keris') || low.includes('batik') || low.includes('pusaka')) {
+    ngoko = 'Aku kepengin weruh filosofi keris lan batik kawung.';
+    kramaInggil = 'Kula kapengin nyumerepi falsafah dhuwung saha sinjang kawung.';
+    etikaId =
+      'Penyebutan pusaka dalam Krama memakai kata halus dhuwung dan sinjang sebagai wujud penghormatan kriya leluhur (S1, S2, S7).';
+    etikaEn =
+      'Refined speech pairs dhuwung (keris) and sinjang (batik cloth) to honor master artisans (S1, S2, S7).';
+    etikaJw =
+      'Tembung krama dhuwung lan sinjang nglairaken pakurmatan dhumateng karya empu lan pambatik (S1, S2, S7).';
+    sumber = ['S1', 'S2', 'S7'];
+  } else if (low.includes('selamat') || low.includes('pagi') || low.includes('sore') || low.includes('greeting')) {
+    ngoko = 'Sugeng rawuh ing pendhapa, muga tansah rahayu.';
+    kramaInggil = 'Sugeng rawuh wonten ing pendhapa, mugi tansah pinaringan karaharjan.';
+    etikaId =
+      'Sapaan pembuka Pendopo mendoakan keselamatan (rahayu) sebelum pergelaran atau perbincangan dimulai (S5, S6).';
+    etikaEn =
+      'A classic Pendopo greeting invoking harmony and well-being (karaharjan) before entering conversation (S5, S6).';
+    etikaJw =
+      'Atur pambagyaharja ing pendhapa tansah nyenyuwun karaharjan sadaya tamu (S5, S6).';
+    sumber = ['S5', 'S6'];
+  }
+
+  const catatanEtika =
+    bahasa === 'en' ? etikaEn : bahasa === 'jw' || bahasa === 'aks' ? etikaJw : etikaId;
+
+  return {
+    kalimatAsal,
+    bahasa,
+    ngoko,
+    kramaInggil,
+    aksaraJawa: latinKeAksaraJawa(kramaInggil),
+    catatanEtika,
+    naskahSuara: kramaInggil,
+    kodeBcp47: 'jv-ID',
+    audioBase64: null,
+    mimeType: null,
+    modePenyedia: 'web-speech-fallback',
+    sumber,
+    modelNama: MODEL_AI_STUDIO,
+    latensiMs: 9,
+    statusAman: validasi.aman,
+    pesanKeamanan: validasi.pesanKeamanan,
+  };
+}
+
+/** Perencana rute kunjungan kuratorial 3-langkah antar-ruang KELIR S1-S7. */
+export function susunRuteTurLokal(
+  minat: MinatTurId,
+  durasi: DurasiTurId,
+  catatanRaw: string,
+  bahasa: BahasaAktif,
+): RuteTurResult {
+  const validasi = validasiCatatanTur(catatanRaw, bahasa);
+  const catatanBersih = bersihkanInputPengguna(validasi.temaBersih, BATAS_KARAKTER_TUR);
+  const isMendalam = durasi === 'mendalam';
+  const estimasiMenit = isMendalam ? 10 : 4;
+
+  const langkahMap: Record<MinatTurId, LangkahRuteTur[]> = {
+    tosan: [
+      {
+        judul: ambilTeks(
+          { id: 'Bedah Metalurgi Bilah Pamor', en: 'Inspect Pamor Steel Forging', jw: 'Bedhah Wesi & Pamor' },
+          bahasa,
+        ),
+        ruang: 'twin',
+        bendaId: 'keris',
+        titikId: 'keris-wilah',
+        alasan: ambilTeks(
+          {
+            id: 'Pelajari lipatan besi meteorit pamor beras wutah serta luk lima Pandawa pada mode Ledak Anatomi (S1).',
+            en: 'Examine meteoric nickel pamor laminations and five-curve Pandawa geometry in Exploded View (S1).',
+            jw: 'Sinau lipatan wesi pamor lan luk gangsal ing mode Ledak Anatomi (S1).',
+          },
+          bahasa,
+        ),
+        sumber: ['S1'],
+      },
+      {
+        judul: ambilTeks(
+          { id: 'Dengarkan Suluk Panggung Keris', en: 'Listen to Keris Forge Suluk', jw: 'Midhanget Suluk Dhuwung' },
+          bahasa,
+        ),
+        ruang: 'koleksi',
+        bendaId: 'keris',
+        trackIdx: 0,
+        alasan: ambilTeks(
+          {
+            id: 'Nikmati pembacaan suluk puitis tempaan tosan aji lengkap dengan iringan narator multibahasa (S1, S5).',
+            en: 'Experience the forge chant accompanied by multi-language AI narration (S1, S5).',
+            jw: 'Midhangetake suluk tempa dhuwung sesarengan narasi basa Jawi/ID (S1, S5).',
+          },
+          bahasa,
+        ),
+        sumber: ['S1', 'S5'],
+      },
+      {
+        judul: ambilTeks(
+          { id: 'Uji Pemahaman di Lab Aksara & Kuis', en: 'Verify Script & Archive Quiz', jw: 'Uji Aksara & Kuis' },
+          bahasa,
+        ),
+        ruang: 'kawruh',
+        alasan: ambilTeks(
+          {
+            id: 'Transliterasikan istilah empu dan uji ketepatan rujukan S1 dalam Kuis Kurasi.',
+            en: 'Transliterate tosan aji terminology into Hanacaraka Unicode and complete the S1 check.',
+            jw: 'Nyerat tembung pusaka mawi aksara Hanacaraka lan nyoba Kuis S1.',
+          },
+          bahasa,
+        ),
+        sumber: ['S1', 'S7'],
+      },
+    ],
+    arsitektur: [
+      {
+        judul: ambilTeks(
+          { id: 'Inspeksi Saka Guru & Umpak Seismik', en: 'Inspect Seismic Saka Guru & Umpak', jw: 'Inspeksi Saka Guru & Umpak' },
+          bahasa,
+        ),
+        ruang: 'twin',
+        bendaId: 'joglo',
+        titikId: 'joglo-sakaguru',
+        alasan: ambilTeks(
+          {
+            id: 'Lihat sambungan pasak purus kayu jati tanpa paku dan sendi umpak andesit peredam gempa (S6).',
+            en: 'Observe nail-free teakwood tenon joinery resting freely on seismic andesite umpak bases (S6).',
+            jw: 'Pirsani sambungan purus kayu jati lan sendi umpak andesit anti-lindhu (S6).',
+          },
+          bahasa,
+        ),
+        sumber: ['S6'],
+      },
+      {
+        judul: ambilTeks(
+          { id: 'Tinjau Batik Kiblat Papat & Spasial', en: 'Compare Kiblat Papat Cosmology', jw: 'Pirsani Kosmologi Kiblat Papat' },
+          bahasa,
+        ),
+        ruang: 'twin',
+        bendaId: 'batik',
+        titikId: 'batik-kiblat',
+        alasan: ambilTeks(
+          {
+            id: 'Hubungkan tata ruang empat arah Pendopo Joglo dengan filosofi pancer motif Batik Kawung (S2, S6).',
+            en: 'Connect Joglo cardinal column symmetry with Batik Kawung centered-origin geometry (S2, S6).',
+            jw: 'Nyambungake tatanan kiblat papat Pendhapa kalih motif Kawung (S2, S6).',
+          },
+          bahasa,
+        ),
+        sumber: ['S2', 'S6'],
+      },
+      {
+        judul: ambilTeks(
+          { id: 'Layar Penuh Suluk Pendopo', en: 'Pendopo Suluk Showcase', jw: 'Suluk Pendhapa Ageng' },
+          bahasa,
+        ),
+        ruang: 'koleksi',
+        bendaId: 'joglo',
+        trackIdx: 3,
+        alasan: ambilTeks(
+          {
+            id: 'Tutup kunjungan dengan kontemplasi akustik kayu jati dan brunjung Joglo.',
+            en: 'Conclude with wooden acoustic resonance notes for Pendopo architecture.',
+            jw: 'Pungkasi kunjungan kanthi suluk Pendhapa Jawi (S6).',
+          },
+          bahasa,
+        ),
+        sumber: ['S6'],
+      },
+    ],
+    karawitan: [
+      {
+        judul: ambilTeks(
+          { id: 'Petik Bilah Perunggu Saron 3D', en: 'Play 3D Bronze Saron Keys', jw: 'Nabuh Wilah Saron 3D' },
+          bahasa,
+        ),
+        ruang: 'twin',
+        bendaId: 'saron',
+        titikId: 'saron-wilah',
+        alasan: ambilTeks(
+          {
+            id: 'Dengarkan perbedaan nada Slendro 1–2–3–5–6–1 langsung lewat bilah 3D dan teknik pijetan gema (S4).',
+            en: 'Tap individual Slendro bronze bars directly in 3D and explore left-hand damping (S4).',
+            jw: 'Cobi nabuh wilah 1-6 laras Slendro lan teknik pijetan (S4).',
+          },
+          bahasa,
+        ),
+        sumber: ['S4'],
+      },
+      {
+        judul: ambilTeks(
+          { id: 'Suluk Laras Slendro & Pelog', en: 'Explore Karawitan Repertoire', jw: 'Suluk & Repertoar Karawitan' },
+          bahasa,
+        ),
+        ruang: 'koleksi',
+        bendaId: 'saron',
+        trackIdx: 1,
+        alasan: ambilTeks(
+          {
+            id: 'Pelajari pembagian irama, fungsi gong ageng, dan filosofi Puspawarna (S4).',
+            en: 'Study rhythmic cycles, colotomic gong markers, and Puspawarna philosophy (S4).',
+            jw: 'Sinau pathet, kenong, gong ageng, lan tembang karawitan (S4).',
+          },
+          bahasa,
+        ),
+        sumber: ['S4'],
+      },
+      {
+        judul: ambilTeks(
+          { id: 'Panggung Wayang & Sabetan Keprak', en: 'Shadow Theatre Keprak Rhythm', jw: 'Pakeliran & Keprak Dalang' },
+          bahasa,
+        ),
+        ruang: 'pakeliran',
+        babakIdx: 0,
+        alasan: ambilTeks(
+          {
+            id: 'Amati bagaimana keprak dalang memimpin tempo gamelan pengiring pakeliran (S3, S4).',
+            en: 'Witness how the puppeteer’s keprak bronze plates cue the gamelan ensemble (S3, S4).',
+            jw: 'Pirsani kepripun keprak dhalang nuntun irama gamelan (S3, S4).',
+          },
+          bahasa,
+        ),
+        sumber: ['S3', 'S4'],
+      },
+    ],
+    pakeliran: [
+      {
+        judul: ambilTeks(
+          { id: 'Panggung Bayangan Kijang Kencana', en: 'Kijang Kencana 3D Shadow Stage', jw: 'Panggung Pakeliran Kijang Kencana' },
+          bahasa,
+        ),
+        ruang: 'pakeliran',
+        babakIdx: 1,
+        alasan: ambilTeks(
+          {
+            id: 'Ganti tata cahaya Blencong–Kelir–Sorot dan aktifkan narator suara dalang di adegan pengejaran (S3, S5).',
+            en: 'Toggle Blencong flame lighting moods and trigger the dalang audio narrator (S3, S5).',
+            jw: 'Ganti cahya Blencong-Kelir lan puter swara dhalang wonten ing adegan (S3, S5).',
+          },
+          bahasa,
+        ),
+        sumber: ['S3', 'S5'],
+      },
+      {
+        judul: ambilTeks(
+          { id: 'Bedah Tatahan Krawangan & Blencong', en: 'Inspect Tatahan & Blencong Lamp', jw: 'Bedhah Tatahan & Blencong' },
+          bahasa,
+        ),
+        ruang: 'twin',
+        bendaId: 'wayang',
+        titikId: 'wayang-blencong',
+        alasan: ambilTeks(
+          {
+            id: 'Periksa anatomi cempurit tanduk kerbau dan sumbu api minyak kelapa yang memproyeksi siluet (S3).',
+            en: 'Examine buffalo horn cempurit rods and coconut-oil Blencong lamp optics (S3).',
+            jw: 'Inspeksi cempurit sungu kebo lan lampu lenga Blencong (S3).',
+          },
+          bahasa,
+        ),
+        sumber: ['S3'],
+      },
+      {
+        judul: ambilTeks(
+          { id: 'Prasasti Hanacaraka U+A980', en: 'Hanacaraka Script Stele', jw: 'Prasasti Hanacaraka U+A980' },
+          bahasa,
+        ),
+        ruang: 'kawruh',
+        alasan: ambilTeks(
+          {
+            id: 'Pahami akar naskah klasik babad Ramayana & carakan 20 aksara Jawa (S5, S7).',
+            en: 'Connect epic literary transmission to the 20 Javanese Nglegena syllables (S5, S7).',
+            jw: 'Sinau sambunganipun epos Ramayana lan aksara Jawa 20 carakan (S5, S7).',
+          },
+          bahasa,
+        ),
+        sumber: ['S5', 'S7'],
+      },
+    ],
+    semua: [
+      {
+        judul: ambilTeks(
+          { id: 'Pembuka: Bedah 3D Keris Mataram', en: 'Stop 1: Keris 3D Anatomy', jw: 'Langkah 1: Bedhah 3D Dhuwung' },
+          bahasa,
+        ),
+        ruang: 'twin',
+        bendaId: 'keris',
+        titikId: 'keris-wilah',
+        alasan: ambilTeks(
+          {
+            id: 'Awali dari pusaka pengakuan UNESCO dengan mode X-Ray & PBR bilah pamor (S1).',
+            en: 'Begin with UNESCO-recognized Tosan Aji metallurgy in PBR and X-Ray views (S1).',
+            jw: 'Miwiti saking dhuwung pusaka UNESCO mawi mode PBR & X-Ray (S1).',
+          },
+          bahasa,
+        ),
+        sumber: ['S1'],
+      },
+      {
+        judul: ambilTeks(
+          { id: 'Tengah: Teater Bayangan & Suluk', en: 'Stop 2: Blencong Shadow Theatre', jw: 'Langkah 2: Pakeliran & Suluk' },
+          bahasa,
+        ),
+        ruang: 'pakeliran',
+        babakIdx: 0,
+        alasan: ambilTeks(
+          {
+            id: 'Saksikan lakon Kijang Kencana lengkap dengan efek api blencong, sabetan, dan narasi dalang (S3, S5).',
+            en: 'Watch Kijang Kencana unfolded under flickering Blencong flame light (S3, S5).',
+            jw: 'Pirsani lakon Kijang Kencana kanthi sorot Blencong lan swara dhalang (S3, S5).',
+          },
+          bahasa,
+        ),
+        sumber: ['S3', 'S5'],
+      },
+      {
+        judul: ambilTeks(
+          { id: 'Penutup: Aksara Hanacaraka & Kuis', en: 'Stop 3: Hanacaraka & Archive Quiz', jw: 'Langkah 3: Lab Aksara & Kuis' },
+          bahasa,
+        ),
+        ruang: 'kawruh',
+        alasan: ambilTeks(
+          {
+            id: 'Coba konverter Unicode U+A980 dan kunci skor tertinggi untuk Piagam Kurator KELIR (S7).',
+            en: 'Try live Unicode U+A980 transliteration and earn your KELIR Curator Certificate (S7).',
+            jw: 'Cobi konverter Unicode U+A980 lan jangkepi Piagam Kurator (S7).',
+          },
+          bahasa,
+        ),
+        sumber: ['S7'],
+      },
+    ],
+  };
+
+  const langkahDasar = langkahMap[minat] ?? langkahMap.semua;
+  const langkah = isMendalam ? langkahDasar : langkahDasar.slice(0, 2);
+  const sumber = [...new Set(langkah.flatMap((l) => l.sumber))];
+
+  return {
+    minat,
+    durasi,
+    catatan: catatanBersih,
+    bahasa,
+    ringkasanRute: ambilTeks(
+      {
+        id: `Rute kurasi ${isMendalam ? 'mendalam' : 'kilat'} (±${estimasiMenit} menit) menyoroti ${langkah.length} titik warisan S1–S7.`,
+        en: `Curated ${isMendalam ? 'deep' : 'express'} spatial itinerary (~${estimasiMenit} min) spanning ${langkah.length} verified S1–S7 rooms.`,
+        jw: `Rute kurasi ${isMendalam ? 'jembar' : 'rikat'} (±${estimasiMenit} menit) ngliwati ${langkah.length} papan warisan S1–S7.`,
+      },
+      bahasa,
+    ),
+    estimasiMenit,
+    langkah,
+    sumber,
+    modelNama: MODEL_AI_STUDIO,
+    mode: 'kurasi-lokal',
+    latensiMs: 8,
+    statusAman: validasi.aman,
+    pesanKeamanan: validasi.pesanKeamanan,
+  };
+}
+
+/** Meminta panduan Krama Inggil + Hanacaraka + Audio WAV dari gemini-3.8-live dengan fallback lokal. */
+export async function mintaKramaAI(
+  frasa: string,
+  bahasa: BahasaAktif,
+): Promise<KramaAksaraResult> {
+  const validasi = validasiInputKrama(frasa, bahasa);
+  if (!validasi.aman) {
+    return susunKramaLokal(frasa, bahasa);
+  }
+  const start = typeof performance !== 'undefined' ? performance.now() : Date.now();
+  const data = await panggilEndpointStudio<KramaAksaraResult>(
+    {
+      tugas: 'krama',
+      tema: validasi.temaBersih,
+      bahasa,
+    },
+    28000,
+  );
+  if (
+    data &&
+    auditDanBersihkanOutputAI(data.kramaInggil, { minKarakter: 6, wajibJangkarBudaya: false }) &&
+    auditDanBersihkanOutputAI(data.catatanEtika, { minKarakter: 8, wajibJangkarBudaya: true }) &&
+    data.aksaraJawa
+  ) {
+    return {
+      ...data,
+      statusAman: data.statusAman ?? true,
+      latensiMs: Math.max(12, Math.round((typeof performance !== 'undefined' ? performance.now() : Date.now()) - start)),
+    };
+  }
+  return susunKramaLokal(frasa, bahasa);
+}
+
+/** Meminta rekomendasi rute tur spasial terkurasi dari gemini-3.8-live dengan fallback S1-S7. */
+export async function mintaRuteTurAI(
+  minat: MinatTurId,
+  durasi: DurasiTurId,
+  catatan: string,
+  bahasa: BahasaAktif,
+): Promise<RuteTurResult> {
+  const validasi = validasiCatatanTur(catatan, bahasa);
+  if (!validasi.aman) {
+    return susunRuteTurLokal(minat, durasi, catatan, bahasa);
+  }
+  const start = typeof performance !== 'undefined' ? performance.now() : Date.now();
+  const data = await panggilEndpointStudio<RuteTurResult>(
+    {
+      tugas: 'tur',
+      minat,
+      durasi,
+      tema: validasi.temaBersih,
+      bahasa,
+    },
+    26000,
+  );
+  if (
+    data &&
+    Array.isArray(data.langkah) &&
+    data.langkah.length > 0 &&
+    auditDanBersihkanOutputAI(data.ringkasanRute, { minKarakter: 12, wajibJangkarBudaya: true })
+  ) {
+    return {
+      ...data,
+      statusAman: data.statusAman ?? true,
+      latensiMs: Math.max(12, Math.round((typeof performance !== 'undefined' ? performance.now() : Date.now()) - start)),
+    };
+  }
+  return susunRuteTurLokal(minat, durasi, catatan, bahasa);
 }

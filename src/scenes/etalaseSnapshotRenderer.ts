@@ -284,11 +284,14 @@ export async function renderEtalaseSnapshots(
         camera.lookAt(...preset.lookAt);
 
         renderer.render(scene, camera);
-        const webp = canvas.toDataURL('image/webp', 0.92);
+        const webp = canvas.toDataURL('image/webp', 0.9);
         hasil[id] = webp.startsWith('data:image/webp') ? webp : canvas.toDataURL('image/png');
 
         scene.remove(root);
         disposeSceneObject(root);
+
+        // Serahkan giliran frame sejenak agar scroll utama bebas patah-patah
+        await new Promise<void>((resolve) => setTimeout(resolve, 0));
       }
 
       disposeSceneObject(studioFloor);

@@ -5210,9 +5210,10 @@ html[data-theme='malam'] .kelir-scroll-rail.is-dragging .kelir-scroll-track {
   position: fixed;
   inset: 0;
   z-index: 1200;
-  display: grid;
-  place-items: start center;
-  padding: clamp(56px, 8vh, 96px) 16px 24px;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding: clamp(56px, 8vh, 96px) 12px 24px;
   background: rgba(10, 11, 14, 0.56);
   backdrop-filter: blur(12px);
 }
@@ -5229,6 +5230,10 @@ html[data-theme='malam'] .kelir-scroll-rail.is-dragging .kelir-scroll-track {
   position: relative;
   z-index: 1;
   width: min(760px, 100%);
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  overflow: hidden;
   max-height: min(78vh, 680px);
   display: flex;
   flex-direction: column;
@@ -5244,11 +5249,14 @@ html[data-theme='malam'] .kelir-scroll-rail.is-dragging .kelir-scroll-track {
   display: flex;
   gap: 10px;
   align-items: center;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .search-input-wrap {
-  flex: 1;
+  flex: 1 1 0%;
   min-width: 0;
+  max-width: 100%;
   display: flex;
   align-items: center;
   gap: 10px;
@@ -5266,7 +5274,8 @@ html[data-theme='malam'] .kelir-scroll-rail.is-dragging .kelir-scroll-track {
 }
 
 .search-modal-input {
-  flex: 1;
+  flex: 1 1 0%;
+  width: 0;
   min-width: 0;
   border: 0;
   outline: none;
@@ -5772,5 +5781,435 @@ html[data-theme='malam'] .kelir-scroll-rail.is-dragging .kelir-scroll-track {
   .karawitan-pill-actions .util-pill {
     padding: 5px 8px;
     font-size: 0.66rem;
+  }
+}
+
+
+/* ============================================================================
+   OPTIMASI PERFORMA GPU SELULER & RESPONSIVITAS KETAT 320px–1080px
+   ============================================================================ */
+@media (max-width: 768px), (hover: none) {
+  .top-nav,
+  .mobile-page-dock,
+  .hero-spec-strip,
+  .scrolly-hud-card,
+  .scrolly-step-card,
+  .karawitan-mini-pill,
+  .karawitan-filosofi-card,
+  .subpage-status-strip {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+}
+
+.studio-quiz-opt,
+.studio-info-card,
+.studio-poet-aksara,
+.source-ledger-row,
+.pakeliran-console {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.pakeliran-slider-label {
+  min-width: 0;
+}
+
+.pakeliran-slider-label input[type='range'] {
+  width: 100%;
+  max-width: 100%;
+}
+
+@media (max-width: 640px) {
+  .search-cat-pills {
+    flex-wrap: wrap;
+    gap: 5px;
+    max-width: 100%;
+  }
+  .search-cat-pills .util-pill {
+    padding: 5px 9px;
+    font-size: 0.68rem;
+  }
+  .studio-tab-bar {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 6px;
+    width: 100%;
+  }
+  .studio-tab-bar .util-pill {
+    width: 100%;
+    min-width: 0;
+    justify-content: center;
+    text-align: center;
+    padding: 7px 6px;
+    font-size: 0.7rem;
+    white-space: normal;
+    line-height: 1.2;
+  }
+  .cf-repertoire-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  .pakeliran-act-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    max-width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .search-modal-head {
+    gap: 6px;
+  }
+  .search-input-wrap {
+    padding: 8px 11px;
+    gap: 7px;
+  }
+  .search-modal-input {
+    font-size: 0.84rem;
+  }
+  .search-modal-head .util-pill {
+    padding: 6px 10px;
+    font-size: 0.72rem;
+    flex-shrink: 0;
+  }
+  .jejak-passport-bar {
+    padding: 8px 10px;
+    gap: 4px 10px;
+  }
+  .studio-poet-aksara {
+    font-size: 1.15rem;
+    line-height: 1.6;
+  }
+}
+
+@media (max-width: 380px) {
+  .karawitan-mini-pill {
+    gap: 6px;
+    padding: 6px 8px 6px 10px;
+  }
+  .karawitan-mini-title {
+    font-size: 0.73rem;
+  }
+  .karawitan-mini-beat {
+    font-size: 0.58rem;
+  }
+}
+
+/* ==========================================================================
+   KURATOR AI INLINE 3D TWIN, PIAGAM KURATOR, FAVORIT & RUTE TUR AI
+   ========================================================================== */
+.twin-part-ai-box {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border-hairline);
+  display: grid;
+  gap: 8px;
+}
+
+.twin-part-ai-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.twin-part-ai-form {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  min-width: 0;
+}
+
+.twin-part-ai-input {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 8px 12px;
+  font-size: 0.82rem;
+}
+
+.twin-part-ai-answer {
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--border-hairline);
+  background: var(--surface-subtle);
+  display: grid;
+  gap: 6px;
+}
+
+.twin-part-ai-copy {
+  margin: 0;
+  font-size: 0.82rem;
+  line-height: 1.5;
+  color: var(--text-primary);
+}
+
+.cert-export-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 12px;
+  border: 1px solid var(--border-hairline);
+  background: var(--surface-subtle);
+}
+
+.cert-input-group {
+  display: flex;
+  flex: 1 1 260px;
+  gap: 6px;
+  align-items: center;
+  min-width: 0;
+}
+
+.cert-name-input {
+  flex: 1 1 140px;
+  min-width: 0;
+  padding: 7px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--border-strong);
+  background: var(--bg-card);
+  color: var(--text-primary);
+  font-size: 0.8rem;
+}
+
+.search-a11y-group {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.search-footer-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 6px;
+  border-top: 1px solid var(--border-hairline);
+  color: var(--text-muted);
+}
+
+.source-badge.is-fav-mark {
+  background: var(--ember-soft);
+  border-color: var(--ember-border);
+  color: var(--accent-ember);
+}
+
+.studio-tur-step-head {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+@media (max-width: 480px) {
+  .twin-part-ai-form {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .cert-input-group {
+    flex-wrap: wrap;
+  }
+  .cert-name-input {
+    width: 100%;
+    flex: 1 1 100%;
+  }
+}
+
+/* ==========================================================================
+   HIERARKI VISUAL JAWABAN AI PAMOMONG & STUDIO (JELAS & LANGSUNG TERLIHAT)
+   ========================================================================== */
+.pamomong-answer-box.is-hero-answer {
+  background: var(--bg-elevated);
+  border: 1.5px solid var(--ember-border);
+  border-left: 4px solid var(--accent-ember);
+  box-shadow:
+    0 14px 34px -16px rgba(18, 16, 14, 0.16),
+    0 0 0 1px var(--ember-soft);
+  padding: 0;
+  overflow: hidden;
+  gap: 0;
+  transition: box-shadow 0.35s var(--ease-expo), border-color 0.25s ease;
+}
+
+.pamomong-answer-box.is-hero-answer > :not(.ai-answer-hero-head) {
+  margin-left: 20px;
+  margin-right: 20px;
+}
+
+.pamomong-answer-box.is-hero-answer > :last-child {
+  margin-bottom: 18px;
+}
+
+.pamomong-answer-box.is-hero-answer.is-abstain-box {
+  border-color: rgba(179, 48, 37, 0.55);
+  border-left-color: var(--accent-crimson);
+}
+
+.pamomong-answer-box.is-hero-answer.is-just-updated {
+  animation: aiAnswerFlash 1.2s var(--ease-expo);
+}
+
+@keyframes aiAnswerFlash {
+  0% {
+    box-shadow: 0 0 0 4px rgba(209, 73, 27, 0.38), 0 18px 40px -14px rgba(209, 73, 27, 0.25);
+  }
+  100% {
+    box-shadow: 0 14px 34px -16px rgba(18, 16, 14, 0.16), 0 0 0 1px var(--ember-soft);
+  }
+}
+
+.ai-answer-hero-head {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px 12px;
+  padding: 11px 20px;
+  margin-bottom: 14px;
+  background: var(--ember-soft);
+  border-bottom: 1px solid var(--ember-border);
+}
+
+.pamomong-answer-box.is-abstain-box .ai-answer-hero-head {
+  background: rgba(179, 48, 37, 0.09);
+  border-bottom-color: rgba(179, 48, 37, 0.3);
+}
+
+.ai-answer-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  color: var(--accent-ember);
+}
+
+.pamomong-answer-box.is-abstain-box .ai-answer-title {
+  color: var(--accent-crimson);
+}
+
+.ai-answer-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--accent-ember);
+  box-shadow: 0 0 0 3px rgba(209, 73, 27, 0.2);
+}
+
+.ai-answer-dot.is-abstain {
+  background: var(--accent-crimson);
+  box-shadow: 0 0 0 3px rgba(179, 48, 37, 0.2);
+}
+
+.ai-answer-head-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.ai-answer-primary-surface {
+  padding: 2px 0 12px;
+}
+
+.pamomong-answer-box.is-hero-answer .pamomong-answer-prose p {
+  font-size: 1.03rem;
+  font-weight: 500;
+  line-height: 1.66;
+  color: var(--text-primary);
+}
+
+.ai-answer-loading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  margin-bottom: 12px;
+  border-radius: 10px;
+  border: 1px dashed var(--ember-border);
+  background: var(--ember-soft);
+  font-family: var(--font-mono);
+  font-size: 0.74rem;
+  color: var(--accent-ember);
+}
+
+.ai-answer-spinner {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--accent-ember);
+  animation: pulseOrb 0.9s infinite alternate;
+}
+
+@keyframes pulseOrb {
+  from {
+    transform: scale(0.75);
+    opacity: 0.55;
+  }
+  to {
+    transform: scale(1.2);
+    opacity: 1;
+  }
+}
+
+.rag-telemetry-bar.is-footer {
+  margin-top: 4px;
+  margin-bottom: 10px;
+  padding-top: 10px;
+  padding-bottom: 8px;
+  border-top: 1px solid var(--border-hairline);
+  border-bottom: none;
+}
+
+.rag-evidence-details {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border-hairline);
+}
+
+.rag-evidence-summary {
+  cursor: pointer;
+  user-select: none;
+  font-family: var(--font-mono);
+  font-size: 0.71rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--text-secondary);
+  list-style: none;
+}
+
+.rag-evidence-summary::before {
+  content: '▸ ';
+  color: var(--accent-ember);
+}
+
+.rag-evidence-details[open] .rag-evidence-summary::before {
+  content: '▾ ';
+}
+
+.rag-evidence-details .rag-evidence-list {
+  margin-top: 10px;
+  border-top: none;
+  padding-top: 0;
+}
+
+@media (max-width: 640px) {
+  .pamomong-answer-box.is-hero-answer > :not(.ai-answer-hero-head) {
+    margin-left: 14px;
+    margin-right: 14px;
+  }
+  .ai-answer-hero-head {
+    padding: 10px 14px;
+  }
+  .pamomong-answer-box.is-hero-answer .pamomong-answer-prose p {
+    font-size: 0.96rem;
   }
 }

@@ -10,8 +10,15 @@ export interface PaketTeksturBudaya {
 }
 
 let cacheTekstur: PaketTeksturBudaya | null = null;
-let cacheHdrEnv: THREE.Texture | null = null;
-let janjiHdrEnv: Promise<THREE.Texture | null> | null = null;
+let janjiHdrRaw: Promise<THREE.DataTexture | null> | null = null;
+
+export function isMobileGpuProfile(): boolean {
+  if (typeof window === 'undefined') return false;
+  return (
+    window.innerWidth <= 768 ||
+    Boolean(window.matchMedia?.('(pointer: coarse)').matches)
+  );
+}
 
 /**
  * Menginisialisasi WebGLRenderer secara aman; mengembalikan null jika konteks WebGL tidak tersedia.
@@ -30,6 +37,7 @@ export function createSafeWebGLRenderer(
 
     const width = Math.max(container.clientWidth || 320, 1);
     const height = Math.max(container.clientHeight || 240, 1);
+    const mobile = isMobileGpuProfile();
 
     const renderer = new THREE.WebGLRenderer({
       canvas,
@@ -38,7 +46,8 @@ export function createSafeWebGLRenderer(
       powerPreference: 'high-performance',
     });
 
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
+    const maxDpr = mobile ? 1.2 : 1.5;
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, maxDpr));
     renderer.setSize(width, height, false);
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 1.12;
@@ -99,25 +108,13 @@ export async function applyStudioHDR(
   renderer: THREE.WebGLRenderer,
   scene: THREE.Scene,
 ): Promise<void> {
-  if (cacheHdrEnv) {
-    scene.environment = cacheHdrEnv;
-    return;
-  }
-
-  if (!janjiHdrEnv) {
-    janjiHdrEnv = new Promise((resolve) => {
+  if (!janjiHdrRaw) {
+    janjiHdrRaw = new Promise((resolve) => {
       try {
         const loader = new HDRLoader();
         loader.load(
           '/textures/studio_small_08_1k.hdr',
-          (hdrTexture) => {
-            const pmrem = new THREE.PMREMGenerator(renderer);
-            const envRT = pmrem.fromEquirectangular(hdrTexture);
-            cacheHdrEnv = envRT.texture;
-            hdrTexture.dispose();
-            pmrem.dispose();
-            resolve(cacheHdrEnv);
-          },
+          (hdrTexture) => resolve(hdrTexture),
           undefined,
           () => resolve(null),
         );
@@ -127,9 +124,17 @@ export async function applyStudioHDR(
     });
   }
 
-  const env = await janjiHdrEnv;
-  if (env) {
-    scene.environment = env;
+  const hdrTexture = await janjiHdrRaw;
+  if (!hdrTexture) return;
+  try {
+    const gl = renderer.getContext();
+    if (!gl || gl.isContextLost()) return;
+    const pmrem = new THREE.PMREMGenerator(renderer);
+    const envRT = pmrem.fromEquirectangular(hdrTexture);
+    scene.environment = envRT.texture;
+    pmrem.dispose();
+  } catch {
+    // Abaikan aman jika panggung telah dibuang sebelum HDR selesai dimuat
   }
 }
 

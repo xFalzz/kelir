@@ -3,6 +3,7 @@ import {
   createSafeWebGLRenderer,
   disposeSceneObject,
   hitungFovResponsif,
+  isMobileGpuProfile,
   loadBudayaTextures,
   pasangObservasiPanggung,
 } from './threeHelpers.ts';
@@ -15,80 +16,85 @@ import {
   type WayangSriRamaRig,
 } from './wayang3DBuilder.ts';
 
+let cacheLayarBlacuCanvas: HTMLCanvasElement | null = null;
+let cacheGedebogCanvas: HTMLCanvasElement | null = null;
+
 function buatTeksturLayarBlacu(): THREE.CanvasTexture | null {
   if (typeof document === 'undefined') return null;
-  const canvas = document.createElement('canvas');
-  canvas.width = 1024;
-  canvas.height = 512;
-  const ctx = canvas.getContext('2d');
-  if (!ctx) return null;
+  if (!cacheLayarBlacuCanvas) {
+    const canvas = document.createElement('canvas');
+    canvas.width = 512;
+    canvas.height = 256;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return null;
 
-  // Pendaran hangat lampu blencong di pusat layar blacu
-  const grad = ctx.createRadialGradient(512, 230, 30, 512, 256, 560);
-  grad.addColorStop(0, '#fff7df');
-  grad.addColorStop(0.38, '#f5e4b8');
-  grad.addColorStop(0.75, '#d6b679');
-  grad.addColorStop(1, '#7c582b');
-  ctx.fillStyle = grad;
-  ctx.fillRect(0, 0, 1024, 512);
+    const grad = ctx.createRadialGradient(256, 115, 16, 256, 128, 280);
+    grad.addColorStop(0, '#fff7df');
+    grad.addColorStop(0.38, '#f5e4b8');
+    grad.addColorStop(0.75, '#d6b679');
+    grad.addColorStop(1, '#7c582b');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, 512, 256);
 
-  // Serat tenun kain blacu halus
-  ctx.strokeStyle = 'rgba(92, 58, 20, 0.08)';
-  ctx.lineWidth = 1;
-  for (let y = 0; y < 512; y += 6) {
-    ctx.beginPath();
-    ctx.moveTo(0, y);
-    ctx.lineTo(1024, y);
-    ctx.stroke();
+    ctx.strokeStyle = 'rgba(92, 58, 20, 0.08)';
+    ctx.lineWidth = 1;
+    for (let y = 0; y < 256; y += 8) {
+      ctx.beginPath();
+      ctx.moveTo(0, y);
+      ctx.lineTo(512, y);
+      ctx.stroke();
+    }
+    for (let x = 0; x < 512; x += 8) {
+      ctx.beginPath();
+      ctx.moveTo(x, 0);
+      ctx.lineTo(x, 256);
+      ctx.stroke();
+    }
+
+    ctx.fillStyle = '#7f1d1d';
+    ctx.fillRect(0, 0, 512, 12);
+    ctx.fillRect(0, 244, 512, 12);
+    ctx.fillStyle = '#fbbf24';
+    ctx.fillRect(0, 12, 512, 3);
+    ctx.fillRect(0, 241, 512, 3);
+    cacheLayarBlacuCanvas = canvas;
   }
-  for (let x = 0; x < 1024; x += 6) {
-    ctx.beginPath();
-    ctx.moveTo(x, 0);
-    ctx.lineTo(x, 512);
-    ctx.stroke();
-  }
 
-  // Plisir tepi kain merah-emas (sligi kelir tradisional)
-  ctx.fillStyle = '#7f1d1d';
-  ctx.fillRect(0, 0, 1024, 24);
-  ctx.fillRect(0, 488, 1024, 24);
-  ctx.fillStyle = '#fbbf24';
-  ctx.fillRect(0, 24, 1024, 5);
-  ctx.fillRect(0, 483, 1024, 5);
-
-  const tex = new THREE.CanvasTexture(canvas);
+  const tex = new THREE.CanvasTexture(cacheLayarBlacuCanvas);
   tex.colorSpace = THREE.SRGBColorSpace;
   return tex;
 }
 
 function buatTeksturGedebogPisang(): THREE.CanvasTexture | null {
   if (typeof document === 'undefined') return null;
-  const canvas = document.createElement('canvas');
-  canvas.width = 512;
-  canvas.height = 256;
-  const ctx = canvas.getContext('2d');
-  if (!ctx) return null;
+  if (!cacheGedebogCanvas) {
+    const canvas = document.createElement('canvas');
+    canvas.width = 256;
+    canvas.height = 128;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return null;
 
-  const grad = ctx.createLinearGradient(0, 0, 0, 256);
-  grad.addColorStop(0, '#4d5e28');
-  grad.addColorStop(0.35, '#657332');
-  grad.addColorStop(0.75, '#464d20');
-  grad.addColorStop(1, '#2b2d12');
-  ctx.fillStyle = grad;
-  ctx.fillRect(0, 0, 512, 256);
+    const grad = ctx.createLinearGradient(0, 0, 0, 128);
+    grad.addColorStop(0, '#4d5e28');
+    grad.addColorStop(0.35, '#657332');
+    grad.addColorStop(0.75, '#464d20');
+    grad.addColorStop(1, '#2b2d12');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, 256, 128);
 
-  // Serat memanjang pelepah batang pisang
-  for (let i = 0; i < 90; i++) {
-    ctx.strokeStyle = i % 2 === 0 ? 'rgba(30, 35, 10, 0.35)' : 'rgba(168, 185, 92, 0.2)';
-    ctx.lineWidth = 1 + (i % 3);
-    const y = (i * 3) % 256;
-    ctx.beginPath();
-    ctx.moveTo(0, y);
-    ctx.lineTo(512, y + Math.sin(i) * 4);
-    ctx.stroke();
+    for (let i = 0; i < 48; i++) {
+      ctx.strokeStyle = i % 2 === 0 ? 'rgba(30, 35, 10, 0.35)' : 'rgba(168, 185, 92, 0.2)';
+      ctx.lineWidth = 1;
+      const y = (i * 3) % 128;
+      ctx.beginPath();
+      ctx.moveTo(0, y);
+      ctx.lineTo(256, y + Math.sin(i) * 3);
+      ctx.stroke();
+    }
+    cacheGedebogCanvas = canvas;
   }
 
-  const tex = new THREE.CanvasTexture(canvas);
+  const tex = new THREE.CanvasTexture(cacheGedebogCanvas);
   tex.colorSpace = THREE.SRGBColorSpace;
   return tex;
 }
@@ -259,8 +265,9 @@ export class WayangStage {
     this.lampuBlencong = new THREE.SpotLight(0xffb84d, 8.5, 25, Math.PI * 0.42, 0.52, 1.1);
     this.lampuBlencong.position.set(0, 1.85, 4.1);
     this.lampuBlencong.castShadow = true;
-    this.lampuBlencong.shadow.mapSize.width = 1024;
-    this.lampuBlencong.shadow.mapSize.height = 1024;
+    const shadowSize = isMobileGpuProfile() ? 512 : 1024;
+    this.lampuBlencong.shadow.mapSize.width = shadowSize;
+    this.lampuBlencong.shadow.mapSize.height = shadowSize;
     this.lampuBlencong.shadow.bias = -0.0005;
     this.scene.add(this.lampuBlencong);
 

@@ -86,20 +86,32 @@
     const mqReduced = window.matchMedia('(prefers-reduced-motion: reduce)');
 
     let scrollTimer: ReturnType<typeof setTimeout> | null = null;
-    const syncScroll = () => {
+    let scrollSyncRaf: number | null = null;
+    const jalankanSyncScroll = () => {
+      scrollSyncRaf = null;
       const m = getActiveScrollMetrics();
-      hasScrollableTarget = m.max > 32;
-      usingModalScroll = m.isModal;
-      scrollRatio = m.max > 0 ? Math.max(0, Math.min(1, m.cur / m.max)) : 0;
-      thumbRatio = Math.max(0.14, Math.min(0.64, m.viewH / Math.max(m.totalH, 1)));
-      isScrolling = true;
+      const nextHasScroll = m.max > 32;
+      const nextRatio = m.max > 0 ? Math.max(0, Math.min(1, m.cur / m.max)) : 0;
+      const nextThumb = Math.max(0.14, Math.min(0.64, m.viewH / Math.max(m.totalH, 1)));
+
+      if (hasScrollableTarget !== nextHasScroll) hasScrollableTarget = nextHasScroll;
+      if (usingModalScroll !== m.isModal) usingModalScroll = m.isModal;
+      if (Math.abs(scrollRatio - nextRatio) >= 0.0015) scrollRatio = nextRatio;
+      if (Math.abs(thumbRatio - nextThumb) >= 0.005) thumbRatio = nextThumb;
+
+      if (!isScrolling) isScrolling = true;
       if (scrollTimer) clearTimeout(scrollTimer);
       scrollTimer = setTimeout(() => {
         isScrolling = false;
-      }, 850);
+      }, 720);
     };
 
-    syncScroll();
+    const syncScroll = () => {
+      if (scrollSyncRaf !== null) return;
+      scrollSyncRaf = window.requestAnimationFrame(jalankanSyncScroll);
+    };
+
+    jalankanSyncScroll();
     window.addEventListener('scroll', syncScroll, { passive: true, capture: true });
     window.addEventListener('resize', syncScroll, { passive: true });
 
