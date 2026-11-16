@@ -1,20 +1,13 @@
 <script lang="ts">
-  import type { BendaPusaka, ItemEtalase } from '../../content/pusaka.ts';
+  import {
+    ambilAksenBenda,
+    type BendaPusaka,
+    type ItemEtalase,
+    type MatrixItem,
+  } from '../../content/pusaka.ts';
   import PusakaArtwork from '../PusakaArtwork.svelte';
 
   export type FilterEtalase = 'semua' | 'tosan-aji' | 'karawitan' | 'wastra' | 'arsitektur' | 'pakeliran';
-
-  interface MatrixItem {
-    id: string;
-    label: string;
-    sub: string;
-    aksara: string;
-    kodeArsip: string;
-    spesifikasi: string;
-    bendaId: BendaPusaka['id'];
-    warna: string;
-    pola: 'grid' | 'gelombang' | 'cakra' | 'bilah' | 'gunungan';
-  }
 
   interface HalamanItem {
     id: string;
@@ -37,8 +30,8 @@
     onFilterChange: (kunci: FilterEtalase) => void;
     itemEtalaseTersaring: ItemEtalase[];
     daftarHalaman: HalamanItem[];
-    onPilihPusaka: (id: BendaPusaka['id'], bukaTwin?: boolean) => void;
-    onPindahHalaman: (id: string) => void;
+    onPilihPusaka: (id: BendaPusaka['id'], bukaTwin?: boolean, targetTitikId?: string) => void;
+    onPindahHalaman: (id: string, anchorId?: string) => void;
   }
 
   let {
@@ -66,6 +59,28 @@
     ['arsitektur', 'Arsitektur'],
     ['pakeliran', 'Pakeliran'],
   ];
+
+  let ribbonEl: HTMLDivElement | undefined = $state();
+
+  function geserRibbon(arah: -1 | 1): void {
+    ribbonEl?.scrollBy({ left: arah * 320, behavior: 'smooth' });
+  }
+
+  /** Mengarahkan pelat indeks atau spesimen etalase ke pin Bedah 3D atau ruang kurasi terkait. */
+  function bukaItemSpasial(target: {
+    bendaId?: BendaPusaka['id'];
+    titikId?: string;
+    halamanTarget?: 'twin' | 'pakeliran' | 'kawruh';
+    anchorTarget?: string;
+  }): void {
+    if (target.halamanTarget && target.halamanTarget !== 'twin') {
+      onPindahHalaman(target.halamanTarget, target.anchorTarget);
+      return;
+    }
+    if (target.bendaId) {
+      onPilihPusaka(target.bendaId, true, target.titikId);
+    }
+  }
 </script>
 
 <!-- MATRIKS ARSIP 12 UNSUR SPASIAL -->
@@ -85,7 +100,7 @@
     </div>
     <p class="band-lead-copy">
       {teksSesuaiBahasa(
-        'Arahkan kursor untuk memiringkan bidang perspektif 3D secara halus, lalu pilih pelat unsur untuk menelaah lapisannya di Studio Digital Twin.',
+        'Arahkan kursor untuk memiringkan bidang perspektif 3D secara halus, lalu pilih pelat unsur untuk membedah lapisannya di Studio Digital Twin atau membuka ruang kurasinya.',
         'Arahake kursor kanggo miringake bidang perspektif 3D kanthi alus, banjur pilih pelat unsur kanggo nliti lapisane.',
       )}
     </p>
@@ -99,21 +114,20 @@
       <button
         type="button"
         class="wall-plate"
-        onclick={() => onPilihPusaka(plat.bendaId, true)}
+        data-benda={plat.bendaId ?? 'aksara'}
+        data-testid="matrix-{plat.id}"
+        onclick={() => bukaItemSpasial(plat)}
       >
         <div class="wall-plate-top">
-          <span class="wall-plate-sub" style="color: {plat.warna};">
+          <span class="wall-plate-sub">
             {plat.kodeArsip} · {plat.sub}
           </span>
-          <span class="wall-plate-dot" style="background: {plat.warna};"></span>
+          <span class="wall-plate-dot"></span>
         </div>
 
         <div class="wall-plate-mid">
           <span class="wall-plate-aksara" lang="jv">{plat.aksara}</span>
-          <span
-            class="wall-plate-rule"
-            style="background: linear-gradient(90deg, {plat.warna}, transparent);"
-          ></span>
+          <span class="wall-plate-rule"></span>
         </div>
 
         <div class="wall-plate-bottom">
@@ -121,7 +135,7 @@
           <div class="wall-plate-spec">{plat.spesifikasi}</div>
         </div>
 
-        <span class="wall-hover-pill">Bedah 3D &#8594;</span>
+        <span class="wall-hover-pill">{plat.ctaLabel ?? 'Bedah 3D \u2192'}</span>
       </button>
     {/each}
   </div>
@@ -136,24 +150,46 @@
         {teksSesuaiBahasa('Etalase Lapisan Budaya', 'Etalase Lapisan Budaya Jawi')}
       </h2>
     </div>
-    <span class="etalase-count">
-      {itemEtalaseTersaring.length} SPESIMEN ARSIP
-    </span>
+    <div class="etalase-header-actions">
+      <span class="etalase-count">
+        {itemEtalaseTersaring.length} SPESIMEN ARSIP
+      </span>
+      <div class="etalase-arrows" aria-label="Geser Etalase">
+        <button
+          type="button"
+          class="util-pill"
+          onclick={() => geserRibbon(-1)}
+          aria-label="Geser Etalase ke Kiri"
+        >
+          &#8592;
+        </button>
+        <button
+          type="button"
+          class="util-pill"
+          onclick={() => geserRibbon(1)}
+          aria-label="Geser Etalase ke Kanan"
+        >
+          &#8594;
+        </button>
+      </div>
+    </div>
   </div>
 
   <div class="wordmark-colossal" aria-hidden="true">PUSAKA JAWA</div>
 
-  <div class="etalase-ribbon">
+  <div class="etalase-ribbon" bind:this={ribbonEl}>
     {#each itemEtalaseTersaring as item}
       <button
         type="button"
         class="etalase-card"
-        onclick={() => onPilihPusaka(item.bendaId, true)}
+        data-benda={item.bendaId}
+        data-testid="etalase-{item.id}"
+        onclick={() => bukaItemSpasial(item)}
       >
         <div class="etalase-card-art">
           <PusakaArtwork
             bendaId={item.ikonTipe}
-            accent={item.aksen}
+            accent={ambilAksenBenda(item.bendaId, tema)}
             compact={true}
             variant={tema === 'terang' ? 'paper' : 'dark'}
           />
@@ -161,7 +197,7 @@
         <div class="etalase-card-meta">
           <div class="etalase-card-head">
             <strong>{item.judul}</strong>
-            <span style="font-family: var(--font-jawa); color: {item.aksen};">{item.aksara}</span>
+            <span class="etalase-card-aksara">{item.aksara}</span>
           </div>
           <div class="etalase-card-sub">{item.subjudul}</div>
           <div class="etalase-card-domain">{item.kodeArsip} · {item.spesifikasi}</div>

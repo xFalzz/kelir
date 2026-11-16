@@ -28,8 +28,8 @@ export function createSafeWebGLRenderer(
       canvas.getContext('experimental-webgl');
     if (!gl) return null;
 
-    const width = Math.max(container.clientWidth || 0, 320);
-    const height = Math.max(container.clientHeight || 0, 240);
+    const width = Math.max(container.clientWidth || 320, 1);
+    const height = Math.max(container.clientHeight || 240, 1);
 
     const renderer = new THREE.WebGLRenderer({
       canvas,
@@ -49,11 +49,17 @@ export function createSafeWebGLRenderer(
       renderer.shadowMap.type = THREE.PCFShadowMap;
     }
 
+    if (getComputedStyle(container).position === 'static') {
+      container.style.position = 'relative';
+    }
+    canvas.style.position = 'absolute';
+    canvas.style.inset = '0';
+    canvas.style.zIndex = '0';
     canvas.style.width = '100%';
     canvas.style.height = '100%';
     canvas.style.display = 'block';
-    container.innerHTML = '';
-    container.appendChild(canvas);
+    container.querySelectorAll('canvas').forEach((el) => el.remove());
+    container.prepend(canvas);
     return renderer;
   } catch {
     return null;
@@ -159,6 +165,23 @@ export function attachCadWireframeLayer(
   }
 
   return lineMat;
+}
+
+/**
+ * Mempertahankan bidang pandang horizontal agar objek 3D tidak terpotong di layar sempit/potret.
+ */
+export function hitungFovResponsif(
+  baseFovDeg: number,
+  aspect: number,
+  refAspect = 1.25,
+  maxFovDeg = 58,
+): number {
+  if (!Number.isFinite(aspect) || aspect <= 0 || aspect >= refAspect) {
+    return baseFovDeg;
+  }
+  const baseRad = THREE.MathUtils.degToRad(baseFovDeg);
+  const adaptedRad = 2 * Math.atan(Math.tan(baseRad / 2) * (refAspect / Math.max(aspect, 0.45)));
+  return Math.min(maxFovDeg, THREE.MathUtils.radToDeg(adaptedRad));
 }
 
 export function disposeSceneObject(obj: THREE.Object3D): void {

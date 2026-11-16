@@ -9,6 +9,7 @@
     KRONIK_SEJARAH_BUDAYA,
     LAKON_KIJANG_KENCANA,
     PILAR_NILAI,
+    ambilAksenBenda,
     ambilTeks,
     type BahasaAktif,
     type BendaPusaka,
@@ -22,7 +23,7 @@
   import type { DigitalTwinStage, ModeVisualTwin, ProyeksiPinTwin } from '../scenes/digitalTwinStage.ts';
   import { LivingPendopoStage, type ProyeksiPinDiorama } from '../scenes/livingPendopoStage.ts';
   import type { PamomongOrbStage } from '../scenes/pamomongOrbStage.ts';
-  import type { WayangStage } from '../scenes/wayangStage.ts';
+  import type { MoodPanggungWayang, WayangStage } from '../scenes/wayangStage.ts';
   import BerandaWallEtalase, { type FilterEtalase } from './components/BerandaWallEtalase.svelte';
   import FooterSection from './components/FooterSection.svelte';
   import KawruhOrbSection from './components/KawruhOrbSection.svelte';
@@ -128,6 +129,7 @@
   let babakIdx = $state(0);
   let posRama = $state(0.46);
   let posKidang = $state(-0.58);
+  let moodPanggungWayang: MoodPanggungWayang = $state('blencong');
 
   // Lab Aksara Jawa & Pamomong AI State (Halaman 05)
   let inputAksaraLatin = $state('Kelir warisan budaya Jawa nusantara.');
@@ -150,6 +152,8 @@
   let wayangStage: WayangStage | null = null;
   let orbStage: PamomongOrbStage | null = null;
   let pengelolaTangan: PengelolaTangan | null = null;
+  let pendingTwinTitikId: string | null = null;
+  let viewportWidth = $state(typeof window !== 'undefined' ? window.innerWidth : 1440);
 
   // Derived Values
   let infoHalamanAktif = $derived(
@@ -232,6 +236,11 @@
       twinStage.muatBenda(bendaAktif);
       twinStage.aturLedakAnatomi(faktorLedak);
       twinStage.terapkanModeVisual(modeVisualTwin);
+      if (pendingTwinTitikId) {
+        const target = bendaAktif.titikInfo.find((t) => t.id === pendingTwinTitikId);
+        if (target) twinStage.fokusKeTitik(target);
+        pendingTwinTitikId = null;
+      }
       twinStage.onProyeksiPin((pins) => {
         twinPins = pins;
       });
@@ -258,6 +267,7 @@
       if (destroyed) return;
       wayangStage = new WayangStage(node);
       wayangStage.aturPosisiTokoh(posRama, posKidang);
+      wayangStage.aturMoodCahaya(moodPanggungWayang);
 
       ro = new ResizeObserver(() => wayangStage?.ubahUkuran());
       ro.observe(node);
@@ -279,7 +289,7 @@
 
     void import('../scenes/pamomongOrbStage.ts').then(({ PamomongOrbStage }) => {
       if (destroyed) return;
-      orbStage = new PamomongOrbStage(node);
+      orbStage = new PamomongOrbStage(node, tema);
 
       ro = new ResizeObserver(() => orbStage?.ubahUkuran());
       ro.observe(node);
@@ -300,6 +310,8 @@
   // =========================================================================
   function pindahHalaman(id: HalamanId, targetAnchorId?: string): void {
     halamanAktif = id;
+    wallTiltX = 0;
+    wallTiltY = 0;
     if (typeof window !== 'undefined') {
       const url = new URL(window.location.href);
       url.searchParams.set('hal', id);
@@ -337,6 +349,7 @@
     }
     dioramaStage?.setTheme(tema);
     twinStage?.setTheme(tema);
+    orbStage?.setTheme(tema);
   }
 
   function toggleAudio(): void {
@@ -354,11 +367,26 @@
     suasanaPendopoAktif = audioBudaya.toggleSuasanaPendopo();
   }
 
-  function pilihPusaka(id: BendaPusaka['id'], bukaHalamanTwin = false): void {
+  function pilihPusaka(
+    id: BendaPusaka['id'],
+    bukaHalamanTwin = false,
+    targetTitikId?: string,
+  ): void {
     bendaAktifId = id;
     const bendaBaru = DAFTAR_BENDA.find((b) => b.id === id) ?? DAFTAR_BENDA[0];
-    titikAktifId = bendaBaru.titikInfo[0].id;
-    twinStage?.muatBenda(bendaBaru);
+    const targetTitik = targetTitikId
+      ? bendaBaru.titikInfo.find((t) => t.id === targetTitikId)
+      : undefined;
+    titikAktifId = targetTitik?.id ?? bendaBaru.titikInfo[0].id;
+
+    if (twinStage) {
+      twinStage.muatBenda(bendaBaru);
+      if (targetTitik) twinStage.fokusKeTitik(targetTitik);
+      pendingTwinTitikId = null;
+    } else if (bukaHalamanTwin) {
+      pendingTwinTitikId = targetTitik?.id ?? null;
+    }
+
     dioramaStage?.fokusKeBangunan(id);
 
     if (audioAktif) picuSuaraBenda(id);
@@ -408,15 +436,17 @@
     if (delta < -Math.floor(len / 2)) delta += len;
 
     const abs = Math.abs(delta);
-    const tx = delta * 245;
-    const tz = -abs * 155;
+    const stepX = viewportWidth <= 480 ? 158 : viewportWidth <= 900 ? 198 : 245;
+    const depthZ = viewportWidth <= 480 ? 120 : 155;
+    const tx = delta * stepX;
+    const tz = -abs * depthZ;
     const ry = delta * -22;
-    const skala = abs === 0 ? 1 : Math.max(0.72, 1 - abs * 0.14);
-    const kabur = abs === 0 ? 0 : abs * 1.9;
-    const opasitas = abs > 2 ? 0 : 1 - abs * 0.18;
+    const skala = abs === 0 ? 1 : Math.max(0.74, 1 - abs * 0.13);
+    const kecerahan = abs === 0 ? 1 : Math.max(0.84, 1 - abs * 0.06);
+    const opasitas = abs > 2 ? 0 : 1 - abs * 0.16;
     const zIndeks = 20 - abs * 4;
 
-    return `transform: translateX(${tx}px) translateZ(${tz}px) rotateY(${ry}deg) scale(${skala}); filter: blur(${kabur}px); opacity: ${opasitas}; z-index: ${zIndeks};`;
+    return `transform: translateX(${tx}px) translateZ(${tz}px) rotateY(${ry}deg) scale(${skala}); filter: brightness(${kecerahan}); opacity: ${opasitas}; z-index: ${zIndeks};`;
   }
 
   function pilihBabak(i: number): void {
@@ -490,8 +520,8 @@
     const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
     const nx = ((e.clientX - rect.left) / Math.max(rect.width, 1)) * 2 - 1;
     const ny = ((e.clientY - rect.top) / Math.max(rect.height, 1)) * 2 - 1;
-    wallTiltX = -ny * 7.5;
-    wallTiltY = nx * 9.5;
+    wallTiltX = -ny * 3.5;
+    wallTiltY = nx * 4.5;
   }
 
   function formatSumberLabel(s: KodeSumber): string {
@@ -559,6 +589,7 @@
 </script>
 
 <svelte:window
+  onresize={() => (viewportWidth = window.innerWidth)}
   onmousemove={handleMouseMoveGlobal}
   onkeydown={(e) => {
     if (e.key === 'Escape' && modalSulukBuka) modalSulukBuka = false;
@@ -659,7 +690,7 @@
       onclick={toggleKameraTangan}
       data-testid="toggle-kamera"
     >
-      {statusKamera === 'aktif' ? 'Kamera Hidup' : 'Gestur 21-Titik'}
+      {statusKamera === 'aktif' ? 'Kamera Hidup' : 'Gestur 3D'}
     </button>
 
     <div class="lang-group" role="group" aria-label="Pilih Bahasa Tampilan">
@@ -775,7 +806,7 @@
         <div class="diorama-scrim"></div>
 
         <!-- Pin Callout 3D Terproyeksi Langsung ke Bangunan Diorama -->
-        <div class="diorama-pins-layer">
+        <div class="diorama-pins-layer" class:is-scrolly-dimmed={scrollyIndeksAktif >= 0}>
           {#each dioramaPins as pin}
             {@const info = DAFTAR_BENDA.find((b) => b.id === pin.bendaId)}
             {#if info && pin.terlihat}
@@ -955,7 +986,7 @@
       {itemEtalaseTersaring}
       daftarHalaman={DAFTAR_HALAMAN}
       onPilihPusaka={pilihPusaka}
-      onPindahHalaman={(id) => pindahHalaman(id as HalamanId)}
+      onPindahHalaman={(id, anchorId) => pindahHalaman(id as HalamanId, anchorId)}
     />
   {/if}
 
@@ -995,6 +1026,19 @@
       <div class="twin-workspace">
         <div class="twin-viewport-card">
           <div class="twin-canvas-host" use:mountTwinStage>
+            <div class="twin-viewport-hud">
+              <span class="twin-viewport-spec">
+                {bendaAktif.nomorUrut} / 05 · SERET ORBIT · GULIR ZOOM
+              </span>
+              <button
+                type="button"
+                class="util-pill"
+                onclick={() => twinStage?.resetKamera()}
+                aria-label="Reset Sudut Kamera 3D"
+              >
+                Reset Sudut
+              </button>
+            </div>
             <div class="twin-pins-overlay">
               {#each twinPins as pin, pIdx}
                 {@const t = bendaAktif.titikInfo.find((item) => item.id === pin.id)}
@@ -1263,7 +1307,11 @@
             aria-label="Pusaka {ambilTeks(benda.nama, bahasa)}"
           >
             <div class="coverflow-card-inner">
-              <PusakaArtwork bendaId={benda.id} accent={benda.warnaAksen} />
+              <PusakaArtwork
+                bendaId={benda.id}
+                accent={ambilAksenBenda(benda.id, tema)}
+                variant={tema === 'terang' ? 'paper' : 'dark'}
+              />
               <div class="coverflow-card-overlay">
                 <div class="coverflow-num">
                   {benda.nomorUrut} · {benda.badgeStatus ?? 'KURASI'}
@@ -1316,9 +1364,13 @@
       <!-- Split Album-Style Index Showcase -->
       <div class="archive-split-index">
         <div class="archive-plate-frame">
-          <PusakaArtwork bendaId={DAFTAR_BENDA[coverflowIdx].id} accent="#b33025" />
+          <PusakaArtwork
+            bendaId={DAFTAR_BENDA[coverflowIdx].id}
+            accent={ambilAksenBenda(DAFTAR_BENDA[coverflowIdx].id, tema)}
+            variant={tema === 'terang' ? 'paper' : 'dark'}
+          />
           <div class="archive-plate-caption">
-            <div style="font-family: var(--font-mono); font-size: 0.72rem; letter-spacing: 0.14em; color: #f5b4a8; margin-bottom: 4px;">
+            <div class="archive-plate-kicker">
               KELIR ARCHIVE · VOL. I
             </div>
             <div style="font-family: var(--font-display); font-size: 1.18rem; font-weight: 700;">
@@ -1416,7 +1468,22 @@
               </p>
             </div>
 
-            <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+            <div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center;">
+              <div class="mode-switch-group" role="group" aria-label="Pencahayaan Panggung Kelir">
+                {#each [['blencong', 'Blencong'], ['kelir', 'Siluet Kelir'], ['sorot', 'Sorot Tatahan']] as [moodId, moodLabel]}
+                  <button
+                    type="button"
+                    class="mode-btn"
+                    class:is-active={moodPanggungWayang === moodId}
+                    onclick={() => {
+                      moodPanggungWayang = moodId as MoodPanggungWayang;
+                      wayangStage?.aturMoodCahaya(moodPanggungWayang);
+                    }}
+                  >
+                    {moodLabel}
+                  </button>
+                {/each}
+              </div>
               <button
                 type="button"
                 class="pill-cta-outline"
@@ -1492,7 +1559,7 @@
             Simulasi Sabetan Dalang via Kamera Lokal
           </h3>
           <p style="margin: 0 0 14px; font-size: 0.88rem; color: var(--text-secondary);">
-            Aktifkan tombol <strong>Gestur 21-Titik</strong> di bilah atas: tangan kanan menggerakkan Sri Rama &amp; kemiringan busur, tangan kiri menggerakkan Kidang Kencana, dan gestur mengepal memicu sabetan keprak.
+            Aktifkan tombol <strong>Gestur 3D</strong> di bilah atas: tangan kanan menggerakkan Sri Rama &amp; kemiringan busur, tangan kiri menggerakkan Kidang Kencana, dan gestur mengepal memicu sabetan keprak.
           </p>
           <button
             type="button"
@@ -1596,7 +1663,11 @@
     </button>
 
     <div class="modal-art-panel">
-      <PusakaArtwork bendaId={modalTrackBenda.id} accent={modalTrackBenda.warnaAksen} />
+      <PusakaArtwork
+        bendaId={modalTrackBenda.id}
+        accent={ambilAksenBenda(modalTrackBenda.id, tema)}
+        variant={tema === 'terang' ? 'paper' : 'dark'}
+      />
     </div>
 
     <div class="modal-lyrics-col">

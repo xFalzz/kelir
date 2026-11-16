@@ -85,11 +85,11 @@
         Ajukan pertanyaan mengenai filosofi pusaka, struktur konstruksi, atau lakon pakeliran. Mesin temu-balik BM25 mengevaluasi relevansi dari basis pengetahuan <strong>S1–S7</strong> serta menolak halusinasi di luar arsip.
       </p>
 
-      <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px;">
+      <div class="pamomong-prompt-chips">
         {#each bendaAktif.pertanyaanContoh as contohQ}
           <button
             type="button"
-            class="util-pill"
+            class="util-pill is-wrap"
             onclick={() => onPilihContohPertanyaan(contohQ)}
           >
             {contohQ}
@@ -97,7 +97,7 @@
         {/each}
         <button
           type="button"
-          class="util-pill"
+          class="util-pill is-wrap"
           onclick={() => onPilihContohPertanyaan('Siapa penemu mesin uap modern?')}
           title="Uji mekanisme penolakan tegas untuk pertanyaan di luar pustaka S1–S7"
         >
@@ -107,14 +107,14 @@
 
       <form
         onsubmit={onKirimTanya}
-        style="display: flex; gap: 10px; flex-wrap: wrap;"
+        class="pamomong-query-form"
         data-testid="form-tanya"
       >
         <input
           type="text"
+          class="pamomong-query-input"
           bind:value={pertanyaanInput}
           placeholder="Tanyakan soal {ambilTeks(bendaAktif.nama, 'id')} atau Ramayana..."
-          style="flex: 1; min-width: 240px; padding: 13px 18px; border-radius: 999px; border: 1px solid var(--border-strong); background: var(--bg-card); color: var(--text-primary);"
         />
         <button type="submit" class="pill-cta-white" disabled={sediaTanya}>
           {sediaTanya ? 'Menganalisis Korpus...' : 'Tanya Pamomong \u2192'}
@@ -143,9 +143,11 @@
           {/each}
         </div>
 
-        <p style="margin: 0; font-size: 0.96rem; line-height: 1.62;">
-          {jawabanPamomong.jawaban}
-        </p>
+        <div class="pamomong-answer-prose">
+          {#each jawabanPamomong.jawaban.split('\n\n') as paragraf}
+            <p>{paragraf}</p>
+          {/each}
+        </div>
 
         {#if jawabanPamomong.butirBukti.length > 0}
           <div class="rag-evidence-list" aria-label="Bukti Primer Terambil">
@@ -166,7 +168,22 @@
       </div>
     </div>
 
-    <div class="pamomong-orb-host" use:mountOrbStage aria-hidden="true"></div>
+    <div class="pamomong-orb-stage">
+      <div class="pamomong-orb-status">
+        <span class="eyebrow-mono">
+          <span class="live-dot" aria-hidden="true"></span>
+          PAMOMONG ASTROLABE 3D
+        </span>
+        <span class="pamomong-status-sep" aria-hidden="true">·</span>
+        <span class="rag-metric">
+          {sediaTanya ? 'Memindai Korpus...' : 'Siap Menjawab'}
+        </span>
+      </div>
+      <div class="pamomong-orb-host" use:mountOrbStage aria-hidden="true"></div>
+      <p class="pamomong-orb-caption">
+        SERET UNTUK ORBIT · KORPUS S1–S7 · NOL HALUSINASI
+      </p>
+    </div>
   </div>
 </section>
 

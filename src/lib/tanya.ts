@@ -337,10 +337,10 @@ export function jawabDariKurasiLokal(bendaId: BendaPusaka['id'], pertanyaanRaw: 
     ...new Set(buktiPilihan.flatMap((item) => item.doc.sumber)),
   ];
 
-  // Sintesis ringkas dari 1-2 bukti terkuat bila bukti kedua juga sangat relevan
+  // Sintesis terstruktur 1-2 bukti terkuat bila bukti kedua juga sangat relevan
   const sintesisTeks =
     kedua && kedua.skor >= topSkor * 0.62 && kedua.doc.id !== utama.doc.id
-      ? `${utama.doc.judul}: ${utama.doc.teks} Selain itu pada ${kedua.doc.judul}: ${kedua.doc.teks}`
+      ? `${utama.doc.judul}: ${utama.doc.teks}\n\nKonteks penguat dari arsip ${kedua.doc.judul}: ${kedua.doc.teks}`
       : `${utama.doc.judul}: ${utama.doc.teks}`;
 
   const skorKeyakinan = Math.min(99, Math.max(54, Math.round(52 + Math.min(topSkor, 9.5) * 4.9)));

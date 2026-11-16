@@ -31,11 +31,26 @@ describe('Kurasi Pusaka, Kronik & Asisten BM25 Terikat Sumber S1-S7', () => {
       expect(plate.aksara.length).toBeGreaterThan(0);
       expect(plate.sub).not.toContain('.id');
       expect(plate.spesifikasi).not.toContain('.id');
+      if (plate.halamanTarget && plate.halamanTarget !== 'twin') {
+        expect(plate.halamanTarget).toBe('kawruh');
+        expect(plate.anchorTarget).toBe('aksara');
+      } else {
+        const benda = DAFTAR_BENDA.find((b) => b.id === plate.bendaId);
+        expect(benda).toBeDefined();
+        expect(benda?.titikInfo.some((t) => t.id === plate.titikId)).toBe(true);
+      }
     }
     for (const item of KOLEKSI_ETALASE) {
       expect(item.kodeArsip).toMatch(/^KLR-\d{2}/);
       expect(item.spesifikasi).not.toContain('.id');
       expect(item.subjudul).not.toContain('.id');
+      if (item.halamanTarget && item.halamanTarget !== 'twin') {
+        expect(item.halamanTarget).toBe('pakeliran');
+      } else {
+        const benda = DAFTAR_BENDA.find((b) => b.id === item.bendaId);
+        expect(benda).toBeDefined();
+        expect(benda?.titikInfo.some((t) => t.id === item.titikId)).toBe(true);
+      }
     }
     for (const b of DAFTAR_BENDA) {
       expect(b.zonaKode).not.toContain('.id');

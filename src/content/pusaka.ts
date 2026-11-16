@@ -96,6 +96,9 @@ export interface KawruhFilosofi {
 export interface ItemEtalase {
   id: string;
   bendaId: BendaPusaka['id'];
+  titikId?: string;
+  halamanTarget?: 'twin' | 'pakeliran' | 'kawruh';
+  anchorTarget?: string;
   kategoriKey: 'tosan-aji' | 'karawitan' | 'wastra' | 'arsitektur' | 'pakeliran';
   judul: string;
   subjudul: string;
@@ -106,8 +109,37 @@ export interface ItemEtalase {
   ikonTipe: BendaPusaka['id'];
 }
 
+export interface MatrixItem {
+  id: string;
+  label: string;
+  sub: string;
+  aksara: string;
+  kodeArsip: string;
+  spesifikasi: string;
+  bendaId?: BendaPusaka['id'];
+  titikId?: string;
+  halamanTarget?: 'twin' | 'pakeliran' | 'kawruh';
+  anchorTarget?: string;
+  ctaLabel?: string;
+  warna: string;
+  pola: 'grid' | 'gelombang' | 'cakra' | 'bilah' | 'gunungan';
+}
+
 export function ambilTeks(teks: MultiTeks, bahasa: BahasaAktif): string {
   return bahasa === 'id' ? teks.id : teks.jw;
+}
+
+const AKSEN_TEMA_BENDA: Record<BendaPusaka['id'], { terang: string; malam: string }> = {
+  keris: { terang: '#c24117', malam: '#f27c4e' },
+  saron: { terang: '#8c6014', malam: '#e6ba63' },
+  batik: { terang: '#a8521f', malam: '#ed9158' },
+  joglo: { terang: '#445b6e', malam: '#93b7d1' },
+  wayang: { terang: '#a32b20', malam: '#ed6d5e' },
+};
+
+/** Mengembalikan warna aksen pusaka berdasar kontras tema terang/malam. */
+export function ambilAksenBenda(id: BendaPusaka['id'], tema: 'malam' | 'terang'): string {
+  return AKSEN_TEMA_BENDA[id][tema];
 }
 
 export const DAFTAR_SUMBER: Record<KodeSumber, SumberKajian> = {
@@ -255,7 +287,7 @@ export const DAFTAR_BENDA: BendaPusaka[] = [
       {
         id: 'keris-ganja',
         judul: { id: 'Ganja (Pangkal Wilah)', jw: 'Ganja Dhuwung' },
-        posisi: [0, -0.45, 0.12],
+        posisi: [0, -0.35, 0.12],
         ringkasan: {
           id: 'Bagian melintang yang menyatukan pesi tangkai dengan bilah tajam, melambangkan bumi yang menopang cita-cita luhur.',
           jw: 'Perangan malang kang nyawijekake pesi lan wilah.',
@@ -269,6 +301,16 @@ export const DAFTAR_BENDA: BendaPusaka[] = [
         ringkasan: {
           id: 'Pegangan kayu trembalo berukir patra dan cincin logam berpermata untuk menjaga ergonomi genggaman.',
           jw: 'Cecekelan kayu trembalo ukir lan mendhak cincin logam.',
+        },
+        sumber: ['S1'],
+      },
+      {
+        id: 'keris-warangka',
+        judul: { id: 'Warangka Gayaman & Pendok', jw: 'Warangka Gayaman saha Pendhok' },
+        posisi: [0.56, -0.22, -0.38],
+        ringkasan: {
+          id: 'Sarung pelindung bilah dari kayu kemuning-timoho berpadu selubung logam berukir (pendok) guna menjaga ketajaman dan wibawa keris.',
+          jw: 'Wadhah wilah saking kayu kemuning pinasangan pendhok kuningan kangge njaga dhuwung.',
         },
         sumber: ['S1'],
       },
@@ -299,7 +341,7 @@ export const DAFTAR_BENDA: BendaPusaka[] = [
       { label: 'Larasan', nilai: 'Slendro 6 Bilah' },
     ],
     ringkas: {
-      id: 'Instrumen pembawa kerangka melodi (balungan) dalam ansambel gamelan dengan tujuh bilah atau enam nada Slendro jernih.',
+      id: 'Instrumen pembawa kerangka melodi (balungan) dalam ansambel gamelan dengan enam bilah nada Slendro jernih.',
       jw: 'Piranti panyangga lagu pokok (balungan) ing gamelan kanthi swara gangsa kang bening.',
     },
     sejarahSingkat: {
@@ -640,6 +682,16 @@ export const DAFTAR_BENDA: BendaPusaka[] = [
         },
         sumber: ['S3'],
       },
+      {
+        id: 'wayang-blencong',
+        judul: { id: 'Pelita Minyak Blencong', jw: 'Lampu Blencong Kuningan' },
+        posisi: [-1.18, 0.92, 0.28],
+        ringkasan: {
+          id: 'Lampu minyak kelapa kuningan bersayap garuda dengan sumbu api menyala yang memancarkan bayangan tatahan wayang ke kelir blacu.',
+          jw: 'Pelita kuningan isi lenga klentik mawa swiwi garuda kang madhangi tatahan wayang ing kelir.',
+        },
+        sumber: ['S3'],
+      },
     ],
     pertanyaanContoh: [
       'Apa fungsi tangkai cempurit dan tuding saat dalang menyabet wayang?',
@@ -697,7 +749,7 @@ export const KRONIK_SEJARAH_BUDAYA: KronikPusaka[] = [
       jw: 'Saben wilah gangsa pinasang ing tawonan sabarung supaya gema swara mlebu resik ing rancakan jati.',
     },
     metrik: [
-      { label: 'Komposisi Logam Gangsa', nilai: 'Tembaga 80% · Timah 20%', persen: 88 },
+      { label: 'Komposisi Logam Gangsa', nilai: 'Tembaga 78% · Timah 22%', persen: 88 },
       { label: 'Stabilitas Laras Slendro', nilai: 'Interval Ekuipentatonik', persen: 95 },
       { label: 'Kesesuaian Arsip S4', nilai: 'Terverifikasi UNESCO', persen: 100 },
     ],
@@ -915,34 +967,34 @@ export const KAWRUH_FILOSOFI: KawruhFilosofi[] = [
 export const KEUNGGULAN_SISTEM = [
   {
     nomor: '01',
-    judul: { id: 'Geometri Otentik Berskala Spasial', jw: 'Geometri Otentik mawa Skala Spasial' },
+    judul: { id: 'Geometri Prosedural & Pencahayaan HDR', jw: 'Geometri Prosedural saha Cahya HDR' },
     teks: {
-      id: 'Setiap bangunan pendopo, lengkung luk keris, dan sendi wayang kulit dibangun langsung lewat pemodelan WebGL PBR lengkap dengan pencahayaan HDR studio tanpa memuat aset statis berat.',
-      jw: 'Saben pendhapa, luk keris, lan sendi wayang kawangun ing WebGL PBR mawa cahya HDR.',
+      id: 'Struktur pendopo, lengkung luk keris, dan sendi wayang kulit dibangun sebagai model WebGL PBR dengan pemetaan tekstur kayu, perunggu, dan pamor di bawah pencahayaan HDR studio.',
+      jw: 'Pendhapa, luk keris, lan sendi wayang kawangun ing WebGL PBR mawa tekstur kayu, gangsa, lan pamor ing cahya HDR studio.',
     },
   },
   {
     nomor: '02',
-    judul: { id: 'Audit Kawat Rangka CAD & Ledak Anatomi', jw: 'Audit Kawat Rangka CAD saha Ledak Anatomi' },
+    judul: { id: 'Urai Komponen & Kawat X-Ray CAD', jw: 'Urai Komponen saha Kawat X-Ray CAD' },
     teks: {
-      id: 'Beralihlah seketika antara tampilan material nyata, lapisan hibrida, dan mode kawat X-Ray jingga untuk mengurai komponen tersembunyi di balik kulit atau kayu.',
-      jw: 'Gantinen antarane rupa nyata, hibrida, lan mode kawat X-Ray kanggo nliti jeroaning pusaka.',
+      id: 'Alihkan tampilan secara presisi antara permukaan material nyata, lapisan hibrida, dan garis struktur X-Ray untuk memeriksa sambungan pasak, pesi, dan tatahan yang lazim tersembunyi.',
+      jw: 'Gantinen antawisipun rupa nyata, hibrida, lan garis X-Ray kangge nliti pasak, pesi, saha tatahan alus.',
     },
   },
   {
     nomor: '03',
-    judul: { id: 'Sintesis Akustik Budaya Waktu-Nyata', jw: 'Sintesis Akustik Budaya Wektu-Nyata' },
+    judul: { id: 'Sintesis Akustik Karawitan Real-Time', jw: 'Sintesis Akustik Karawitan Wektu-Nyata' },
     teks: {
-      id: 'Bilah saron laras Slendro, dentuman gong ageng, ketukan keprak dalang, dan bunyi hunusan keris diproses seketika melalui mesin Web Audio prosedural bebas latensi jaringan.',
-      jw: 'Wilah saron Slendro, gong ageng, lan keprak dhalang kasintesis sanalika tanpa ketergantungan berkas audio.',
+      id: 'Nada pentatonik laras Slendro pada bilah saron, gema gong ageng, keprak dalang, hingga desis besi keris disintesis langsung oleh mesin Web Audio sesuai karakter akustik tiap instrumen.',
+      jw: 'Nada pentatonik laras Slendro ing wilah saron, gong ageng, keprak dhalang, lan hunusan dhuwung kasintesis langsung dening Web Audio.',
     },
   },
   {
     nomor: '04',
-    judul: { id: 'Kendali Gestur Tangan 21-Titik Lokal', jw: 'Kendhali Gestur Asta 21-Titik Lokal' },
+    judul: { id: 'Kinematika Tangan 21-Titik di Perangkat', jw: 'Kinematika Asta 21-Titik Lokal' },
     teks: {
-      id: 'Digerakkan oleh model MediaPipe offline dari peramban pengguna: cubit untuk zoom, arahkan telunjuk ke sorot cahaya, atau gerakkan dua tokoh wayang seketika dengan kedua tangan.',
-      jw: 'Mlakokake wayang lan muter pusaka nganggo tangan langsung ing kamera tanpa ngirim data menyang server.',
+      id: 'Model pengenalan gestur MediaPipe memproses pergerakan tangan sepenuhnya secara luring untuk mengendalikan rotasi pusaka, pembesaran detail, dan sabetan dua tokoh wayang.',
+      jw: 'Model pangolah gestur MediaPipe lumaku ing piranti piyambak tanpa ngirim gambar kangge muter pusaka lan nglakokake wayang.',
     },
   },
 ];
@@ -950,29 +1002,29 @@ export const KEUNGGULAN_SISTEM = [
 export const PILAR_NILAI = [
   {
     nomor: '01',
-    judul: { id: 'Konservasi Presisi', jw: 'Konservasi Presisi' },
-    sorot: { id: 'KEMBARAN DIGITAL BUDAYA', jw: 'KEMBARAN DIGITAL BUDAYA' },
+    judul: { id: 'Dokumentasi Akurasi Tinggi', jw: 'Dokumentasi Akurasi Inggil' },
+    sorot: { id: 'KONSERVASI SPASIAL', jw: 'KONSERVASI SPASIAL' },
     teks: {
-      id: 'Mengabadikan detail struktur arsitektur Joglo, lipatan pamor besi-nikel, dan ukiran tatahan kulit ke dalam model spasial berakurasi kepustakaan.',
-      jw: 'Ngabadiake struktur Joglo, lipetan pamor wesi-nikel, lan tatahan kulit ing model spasial kang akurat.',
+      id: 'Merekam proporsi arsitektur Joglo, lipatan pamor besi-nikel, dan ukiran tatahan kulit ke dalam arsip tiga dimensi yang dapat diperiksa dari seluruh sudut.',
+      jw: 'Nyathet proporsi arsitektur Joglo, lipetan pamor wesi-nikel, lan tatahan kulit ing arsip telung dhimensi.',
     },
   },
   {
     nomor: '02',
-    judul: { id: 'Transmisi Aktif', jw: 'Transmisi Aktif' },
-    sorot: { id: 'BELAJAR MELALUI INTERAKSI', jw: 'SINAU LIWAT INTERAKSI' },
+    judul: { id: 'Pembelajaran Eksploratif', jw: 'Pasinaon Eksploratif' },
+    sorot: { id: 'INTERAKSI LANGSUNG', jw: 'INTERAKSI LANGSUNG' },
     teks: {
-      id: 'Pengetahuan bukan sekadar teks pasif: sentuh bilah Saron hingga bergema, urai lapisan Keris, dan gerakkan Sri Rama di balik kelir blencong.',
-      jw: 'Kawruh ora mung tulisan: demok wilah Saron nganti muni, urai bagian Dhuwung, lan lakokake wayang ing kelir.',
+      id: 'Membuka pemahaman budaya melalui praktik langsung: dengarkan laras Slendro tiap bilah saron, urai bagian keris satu per satu, dan gerakkan tokoh Sri Rama di kelir.',
+      jw: 'Mbukak pangertosan budaya lumantar praktik: mirengake laras saron, ngurai bageyan dhuwung, lan nglakokake wayang.',
     },
   },
   {
     nomor: '03',
-    judul: { id: 'Integritas Arsip S1–S7', jw: 'Integritas Arsip S1–S7' },
-    sorot: { id: 'RUJUKAN AKADEMIK RESMI', jw: 'RUJUKAN AKADEMIK RESMI' },
+    judul: { id: 'Keterlacakan Rujukan S1–S7', jw: 'Rujukan Resmi S1–S7' },
+    sorot: { id: 'STANDAR KEPUSTAKAAN', jw: 'STANDAR KEPUSTAKAAN' },
     teks: {
-      id: 'Asisten Pamomong dan setiap pelat kurasi terikat langsung pada dokumen UNESCO ICH, Museum Sonobudoyo, dan pedoman Kemdikbud RI.',
-      jw: 'Asisten Pamomong lan saben pelat kurasi kasambung langsung karo arsip UNESCO ICH, Museum Sonobudoyo, lan Kemdikbud RI.',
+      id: 'Seluruh istilah anatomi, narasi kronik, dan sistem tanya-jawab Pamomong mengacu secara eksplisit pada arsip UNESCO ICH, Museum Sonobudoyo, serta Perpusnas RI.',
+      jw: 'Sedaya istilah anatomi, narasi kronik, lan Pamomong ngrujuk dhumateng arsip UNESCO ICH, Museum Sonobudoyo, lan Perpusnas RI.',
     },
   },
 ];
@@ -981,6 +1033,7 @@ export const KOLEKSI_ETALASE: ItemEtalase[] = [
   {
     id: 'et-keris-pamor',
     bendaId: 'keris',
+    titikId: 'keris-pamor',
     kategoriKey: 'tosan-aji',
     judul: 'Pamor Beras Wutah',
     subjudul: 'Lipatan Nikel Meteorit & Warangan',
@@ -993,6 +1046,7 @@ export const KOLEKSI_ETALASE: ItemEtalase[] = [
   {
     id: 'et-saron-slendro',
     bendaId: 'saron',
+    titikId: 'saron-wilah',
     kategoriKey: 'karawitan',
     judul: 'Wilah Perunggu 6 Nada',
     subjudul: 'Laras Slendro · Pijetan Balungan',
@@ -1005,6 +1059,7 @@ export const KOLEKSI_ETALASE: ItemEtalase[] = [
   {
     id: 'et-batik-kawung',
     bendaId: 'batik',
+    titikId: 'batik-pusat',
     kategoriKey: 'wastra',
     judul: 'Simetri Kiblat Papat',
     subjudul: 'Canting Tembaga & Celup Soga',
@@ -1017,6 +1072,7 @@ export const KOLEKSI_ETALASE: ItemEtalase[] = [
   {
     id: 'et-joglo-tumpangsari',
     bendaId: 'joglo',
+    titikId: 'joglo-tumpangsari',
     kategoriKey: 'arsitektur',
     judul: 'Undakan Tumpang Sari',
     subjudul: 'Pasak Purus Jati Tanpa Paku',
@@ -1029,6 +1085,7 @@ export const KOLEKSI_ETALASE: ItemEtalase[] = [
   {
     id: 'et-wayang-rama',
     bendaId: 'wayang',
+    titikId: 'wayang-sungging',
     kategoriKey: 'pakeliran',
     judul: 'Satria Sri Rama',
     subjudul: 'Tatahan Wacucal Kebo & Cempurit',
@@ -1041,9 +1098,10 @@ export const KOLEKSI_ETALASE: ItemEtalase[] = [
   {
     id: 'et-wayang-kidang',
     bendaId: 'wayang',
+    halamanTarget: 'pakeliran',
     kategoriKey: 'pakeliran',
     judul: 'Kidang Kencana 3D',
-    subjudul: 'Lakon Aranya Kanda & Blencong',
+    subjudul: 'Panggung Pakeliran · Aranya Kanda',
     kodeArsip: 'KLR-06 · S5',
     spesifikasi: 'Artikulasi Sendi Ganda · Prada Mas',
     aksara: 'ꦏꦶꦢꦁ',
@@ -1053,6 +1111,7 @@ export const KOLEKSI_ETALASE: ItemEtalase[] = [
   {
     id: 'et-keris-warangka',
     bendaId: 'keris',
+    titikId: 'keris-warangka',
     kategoriKey: 'tosan-aji',
     judul: 'Warangka Gayaman Jati',
     subjudul: 'Pendok Bunton & Mendak Permata',
@@ -1065,6 +1124,7 @@ export const KOLEKSI_ETALASE: ItemEtalase[] = [
   {
     id: 'et-joglo-umpak',
     bendaId: 'joglo',
+    titikId: 'joglo-sakaguru',
     kategoriKey: 'arsitektur',
     judul: 'Sendi Umpak Andesit',
     subjudul: 'Peredam Getar Gempa Nusantara',
@@ -1076,27 +1136,17 @@ export const KOLEKSI_ETALASE: ItemEtalase[] = [
   },
 ];
 
-export const DINDING_MATRIX: Array<{
-  id: string;
-  label: string;
-  sub: string;
-  aksara: string;
-  kodeArsip: string;
-  spesifikasi: string;
-  bendaId: BendaPusaka['id'];
-  warna: string;
-  pola: 'grid' | 'gelombang' | 'cakra' | 'bilah' | 'gunungan';
-}> = [
-  { id: 'm01', label: 'Luk 5', sub: 'Tosan Aji', aksara: 'ꦭꦸꦏ꧀', kodeArsip: 'KLR-01 · S1', spesifikasi: 'Bilah Tempa Pandawa', bendaId: 'keris', warna: '#d1491b', pola: 'cakra' },
-  { id: 'm02', label: 'Slendro', sub: 'Karawitan', aksara: 'ꦱ꧀ꦭꦺꦤ꧀ꦢꦿ', kodeArsip: 'KLR-02 · S4', spesifikasi: 'Larasan Pentatonik 5 Nada', bendaId: 'saron', warna: '#9a6c1d', pola: 'bilah' },
-  { id: 'm03', label: 'Kawung', sub: 'Wastra Soga', aksara: 'ꦏꦮꦸꦁ', kodeArsip: 'KLR-03 · S2', spesifikasi: 'Geometri Papat Pancer', bendaId: 'batik', warna: '#b85d28', pola: 'grid' },
-  { id: 'm04', label: 'Joglo', sub: 'Tumpang Sari', aksara: 'ꦗꦺꦴꦒ꧀ꦭꦺꦴ', kodeArsip: 'KLR-04 · S6', spesifikasi: 'Pasak Kayu Tanpa Paku', bendaId: 'joglo', warna: '#516778', pola: 'grid' },
-  { id: 'm05', label: 'Sri Rama', sub: 'Pakeliran', aksara: 'ꦫꦩ', kodeArsip: 'KLR-05 · S3', spesifikasi: 'Wacucal Tatah Krawangan', bendaId: 'wayang', warna: '#b33025', pola: 'gunungan' },
-  { id: 'm06', label: 'Pamor', sub: 'Beras Wutah', aksara: 'ꦥꦩꦺꦴꦂ', kodeArsip: 'KLR-06 · S1', spesifikasi: 'Meteorit Nikel-Besi', bendaId: 'keris', warna: '#d1491b', pola: 'gelombang' },
-  { id: 'm07', label: 'Gangsa', sub: 'Gamelan', aksara: 'ꦒꦁꦱ', kodeArsip: 'KLR-07 · S4', spesifikasi: 'Tembaga & Timah 78/22', bendaId: 'saron', warna: '#9a6c1d', pola: 'bilah' },
-  { id: 'm08', label: 'Canting', sub: 'Rintang Malam', aksara: 'ꦕꦤ꧀ꦛꦶꦁ', kodeArsip: 'KLR-08 · S2', spesifikasi: 'Cucuk Tembaga Presisi', bendaId: 'batik', warna: '#b85d28', pola: 'cakra' },
-  { id: 'm09', label: 'Brunjung', sub: 'Atap Tajug', aksara: 'ꦧꦿꦸꦚ꧀ꦗꦸꦁ', kodeArsip: 'KLR-09 · S6', spesifikasi: 'Puncak Trapesium Pendopo', bendaId: 'joglo', warna: '#516778', pola: 'gunungan' },
-  { id: 'm10', label: 'Blencong', sub: 'Pelita Kelir', aksara: 'ꦧ꧀ꦭꦺꦚ꧀ꦕꦺꦴꦁ', kodeArsip: 'KLR-10 · S3', spesifikasi: 'Sorot Sumbu Minyak Kelapa', bendaId: 'wayang', warna: '#b33025', pola: 'cakra' },
-  { id: 'm11', label: 'Ganja', sub: 'Pangkal Bilah', aksara: 'ꦒꦚ꧀ꦗ', kodeArsip: 'KLR-11 · S1', spesifikasi: 'Penyatuan Lingga & Yoni', bendaId: 'keris', warna: '#d1491b', pola: 'bilah' },
-  { id: 'm12', label: 'Hanacaraka', sub: 'Aksara Jawa', aksara: 'ꦲꦤꦕꦫꦏ', kodeArsip: 'KLR-12 · S7', spesifikasi: 'Blok Unicode U+A980', bendaId: 'wayang', warna: '#9a6c1d', pola: 'grid' },
+export const DINDING_MATRIX: MatrixItem[] = [
+  { id: 'm01', label: 'Luk 5', sub: 'Tosan Aji', aksara: 'ꦭꦸꦏ꧀', kodeArsip: 'KLR-01 · S1', spesifikasi: 'Bilah Tempa Pandawa', bendaId: 'keris', titikId: 'keris-wilah', warna: '#d1491b', pola: 'cakra' },
+  { id: 'm02', label: 'Slendro', sub: 'Karawitan', aksara: 'ꦱ꧀ꦭꦺꦤ꧀ꦢꦿ', kodeArsip: 'KLR-02 · S4', spesifikasi: 'Larasan Pentatonik 6 Bilah', bendaId: 'saron', titikId: 'saron-wilah', warna: '#9a6c1d', pola: 'bilah' },
+  { id: 'm03', label: 'Kawung', sub: 'Wastra Soga', aksara: 'ꦏꦮꦸꦁ', kodeArsip: 'KLR-03 · S2', spesifikasi: 'Geometri Papat Pancer', bendaId: 'batik', titikId: 'batik-pusat', warna: '#b85d28', pola: 'grid' },
+  { id: 'm04', label: 'Joglo', sub: 'Tumpang Sari', aksara: 'ꦗꦺꦴꦒ꧀ꦭꦺꦴ', kodeArsip: 'KLR-04 · S6', spesifikasi: 'Pasak Kayu Tanpa Paku', bendaId: 'joglo', titikId: 'joglo-tumpangsari', warna: '#516778', pola: 'grid' },
+  { id: 'm05', label: 'Sri Rama', sub: 'Pakeliran', aksara: 'ꦫꦩ', kodeArsip: 'KLR-05 · S3', spesifikasi: 'Wacucal Tatah Krawangan', bendaId: 'wayang', titikId: 'wayang-sungging', warna: '#b33025', pola: 'gunungan' },
+  { id: 'm06', label: 'Pamor', sub: 'Beras Wutah', aksara: 'ꦥꦩꦺꦴꦂ', kodeArsip: 'KLR-06 · S1', spesifikasi: 'Meteorit Nikel-Besi', bendaId: 'keris', titikId: 'keris-pamor', warna: '#d1491b', pola: 'gelombang' },
+  { id: 'm07', label: 'Gangsa', sub: 'Gamelan', aksara: 'ꦒꦁꦱ', kodeArsip: 'KLR-07 · S4', spesifikasi: 'Tembaga & Timah 78/22', bendaId: 'saron', titikId: 'saron-wilah', warna: '#9a6c1d', pola: 'bilah' },
+  { id: 'm08', label: 'Canting', sub: 'Rintang Malam', aksara: 'ꦕꦤ꧀ꦛꦶꦁ', kodeArsip: 'KLR-08 · S2', spesifikasi: 'Cucuk Tembaga Presisi', bendaId: 'batik', titikId: 'batik-canting', warna: '#b85d28', pola: 'cakra' },
+  { id: 'm09', label: 'Brunjung', sub: 'Atap Tajug', aksara: 'ꦧꦿꦸꦚ꧀ꦗꦸꦁ', kodeArsip: 'KLR-09 · S6', spesifikasi: 'Puncak Trapesium Pendopo', bendaId: 'joglo', titikId: 'joglo-brunjung', warna: '#516778', pola: 'gunungan' },
+  { id: 'm10', label: 'Blencong', sub: 'Pelita Kelir', aksara: 'ꦧ꧀ꦭꦺꦚ꧀ꦕꦺꦴꦁ', kodeArsip: 'KLR-10 · S3', spesifikasi: 'Sorot Sumbu Minyak Kelapa', bendaId: 'wayang', titikId: 'wayang-blencong', warna: '#b33025', pola: 'cakra' },
+  { id: 'm11', label: 'Ganja', sub: 'Pangkal Bilah', aksara: 'ꦒꦚ꧀ꦗ', kodeArsip: 'KLR-11 · S1', spesifikasi: 'Penyatuan Lingga & Yoni', bendaId: 'keris', titikId: 'keris-ganja', warna: '#d1491b', pola: 'bilah' },
+  { id: 'm12', label: 'Hanacaraka', sub: 'Aksara Jawa', aksara: 'ꦲꦤꦕꦫꦏ', kodeArsip: 'KLR-12 · S7', spesifikasi: 'Blok Unicode U+A980', halamanTarget: 'kawruh', anchorTarget: 'aksara', ctaLabel: 'Lab Aksara \u2192', warna: '#9a6c1d', pola: 'grid' },
 ];

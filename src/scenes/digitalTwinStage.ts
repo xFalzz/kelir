@@ -6,11 +6,23 @@ import {
   attachCadWireframeLayer,
   createSafeWebGLRenderer,
   disposeSceneObject,
+  hitungFovResponsif,
   loadBudayaTextures,
 } from './threeHelpers.ts';
 import { buildSriRamaWayang3D } from './wayang3DBuilder.ts';
 
 export type ModeVisualTwin = 'pbr' | 'hibrida' | 'kawat';
+
+const PRESET_KAMERA_PUSAKA: Record<
+  BendaPusaka['id'],
+  { pos: [number, number, number]; target: [number, number, number] }
+> = {
+  keris: { pos: [0.45, 0.32, 8.45], target: [0, 0.18, 0] },
+  saron: { pos: [0.75, 1.55, 6.1], target: [0, 0.02, 0] },
+  batik: { pos: [0.3, 0.95, 5.9], target: [0, 0.12, 0] },
+  joglo: { pos: [4.2, 2.55, 5.5], target: [0, 0.35, 0] },
+  wayang: { pos: [0.18, 0.58, 7.15], target: [-0.24, 0.25, 0] },
+};
 
 export interface ProyeksiPinTwin {
   id: string;
@@ -245,15 +257,23 @@ export class DigitalTwinStage {
   private artifactGroup: THREE.Group | null = null;
   private floorGrid: THREE.GridHelper | null = null;
   private cadLineMat: THREE.LineBasicMaterial | null = null;
+  private ambientLight: THREE.AmbientLight | null = null;
+  private keyLight: THREE.DirectionalLight | null = null;
+  private fillLight: THREE.DirectionalLight | null = null;
+  private emberRim: THREE.PointLight | null = null;
+  private blencongFlame: THREE.Mesh | null = null;
+  private blencongLight: THREE.PointLight | null = null;
   private solidMaterials: THREE.Material[] = [];
 
   private targetExplode = 0;
   private curExplode = 0;
   private modeVisual: ModeVisualTwin = 'hibrida';
   private aksiHidup = true;
+  private bendaIdAktif: BendaPusaka['id'] = 'keris';
   private titikAktif: TitikInfoPusaka[] = [];
-  private targetCamFocus = new THREE.Vector3(0, 0.1, 0);
+  private targetCamFocus = new THREE.Vector3(0, 0.25, 0);
   private spesialPulse = 0;
+  private zoomRatio = 1;
   private onPinCb: ((pins: ProyeksiPinTwin[]) => void) | null = null;
   private rafId: number | null = null;
 
@@ -271,19 +291,21 @@ export class DigitalTwinStage {
     this.controls.minDistance = 2.2;
     this.controls.maxDistance = 9.5;
 
-    this.scene.add(new THREE.AmbientLight(0xdbe2ee, 0.85));
-    const keyLight = new THREE.DirectionalLight(0xfff1dc, 2.65);
-    keyLight.position.set(4.5, 6.5, 5.5);
-    keyLight.castShadow = true;
-    this.scene.add(keyLight);
+    this.ambientLight = new THREE.AmbientLight(0xdbe2ee, 0.85);
+    this.scene.add(this.ambientLight);
 
-    const fillLight = new THREE.DirectionalLight(0x93c5fd, 1.25);
-    fillLight.position.set(-4.5, 2.0, 3.5);
-    this.scene.add(fillLight);
+    this.keyLight = new THREE.DirectionalLight(0xfff1dc, 2.65);
+    this.keyLight.position.set(4.5, 6.5, 5.5);
+    this.keyLight.castShadow = true;
+    this.scene.add(this.keyLight);
 
-    const emberRim = new THREE.PointLight(0xff5a1f, 3.6, 14);
-    emberRim.position.set(-3.2, 1.8, -2.6);
-    this.scene.add(emberRim);
+    this.fillLight = new THREE.DirectionalLight(0x93c5fd, 1.25);
+    this.fillLight.position.set(-4.5, 2.0, 3.5);
+    this.scene.add(this.fillLight);
+
+    this.emberRim = new THREE.PointLight(0xff5a1f, 3.6, 14);
+    this.emberRim.position.set(-3.2, 1.8, -2.6);
+    this.scene.add(this.emberRim);
 
     this.setTheme(tema);
 
@@ -292,6 +314,7 @@ export class DigitalTwinStage {
   }
 
   public muatBenda(benda: BendaPusaka): void {
+    this.bendaIdAktif = benda.id;
     this.titikAktif = benda.titikInfo;
     if (!this.renderer) return;
 
@@ -301,6 +324,8 @@ export class DigitalTwinStage {
     }
 
     this.solidMaterials = [];
+    this.blencongFlame = null;
+    this.blencongLight = null;
     this.artifactGroup = new THREE.Group();
 
     const id = benda.id;
@@ -325,6 +350,18 @@ export class DigitalTwinStage {
     this.cadLineMat = attachCadWireframeLayer(this.artifactGroup, 0xff5a1f, 0.35);
     this.scene.add(this.artifactGroup);
     this.terapkanModeVisual(this.modeVisual);
+    this.resetKamera(id);
+  }
+
+  public resetKamera(id: BendaPusaka['id'] = this.bendaIdAktif): void {
+    const preset = PRESET_KAMERA_PUSAKA[id] ?? PRESET_KAMERA_PUSAKA.keris;
+    this.zoomRatio = 1;
+    this.camera.position.set(...preset.pos);
+    this.camera.fov = hitungFovResponsif(37, this.camera.aspect, 1.22, 60);
+    this.camera.updateProjectionMatrix();
+    this.targetCamFocus.set(...preset.target);
+    this.controls?.target.set(...preset.target);
+    this.controls?.update();
   }
 
   /**
@@ -579,12 +616,12 @@ export class DigitalTwinStage {
     };
     this.artifactGroup.add(buatSayapRancakan(-1), buatSayapRancakan(1));
 
-    // C. 7 Bilah Wilah Perunggu Gangsa + Paku Tawonan (Terangkat Berjenjang Harmonik!)
-    for (let i = 0; i < 7; i++) {
+    // C. 6 Bilah Wilah Perunggu Gangsa Slendro (1-2-3-5-6-i) + 12 Paku Tawonan
+    for (let i = 0; i < 6; i++) {
       const wilahGrup = new THREE.Group();
-      const lebar = 0.27 - i * 0.008;
-      const panjang = 0.76 - i * 0.038;
-      const xPos = -1.02 + i * 0.34;
+      const lebar = 0.28 - i * 0.009;
+      const panjang = 0.76 - i * 0.042;
+      const xPos = -0.875 + i * 0.35;
 
       // Bilah trapesium ber-punggung cembung
       const bilah = new THREE.Mesh(new THREE.BoxGeometry(lebar, 0.055, panjang), gangsaTempaMat);
@@ -824,12 +861,120 @@ export class DigitalTwinStage {
     this.artifactGroup.add(penanggap, brunjung, wuwungan);
   }
 
+  /** Membuat instrumen 3D Pelita Minyak Blencong Kuningan bersayap garuda untuk bedah Wayang. */
+  private buatBlencongWayang3D(): THREE.Group {
+    const kuninganMat = new THREE.MeshStandardMaterial({
+      color: 0xe6b655,
+      metalness: 0.9,
+      roughness: 0.2,
+    });
+    const perungguGelapMat = new THREE.MeshStandardMaterial({
+      color: 0x4b3822,
+      metalness: 0.72,
+      roughness: 0.36,
+    });
+    const minyakMat = new THREE.MeshStandardMaterial({
+      color: 0xb45309,
+      metalness: 0.12,
+      roughness: 0.14,
+    });
+    const apiMat = new THREE.MeshStandardMaterial({
+      color: 0xfff3c4,
+      emissive: 0xff7b24,
+      emissiveIntensity: 2.1,
+      roughness: 0.2,
+    });
+
+    const blencong = new THREE.Group();
+    blencong.position.set(-1.18, 0.92, 0.28);
+    blencong.rotation.y = 0.42;
+    blencong.userData.explodeVec = new THREE.Vector3(-0.75, 0.55, 0.35);
+
+    // Mangkuk reservoir minyak kelapa (LatheGeometry berprofil tradisional)
+    const profil = [
+      new THREE.Vector2(0.001, -0.22),
+      new THREE.Vector2(0.055, -0.18),
+      new THREE.Vector2(0.032, -0.12),
+      new THREE.Vector2(0.18, -0.06),
+      new THREE.Vector2(0.24, 0.04),
+      new THREE.Vector2(0.21, 0.09),
+      new THREE.Vector2(0.17, 0.05),
+      new THREE.Vector2(0.001, 0.03),
+    ];
+    const mangkuk = new THREE.Mesh(new THREE.LatheGeometry(profil, 28), kuninganMat);
+    mangkuk.castShadow = true;
+    blencong.add(mangkuk);
+
+    // Genangan minyak kelapa & cincin bibir pelita
+    const minyak = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.16, 0.025, 22), minyakMat);
+    minyak.position.y = 0.045;
+    blencong.add(minyak);
+
+    // Cucuk corong sumbu ke arah wayang (+X) + sumbu kapas + nyala api hangat
+    const corong = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.055, 0.19, 12), kuninganMat);
+    corong.rotation.z = -Math.PI * 0.46;
+    corong.position.set(0.22, 0.065, 0);
+    blencong.add(corong);
+
+    const sumbu = new THREE.Mesh(new THREE.CylinderGeometry(0.016, 0.022, 0.08, 10), perungguGelapMat);
+    sumbu.rotation.z = -0.35;
+    sumbu.position.set(0.3, 0.09, 0);
+    blencong.add(sumbu);
+
+    const flame = new THREE.Mesh(new THREE.SphereGeometry(0.042, 14, 12), apiMat);
+    flame.scale.set(0.72, 1.55, 0.72);
+    flame.position.set(0.32, 0.16, 0);
+    this.blencongFlame = flame;
+    blencong.add(flame);
+
+    const light = new THREE.PointLight(0xff9c3b, 2.1, 4.8);
+    light.position.set(0.34, 0.18, 0.04);
+    this.blencongLight = light;
+    blencong.add(light);
+
+    // Sayap burung garuda kuningan & mahkota belakang pelita
+    const sayapShape = new THREE.Shape();
+    sayapShape.moveTo(0, -0.02);
+    sayapShape.quadraticCurveTo(0.14, 0.04, 0.34, 0.18);
+    sayapShape.quadraticCurveTo(0.24, 0.34, 0.08, 0.38);
+    sayapShape.lineTo(0, 0.24);
+    sayapShape.lineTo(-0.08, 0.38);
+    sayapShape.quadraticCurveTo(-0.24, 0.34, -0.34, 0.18);
+    sayapShape.quadraticCurveTo(-0.14, 0.04, 0, -0.02);
+
+    const sayap = new THREE.Mesh(
+      new THREE.ExtrudeGeometry(sayapShape, {
+        depth: 0.026,
+        bevelEnabled: true,
+        bevelThickness: 0.008,
+        bevelSize: 0.008,
+      }),
+      kuninganMat,
+    );
+    sayap.rotation.y = Math.PI / 2;
+    sayap.position.set(-0.2, 0.08, 0);
+    blencong.add(sayap);
+
+    // Batang gantung & kait cincin pelita atas
+    const batangGantung = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.014, 0.018, 0.62, 10),
+      perungguGelapMat,
+    );
+    batangGantung.position.set(0, 0.42, 0);
+    const kait = new THREE.Mesh(new THREE.TorusGeometry(0.048, 0.012, 10, 22), kuninganMat);
+    kait.position.set(0, 0.74, 0);
+    blencong.add(batangGantung, kait);
+
+    return blencong;
+  }
+
   private bangunWayang(): void {
     if (!this.artifactGroup) return;
     const rama = buildSriRamaWayang3D();
     rama.root.scale.setScalar(1.22);
     rama.root.position.set(0, 0.08, 0);
-    this.artifactGroup.add(rama.root);
+    const blencong = this.buatBlencongWayang3D();
+    this.artifactGroup.add(rama.root, blencong);
   }
 
   public aturLedakAnatomi(nilai0ke1: number): void {
@@ -902,7 +1047,9 @@ export class DigitalTwinStage {
     if (this.artifactGroup) {
       this.artifactGroup.rotation.y += dx * 0.08;
     }
-    this.camera.fov = THREE.MathUtils.clamp(37 / zoom, 22, 54);
+    this.zoomRatio = zoom || 1;
+    const baseFov = THREE.MathUtils.clamp(37 / this.zoomRatio, 22, 54);
+    this.camera.fov = hitungFovResponsif(baseFov, this.camera.aspect, 1.22, 60);
     this.camera.updateProjectionMatrix();
   }
 
@@ -912,6 +1059,31 @@ export class DigitalTwinStage {
 
   public setTheme(tema: 'malam' | 'terang'): void {
     if (!this.renderer) return;
+
+    if (tema === 'malam') {
+      if (this.ambientLight) {
+        this.ambientLight.color.setHex(0xeae3d7);
+        this.ambientLight.intensity = 1.08;
+      }
+      if (this.keyLight) this.keyLight.intensity = 2.95;
+      if (this.fillLight) {
+        this.fillLight.color.setHex(0xc8d8ee);
+        this.fillLight.intensity = 1.48;
+      }
+      if (this.emberRim) this.emberRim.intensity = 4.25;
+    } else {
+      if (this.ambientLight) {
+        this.ambientLight.color.setHex(0xdbe2ee);
+        this.ambientLight.intensity = 0.85;
+      }
+      if (this.keyLight) this.keyLight.intensity = 2.65;
+      if (this.fillLight) {
+        this.fillLight.color.setHex(0x93c5fd);
+        this.fillLight.intensity = 1.25;
+      }
+      if (this.emberRim) this.emberRim.intensity = 3.4;
+    }
+
     if (this.floorGrid) {
       this.scene.remove(this.floorGrid);
       this.floorGrid.geometry.dispose();
@@ -919,19 +1091,21 @@ export class DigitalTwinStage {
       if (Array.isArray(mat)) mat.forEach((m) => m.dispose());
       else mat.dispose();
     }
-    const cMain = tema === 'terang' ? 0xb5ae9e : 0x4b5563;
-    const cSub = tema === 'terang' ? 0xdbd5c8 : 0x18181b;
+    const cMain = tema === 'terang' ? 0xb5ae9e : 0x665c4f;
+    const cSub = tema === 'terang' ? 0xdbd5c8 : 0x28231d;
     this.floorGrid = new THREE.GridHelper(6.8, 18, cMain, cSub);
-    this.floorGrid.position.y = -1.68;
+    this.floorGrid.position.y = -1.96;
     this.floorGrid.userData.skipCad = true;
     this.scene.add(this.floorGrid);
   }
 
   public ubahUkuran(): void {
     if (!this.renderer) return;
-    const w = Math.max(this.container.clientWidth || 640, 280);
-    const h = Math.max(this.container.clientHeight || 480, 240);
+    const w = Math.max(this.container.clientWidth || 640, 1);
+    const h = Math.max(this.container.clientHeight || 480, 1);
     this.camera.aspect = w / h;
+    const baseFov = THREE.MathUtils.clamp(37 / this.zoomRatio, 22, 54);
+    this.camera.fov = hitungFovResponsif(baseFov, this.camera.aspect, 1.22, 60);
     this.camera.updateProjectionMatrix();
     this.renderer.setSize(w, h, false);
   }
@@ -986,6 +1160,13 @@ export class DigitalTwinStage {
     }
 
     this.spesialPulse *= 0.92;
+    if (this.blencongFlame) {
+      const flicker = 1 + Math.sin(performance.now() * 0.009) * 0.08;
+      this.blencongFlame.scale.set(0.72 * flicker, 1.55 * flicker, 0.72 * flicker);
+      if (this.blencongLight) {
+        this.blencongLight.intensity = 1.9 + flicker * 0.35;
+      }
+    }
     this.renderer.render(this.scene, this.camera);
     this.proyeksikanTitik();
   };

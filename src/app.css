@@ -32,6 +32,15 @@ html[data-theme='terang'] {
   --accent-ember: #d1491b;
   --accent-crimson: #b33025;
   --accent-gold: #9a6c1d;
+  --ember-soft: rgba(209, 73, 27, 0.12);
+  --ember-border: rgba(209, 73, 27, 0.45);
+
+  --tone-keris: #c24117;
+  --tone-saron: #8c6014;
+  --tone-batik: #a8521f;
+  --tone-joglo: #445b6e;
+  --tone-wayang: #a32b20;
+
   --pill-cta-bg: #141518;
   --pill-cta-fg: #ffffff;
   --pin-bg: rgba(255, 255, 255, 0.92);
@@ -40,44 +49,53 @@ html[data-theme='terang'] {
 
   --hero-scrim: linear-gradient(
     90deg,
-    #f6f4ef 6%,
-    rgba(246, 244, 239, 0.9) 34%,
-    rgba(246, 244, 239, 0.36) 54%,
-    rgba(246, 244, 239, 0) 76%
+    #f6f4ef 8%,
+    rgba(246, 244, 239, 0.94) 37%,
+    rgba(246, 244, 239, 0.44) 56%,
+    rgba(246, 244, 239, 0) 78%
   );
 }
 
-/* Mode Gelap Studio Spasial (Obsidian Museum — Opsional) */
+/* Mode Gelap Studio Spasial (Smoked Obsidian & Kayu Jati — Opsional) */
 html[data-theme='malam'] {
-  --bg-void: #0a0b0e;
-  --bg-black: #0e1015;
-  --bg-elevated: #12141b;
-  --bg-card: rgba(19, 21, 28, 0.84);
-  --bg-pill: rgba(14, 16, 21, 0.88);
-  --surface-subtle: rgba(255, 255, 255, 0.04);
-  --border-hairline: rgba(255, 255, 255, 0.085);
-  --border-strong: rgba(255, 255, 255, 0.2);
+  --bg-void: #12100e;
+  --bg-black: #181512;
+  --bg-elevated: #211d18;
+  --bg-card: rgba(29, 25, 21, 0.92);
+  --bg-pill: rgba(23, 20, 17, 0.88);
+  --surface-subtle: rgba(243, 236, 224, 0.055);
+  --border-hairline: rgba(243, 236, 224, 0.11);
+  --border-strong: rgba(243, 236, 224, 0.24);
 
-  --text-primary: #f4f4f1;
-  --text-secondary: #a0a4ae;
-  --text-muted: #686d78;
-  --text-inverse: #0a0b0e;
+  --text-primary: #f4efe6;
+  --text-secondary: #c7bfb3;
+  --text-muted: #988f83;
+  --text-inverse: #12100e;
 
-  --accent-ember: #e85d2a;
-  --accent-crimson: #c83e31;
-  --accent-gold: #d4a148;
-  --pill-cta-bg: #f4f4f1;
-  --pill-cta-fg: #0a0b0e;
-  --pin-bg: rgba(14, 15, 20, 0.86);
-  --pin-fg: #f4f4f1;
-  --pin-border: rgba(232, 93, 42, 0.52);
+  --accent-ember: #f06d3c;
+  --accent-crimson: #db5647;
+  --accent-gold: #e0b35a;
+  --ember-soft: rgba(240, 109, 60, 0.15);
+  --ember-border: rgba(240, 109, 60, 0.52);
+
+  --tone-keris: #f27c4e;
+  --tone-saron: #e6ba63;
+  --tone-batik: #ed9158;
+  --tone-joglo: #93b7d1;
+  --tone-wayang: #ed6d5e;
+
+  --pill-cta-bg: #efe9dc;
+  --pill-cta-fg: #12100e;
+  --pin-bg: rgba(26, 22, 18, 0.9);
+  --pin-fg: #f4efe6;
+  --pin-border: rgba(240, 109, 60, 0.56);
 
   --hero-scrim: linear-gradient(
     90deg,
-    #0a0b0e 6%,
-    rgba(10, 11, 14, 0.86) 32%,
-    rgba(10, 11, 14, 0.34) 56%,
-    rgba(10, 11, 14, 0.02) 82%
+    #12100e 8%,
+    rgba(18, 16, 14, 0.94) 36%,
+    rgba(18, 16, 14, 0.5) 58%,
+    rgba(18, 16, 14, 0.1) 82%
   );
 }
 
@@ -247,7 +265,8 @@ input {
 }
 
 html[data-theme='malam'] .top-nav {
-  box-shadow: 0 12px 38px rgba(0, 0, 0, 0.38);
+  border-color: rgba(243, 236, 224, 0.14);
+  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.45);
 }
 
 .brand-mark {
@@ -325,8 +344,8 @@ html[data-theme='malam'] .top-nav {
 }
 
 .nav-page-tab.is-active {
-  background: rgba(255, 90, 31, 0.16);
-  border-color: rgba(255, 90, 31, 0.55);
+  background: var(--ember-soft);
+  border-color: var(--ember-border);
   color: var(--text-primary);
   font-weight: 600;
 }
@@ -341,7 +360,7 @@ html[data-theme='malam'] .top-nav {
 }
 
 .subpage-status-strip {
-  padding-top: 84px;
+  padding-top: 94px;
   border-bottom: 1px solid var(--border-hairline);
   background: var(--bg-elevated);
 }
@@ -359,8 +378,10 @@ html[data-theme='malam'] .top-nav {
 
 .subpage-breadcrumb {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 10px;
+  gap: 8px 10px;
+  min-width: 0;
   font-family: var(--font-mono);
   font-size: 0.74rem;
   letter-spacing: 0.12em;
@@ -392,6 +413,7 @@ html[data-theme='malam'] .top-nav {
 
 .subpage-quick-switch {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 8px;
 }
@@ -492,11 +514,11 @@ html[data-theme='malam'] .top-nav {
 
 .bridge-card.is-primary {
   text-align: right;
-  background: rgba(232, 93, 42, 0.07);
+  background: var(--ember-soft);
 }
 
 .bridge-card.is-primary:hover {
-  background: rgba(232, 93, 42, 0.14);
+  background: var(--ember-border);
 }
 
 .bridge-status-center {
@@ -567,6 +589,15 @@ html[data-theme='malam'] .top-nav {
   background: var(--accent-ember);
   border-color: var(--accent-ember);
   color: #ffffff;
+}
+
+.util-pill.is-wrap {
+  white-space: normal;
+  text-align: left;
+  max-width: 100%;
+  border-radius: 14px;
+  padding: 7px 12px;
+  line-height: 1.35;
 }
 
 .lang-group {
@@ -680,7 +711,8 @@ footer {
 }
 
 .pill-cta-outline:hover {
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--surface-subtle);
+  border-color: var(--accent-ember);
 }
 
 .pill-cta-outline.is-active {
@@ -720,6 +752,15 @@ footer {
   z-index: 1;
 }
 
+html[data-theme='malam'] .diorama-sticky-stage {
+  background: radial-gradient(
+    circle at 68% 52%,
+    rgba(224, 179, 90, 0.09) 0%,
+    rgba(240, 109, 60, 0.045) 38%,
+    transparent 74%
+  );
+}
+
 .diorama-webgl-host {
   position: absolute;
   inset: 0;
@@ -739,6 +780,15 @@ footer {
   position: absolute;
   inset: 0;
   z-index: 4;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+
+.diorama-pins-layer.is-scrolly-dimmed {
+  opacity: 0.14;
+}
+
+.diorama-pins-layer.is-scrolly-dimmed .diorama-pin {
   pointer-events: none;
 }
 
@@ -809,7 +859,7 @@ footer {
 .hero-h1 {
   margin: 14px 0 18px;
   font-family: var(--font-display);
-  font-size: clamp(2.85rem, 6vw, 5rem);
+  font-size: clamp(2.15rem, 6vw, 5rem);
   font-weight: 700;
   line-height: 0.96;
   letter-spacing: -0.045em;
@@ -863,10 +913,19 @@ footer {
 }
 
 .hero-micro-meta {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  margin-top: 6px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-hairline);
+  backdrop-filter: blur(10px);
   font-family: var(--font-mono);
-  font-size: 0.72rem;
+  font-size: 0.7rem;
   letter-spacing: 0.03em;
-  color: var(--text-muted);
+  color: var(--text-secondary);
 }
 
 .hero-live-pill {
@@ -917,7 +976,7 @@ footer {
 }
 
 .scrolly-step.is-active .scrolly-narrative {
-  border-color: rgba(255, 90, 31, 0.55);
+  border-color: var(--ember-border);
 }
 
 .scrolly-step-title {
@@ -946,8 +1005,9 @@ footer {
   box-shadow: 0 12px 30px rgba(18, 19, 22, 0.08);
 }
 
-html[data-theme='malam'] .scrolly-hud-card {
-  box-shadow: 0 18px 46px rgba(0, 0, 0, 0.45);
+html[data-theme='malam'] .scrolly-hud-card,
+html[data-theme='malam'] .scrolly-narrative {
+  box-shadow: 0 18px 46px rgba(0, 0, 0, 0.42);
 }
 
 .hud-header {
@@ -975,7 +1035,7 @@ html[data-theme='malam'] .scrolly-hud-card {
 }
 
 .hud-bar {
-  height: 5px;
+  height: 2px;
   border-radius: 999px;
   background: var(--border-hairline);
   overflow: hidden;
@@ -983,7 +1043,7 @@ html[data-theme='malam'] .scrolly-hud-card {
 
 .hud-bar-fill {
   height: 100%;
-  background: linear-gradient(90deg, #ff5a1f, #eab308);
+  background: var(--accent-ember);
   border-radius: 999px;
 }
 
@@ -1052,7 +1112,7 @@ html[data-theme='malam'] .scrolly-hud-card {
 }
 
 /* ==========================================================================
-   5. ZEGGO Digital Twin Studio + Split Engineering + Diagonal Pillars
+   5. Studio Kembaran Digital 3D + Ledger Rekayasa + Pilar Kuratorial
    ========================================================================== */
 .band-section {
   position: relative;
@@ -1110,6 +1170,15 @@ html[data-theme='malam'] .scrolly-hud-card {
   align-items: stretch;
 }
 
+.twin-workspace > *,
+.engineering-grid-panel > *,
+.two-col-editorial > *,
+.archive-split-index > *,
+.pamomong-grid > *,
+.footer-columns > * {
+  min-width: 0;
+}
+
 .twin-viewport-card {
   position: relative;
   min-height: 520px;
@@ -1122,7 +1191,7 @@ html[data-theme='malam'] .scrolly-hud-card {
 }
 
 html[data-theme='malam'] .twin-viewport-card {
-  background: radial-gradient(circle at 50% 42%, #181a24 0%, #07080c 72%);
+  background: radial-gradient(circle at 50% 42%, #24201a 0%, #14120f 76%);
 }
 
 .twin-canvas-host {
@@ -1131,10 +1200,43 @@ html[data-theme='malam'] .twin-viewport-card {
   position: relative;
 }
 
+.twin-viewport-hud {
+  position: absolute;
+  top: 14px;
+  left: 16px;
+  right: 16px;
+  z-index: 6;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  pointer-events: none;
+}
+
+.twin-viewport-hud .util-pill {
+  pointer-events: auto;
+  background: var(--bg-pill);
+  backdrop-filter: blur(10px);
+}
+
+.twin-viewport-spec {
+  padding: 5px 11px;
+  border-radius: 999px;
+  background: var(--bg-pill);
+  border: 1px solid var(--border-hairline);
+  backdrop-filter: blur(10px);
+  font-family: var(--font-mono);
+  font-size: 0.66rem;
+  letter-spacing: 0.08em;
+  color: var(--text-secondary);
+}
+
 .twin-pins-overlay {
   position: absolute;
   inset: 0;
   pointer-events: none;
+  z-index: 5;
 }
 
 .twin-pin {
@@ -1144,20 +1246,20 @@ html[data-theme='malam'] .twin-viewport-card {
   width: 26px;
   height: 26px;
   border-radius: 50%;
-  border: 2px solid #ffffff;
-  background: rgba(255, 90, 31, 0.92);
+  border: 2px solid #f7f4ed;
+  background: var(--accent-ember);
   color: #ffffff;
   font-family: var(--font-mono);
   font-size: 0.68rem;
   font-weight: 700;
   cursor: pointer;
-  box-shadow: 0 0 18px rgba(255, 90, 31, 0.75);
+  box-shadow: 0 4px 16px rgba(240, 109, 60, 0.42);
 }
 
 .twin-pin.is-active {
   transform: translate(-50%, -50%) scale(1.22);
-  background: #ffffff;
-  color: #141518;
+  background: var(--pill-cta-bg);
+  color: var(--pill-cta-fg);
   border-color: var(--accent-ember);
 }
 
@@ -1174,7 +1276,7 @@ html[data-theme='malam'] .twin-viewport-card {
 }
 
 html[data-theme='malam'] .twin-controls-bar {
-  background: rgba(10, 11, 15, 0.9);
+  background: rgba(22, 19, 16, 0.94);
 }
 
 .mode-switch-group {
@@ -1210,7 +1312,7 @@ html[data-theme='malam'] .twin-controls-bar {
 }
 
 .explode-slider-wrap input[type='range'] {
-  accent-color: #ff5a1f;
+  accent-color: var(--accent-ember);
   width: 130px;
   cursor: pointer;
 }
@@ -1277,7 +1379,7 @@ html[data-theme='malam'] .twin-controls-bar {
 
 .titik-btn.is-active {
   border-color: var(--accent-ember);
-  background: rgba(255, 90, 31, 0.11);
+  background: var(--ember-soft);
 }
 
 .titik-btn-head {
@@ -1293,7 +1395,7 @@ html[data-theme='malam'] .twin-controls-bar {
   font-size: 0.68rem;
   padding: 2px 7px;
   border-radius: 999px;
-  background: rgba(255, 90, 31, 0.16);
+  background: var(--ember-soft);
   color: var(--accent-ember);
 }
 
@@ -1306,8 +1408,8 @@ html[data-theme='malam'] .twin-controls-bar {
 .wilah-key {
   padding: 10px 4px;
   border-radius: 8px;
-  border: 1px solid rgba(234, 179, 8, 0.4);
-  background: linear-gradient(180deg, rgba(234, 179, 8, 0.25), rgba(161, 98, 7, 0.15));
+  border: 1px solid rgba(224, 179, 90, 0.42);
+  background: linear-gradient(180deg, rgba(224, 179, 90, 0.22), rgba(154, 108, 29, 0.14));
   color: var(--text-primary);
   font-family: var(--font-mono);
   font-weight: 700;
@@ -1315,8 +1417,8 @@ html[data-theme='malam'] .twin-controls-bar {
 }
 
 .wilah-key:hover {
-  background: #eab308;
-  color: #090a0d;
+  background: var(--accent-gold);
+  color: var(--text-inverse);
 }
 
 .band-lead-copy {
@@ -1409,6 +1511,10 @@ html[data-theme='malam'] .twin-controls-bar {
   overflow: hidden;
 }
 
+html[data-theme='malam'] .archive-showcase-section {
+  background: radial-gradient(ellipse at 50% 16%, rgba(219, 86, 71, 0.13), transparent 58%), var(--bg-void);
+}
+
 .archive-hero-head {
   text-align: center;
   max-width: 900px;
@@ -1451,15 +1557,17 @@ html[data-theme='malam'] .twin-controls-bar {
   height: 430px;
   border-radius: 22px;
   overflow: hidden;
-  border: 1px solid var(--border-hairline);
-  background: #141518;
-  box-shadow: 0 22px 52px rgba(18, 19, 22, 0.16);
+  border: 1px solid var(--border-strong);
+  background: var(--bg-elevated);
+  box-shadow: 0 22px 52px rgba(18, 19, 22, 0.14);
   transition: transform 0.55s var(--ease-expo), filter 0.45s ease, opacity 0.45s ease;
   cursor: pointer;
 }
 
 html[data-theme='malam'] .coverflow-card {
-  box-shadow: 0 28px 65px rgba(0, 0, 0, 0.65);
+  background: #1a1713;
+  border-color: rgba(243, 236, 224, 0.16);
+  box-shadow: 0 28px 65px rgba(0, 0, 0, 0.58);
 }
 
 .coverflow-card-inner {
@@ -1477,8 +1585,18 @@ html[data-theme='malam'] .coverflow-card {
   justify-content: space-between;
   align-items: center;
   text-align: center;
-  background: linear-gradient(180deg, rgba(0, 0, 0, 0.45) 0%, transparent 45%, rgba(0, 0, 0, 0.85) 100%);
-  color: #ffffff;
+  background: linear-gradient(
+    180deg,
+    rgba(246, 244, 239, 0.72) 0%,
+    transparent 38%,
+    rgba(246, 244, 239, 0.92) 100%
+  );
+  color: var(--text-primary);
+}
+
+html[data-theme='malam'] .coverflow-card-overlay {
+  background: linear-gradient(180deg, rgba(18, 16, 14, 0.62) 0%, transparent 42%, rgba(18, 16, 14, 0.92) 100%);
+  color: var(--text-primary);
 }
 
 .coverflow-num {
@@ -1551,8 +1669,25 @@ html[data-theme='malam'] .archive-plate-frame {
   flex-direction: column;
   justify-content: flex-end;
   padding: 28px;
-  background: linear-gradient(180deg, transparent 40%, rgba(0, 0, 0, 0.84) 100%);
-  color: #ffffff;
+  background: linear-gradient(180deg, transparent 42%, rgba(246, 244, 239, 0.94) 100%);
+  color: var(--text-primary);
+}
+
+.archive-plate-kicker {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.14em;
+  color: var(--accent-crimson);
+  margin-bottom: 4px;
+}
+
+html[data-theme='malam'] .archive-plate-caption {
+  background: linear-gradient(180deg, transparent 38%, rgba(18, 16, 14, 0.92) 100%);
+  color: var(--text-primary);
+}
+
+html[data-theme='malam'] .archive-plate-kicker {
+  color: #f2a899;
 }
 
 .archive-repertoire-list {
@@ -1589,8 +1724,10 @@ html[data-theme='malam'] .archive-plate-frame {
 
 .track-title-wrap {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 10px;
+  gap: 8px 10px;
+  min-width: 0;
   font-weight: 600;
   font-size: 1rem;
 }
@@ -1628,8 +1765,8 @@ html[data-theme='malam'] .archive-plate-frame {
 }
 
 html[data-theme='malam'] .modal-suluk-backdrop {
-  background: rgba(7, 6, 8, 0.94);
-  color: #f5f5f5;
+  background: rgba(18, 16, 14, 0.95);
+  color: var(--text-primary);
 }
 
 .modal-close-btn {
@@ -1695,12 +1832,14 @@ html[data-theme='malam'] .modal-art-panel {
   margin-top: 12px;
   padding: 16px 20px;
   border-radius: 16px;
-  background: linear-gradient(120deg, #991b1b, #dc2626);
+  background: linear-gradient(120deg, #6d1e18, #a93226);
+  border: 1px solid rgba(255, 236, 224, 0.16);
   color: #ffffff;
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
+  gap: 14px 16px;
 }
 
 /* ==========================================================================
@@ -1725,6 +1864,18 @@ html[data-theme='malam'] .modal-art-panel {
   gap: 16px;
 }
 
+.etalase-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.etalase-arrows {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
 .etalase-count {
   font-family: var(--font-mono);
   font-size: 0.76rem;
@@ -1746,7 +1897,7 @@ html[data-theme='malam'] .modal-art-panel {
 }
 
 html[data-theme='malam'] .wordmark-colossal {
-  color: rgba(255, 255, 255, 0.045);
+  color: rgba(244, 239, 230, 0.048);
 }
 
 .etalase-ribbon {
@@ -1816,10 +1967,47 @@ html[data-theme='malam'] .wordmark-colossal {
   font-size: 0.92rem;
 }
 
+.etalase-card-aksara {
+  font-family: var(--font-jawa);
+  color: var(--plat-tone, var(--accent-ember));
+}
+
+.etalase-card[data-benda='keris'],
+.wall-plate[data-benda='keris'] {
+  --plat-tone: var(--tone-keris);
+}
+
+.etalase-card[data-benda='saron'],
+.wall-plate[data-benda='saron'] {
+  --plat-tone: var(--tone-saron);
+}
+
+.etalase-card[data-benda='batik'],
+.wall-plate[data-benda='batik'] {
+  --plat-tone: var(--tone-batik);
+}
+
+.etalase-card[data-benda='joglo'],
+.wall-plate[data-benda='joglo'] {
+  --plat-tone: var(--tone-joglo);
+}
+
+.etalase-card[data-benda='wayang'],
+.wall-plate[data-benda='wayang'] {
+  --plat-tone: var(--tone-wayang);
+}
+
+.wall-plate[data-benda='aksara'] {
+  --plat-tone: var(--tone-saron);
+}
+
 .etalase-card-sub {
   font-size: 0.81rem;
   color: var(--text-secondary);
   margin-top: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .etalase-card-domain {
@@ -1827,6 +2015,9 @@ html[data-theme='malam'] .wordmark-colossal {
   font-size: 0.7rem;
   color: var(--text-muted);
   margin-top: 10px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .etalase-dock {
@@ -1882,8 +2073,7 @@ html[data-theme='malam'] .wordmark-colossal {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 14px;
-  transform-style: preserve-3d;
-  transition: transform 0.25s ease-out;
+  transition: transform 0.14s ease-out;
 }
 
 .wall-plate {
@@ -1901,14 +2091,18 @@ html[data-theme='malam'] .wordmark-colossal {
   text-align: left;
   cursor: pointer;
   overflow: hidden;
-  transition: transform 0.3s var(--ease-expo), border-color 0.25s ease, box-shadow 0.25s ease;
+  transition: transform 0.18s var(--ease-expo), border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.wall-plate > * {
+  pointer-events: none;
 }
 
 .wall-plate:hover,
 .wall-plate:focus-visible {
-  transform: translateY(-4px) translateZ(18px);
-  border-color: var(--accent-ember);
-  box-shadow: 0 14px 32px rgba(0, 0, 0, 0.14);
+  transform: translateY(-4px);
+  border-color: var(--plat-tone, var(--accent-ember));
+  box-shadow: 0 14px 32px rgba(0, 0, 0, 0.22);
   z-index: 4;
 }
 
@@ -1925,6 +2119,7 @@ html[data-theme='malam'] .wordmark-colossal {
   font-weight: 600;
   letter-spacing: 0.08em;
   text-transform: uppercase;
+  color: var(--plat-tone, var(--accent-ember));
 }
 
 .wall-plate-dot {
@@ -1933,6 +2128,7 @@ html[data-theme='malam'] .wordmark-colossal {
   border-radius: 1px;
   transform: rotate(45deg);
   flex-shrink: 0;
+  background: var(--plat-tone, var(--accent-ember));
 }
 
 .wall-plate-mid {
@@ -1947,13 +2143,14 @@ html[data-theme='malam'] .wordmark-colossal {
   font-size: 1.25rem;
   line-height: 1;
   color: var(--text-secondary);
-  opacity: 0.72;
+  opacity: 0.78;
 }
 
 .wall-plate-rule {
   height: 1px;
   flex: 1;
-  opacity: 0.38;
+  opacity: 0.44;
+  background: linear-gradient(90deg, var(--plat-tone, var(--accent-ember)), transparent);
 }
 
 .wall-plate-title {
@@ -2005,11 +2202,15 @@ html[data-theme='malam'] .wordmark-colossal {
   overflow: hidden;
 }
 
+html[data-theme='malam'] .pakeliran-theatre-box {
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.42);
+}
+
 .pakeliran-canvas-host {
   width: 100%;
   height: 480px;
   position: relative;
-  background: #070605;
+  background: #0d0b09;
 }
 
 .pakeliran-console {
@@ -2032,6 +2233,12 @@ html[data-theme='malam'] .wordmark-colossal {
   font-family: var(--font-mono);
   font-size: 0.76rem;
   color: var(--text-secondary);
+}
+
+.pakeliran-slider-label input[type='range'] {
+  width: 100%;
+  accent-color: var(--accent-ember);
+  cursor: pointer;
 }
 
 .sources-ledger-wrap {
@@ -2174,18 +2381,121 @@ html[data-theme='malam'] .wordmark-colossal {
   margin-top: 4px;
 }
 
-/* Pamomong AI Orb Section */
+/* Pamomong AI Orb Section — Unboxed Spatial Stage */
 .pamomong-grid {
   display: grid;
-  grid-template-columns: 1.15fr 0.85fr;
-  gap: 32px;
+  grid-template-columns: 1.02fr 0.98fr;
+  gap: clamp(24px, 4vw, 56px);
+  align-items: start;
+}
+
+.pamomong-prompt-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.pamomong-query-form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+  gap: 10px;
+}
+
+.pamomong-query-input {
+  flex: 1 1 210px;
+  min-width: 0;
+  width: 100%;
+  padding: 13px 18px;
+  border-radius: 999px;
+  border: 1px solid var(--border-strong);
+  background: var(--bg-card);
+  color: var(--text-primary);
+  font-size: 0.96rem;
+}
+
+.pamomong-orb-stage {
+  position: sticky;
+  top: 96px;
+  display: flex;
+  flex-direction: column;
   align-items: center;
+  background: transparent;
+  border: none;
+  padding: 0;
+  overflow: visible;
+}
+
+.pamomong-orb-status {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+  margin-bottom: 4px;
+}
+
+.pamomong-status-sep {
+  opacity: 0.45;
 }
 
 .pamomong-orb-host {
-  height: 390px;
+  height: clamp(430px, 38vw, 520px);
   width: 100%;
   position: relative;
+  background: transparent;
+  overflow: visible;
+  cursor: grab;
+  touch-action: pan-y;
+}
+
+.pamomong-orb-host:active {
+  cursor: grabbing;
+}
+
+.pamomong-orb-host > canvas {
+  z-index: 1;
+}
+
+html[data-theme='malam'] .pamomong-orb-host::before {
+  content: '';
+  position: absolute;
+  inset: -6%;
+  pointer-events: none;
+  background: radial-gradient(
+    circle at 50% 48%,
+    rgba(240, 109, 60, 0.14) 0%,
+    rgba(224, 179, 90, 0.06) 34%,
+    rgba(18, 16, 14, 0) 68%
+  );
+  z-index: 0;
+}
+
+.pamomong-orb-caption {
+  margin: 2px 0 0;
+  text-align: center;
+  font-family: var(--font-mono);
+  font-size: 0.64rem;
+  letter-spacing: 0.1em;
+  color: var(--text-muted);
+  opacity: 0.78;
+}
+
+.pamomong-answer-prose {
+  display: grid;
+  gap: 10px;
+}
+
+.pamomong-answer-prose p {
+  margin: 0;
+  font-size: 0.95rem;
+  line-height: 1.62;
+  color: var(--text-primary);
 }
 
 .pamomong-answer-box {
@@ -2319,11 +2629,45 @@ html[data-theme='malam'] .wordmark-colossal {
 }
 
 /* ==========================================================================
-   10. Responsivitas Ponsel & Gerak Tereduksi
+   10. Responsivitas Semua Perangkat & Gerak Tereduksi
    ========================================================================== */
-@media (max-width: 1080px) {
+@media (hover: none) {
+  .wall-hover-pill {
+    opacity: 0.9;
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 1240px) {
+  .top-nav {
+    gap: 8px;
+    padding: 7px 9px 7px 13px;
+  }
   .nav-links {
+    gap: 2px;
+  }
+  .nav-links a,
+  .nav-page-tab {
+    padding: 5px 9px;
+    font-size: 0.76rem;
+    gap: 5px;
+  }
+  .nav-controls {
+    gap: 5px;
+  }
+  .util-pill {
+    padding: 5px 9px;
+    font-size: 0.73rem;
+  }
+}
+
+@media (max-width: 1080px) {
+  .nav-links,
+  .chapter-rail {
     display: none;
+  }
+  .site-footer {
+    padding-bottom: 88px;
   }
   .mobile-page-dock {
     position: fixed;
@@ -2334,7 +2678,7 @@ html[data-theme='malam'] .wordmark-colossal {
     width: calc(100% - 20px);
     max-width: 560px;
     display: grid;
-    grid-template-columns: repeat(5, 1fr);
+    grid-template-columns: repeat(5, minmax(0, 1fr));
     gap: 4px;
     padding: 6px;
     border-radius: 16px;
@@ -2351,19 +2695,19 @@ html[data-theme='malam'] .wordmark-colossal {
     border: none;
     background: transparent;
     color: var(--text-secondary);
-    padding: 6px 2px;
+    padding: 6px 3px;
     border-radius: 10px;
     font-size: 0.65rem;
+    line-height: 1.2;
     font-weight: 600;
+    min-width: 0;
     display: flex;
     flex-direction: column;
     align-items: center;
+    justify-content: center;
     gap: 2px;
     cursor: pointer;
     text-align: center;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
   }
   .mobile-page-btn.is-active {
     background: var(--accent-ember);
@@ -2399,15 +2743,59 @@ html[data-theme='malam'] .wordmark-colossal {
     border-top: 1px solid var(--border-hairline);
     border-bottom: 1px solid var(--border-hairline);
   }
-  .engineering-sticky-col {
+  .engineering-sticky-col,
+  .pamomong-orb-stage {
     position: static;
+  }
+  .pamomong-orb-host {
+    height: clamp(300px, 56vw, 440px);
   }
   .spatial-grid-3d {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+  .modal-suluk-backdrop {
+    align-content: start;
+    padding-top: 68px;
+  }
+  .modal-close-btn {
+    top: 14px;
+    right: 16px;
+  }
+  .modal-art-panel {
+    aspect-ratio: 16 / 10;
+    max-height: 36vh;
+  }
+  .webcam-pip {
+    bottom: 82px;
+    left: 12px;
+    width: 168px;
+  }
+}
+
+@media (max-width: 768px) {
+  :root,
+  html[data-theme='terang'] {
+    --hero-scrim: linear-gradient(
+      180deg,
+      rgba(246, 244, 239, 0.9) 0%,
+      rgba(246, 244, 239, 0.72) 52%,
+      rgba(246, 244, 239, 0.25) 100%
+    );
+  }
+  html[data-theme='malam'] {
+    --hero-scrim: linear-gradient(
+      180deg,
+      rgba(18, 16, 14, 0.9) 0%,
+      rgba(18, 16, 14, 0.74) 52%,
+      rgba(18, 16, 14, 0.28) 100%
+    );
+  }
 }
 
 @media (max-width: 640px) {
+  .pamomong-orb-host {
+    height: clamp(270px, 68vw, 360px);
+  }
   .top-nav {
     padding: 6px 10px;
     gap: 6px;
@@ -2417,6 +2805,12 @@ html[data-theme='malam'] .wordmark-colossal {
   .nav-cta-white {
     display: none;
   }
+  .subpage-status-strip {
+    padding-top: 78px;
+  }
+  .hero-overlay-copy {
+    padding: 96px 18px 24px;
+  }
   .diorama-pins-layer {
     display: none;
   }
@@ -2424,15 +2818,138 @@ html[data-theme='malam'] .wordmark-colossal {
   .spatial-grid-3d {
     grid-template-columns: 1fr;
   }
+  .twin-viewport-card {
+    min-height: clamp(340px, 56vh, 450px);
+  }
+  .twin-canvas-host {
+    min-height: clamp(265px, 44vh, 360px);
+  }
+  .twin-inspector-panel {
+    padding: 18px;
+  }
+  .engineering-grid-panel {
+    margin-top: 40px;
+    padding: 26px 18px;
+    gap: 28px;
+  }
+  .editorial-pillar-card {
+    padding: 20px;
+  }
+  .coverflow-viewport {
+    height: 400px;
+  }
   .coverflow-card {
     width: 248px;
     height: 365px;
   }
   .pakeliran-canvas-host {
-    height: 300px;
+    height: clamp(240px, 56vw, 310px);
+  }
+  .pakeliran-console {
+    padding: 18px 16px;
+  }
+  .aksara-grid {
+    grid-template-columns: repeat(auto-fill, minmax(92px, 1fr));
   }
   .hero-live-pill {
     display: none;
+  }
+}
+
+@media (max-width: 480px) {
+  .top-nav {
+    width: calc(100% - 14px);
+    top: 10px;
+    padding: 5px 8px 5px 11px;
+    gap: 6px;
+  }
+  .brand-mark {
+    font-size: 0.9rem;
+    gap: 7px;
+    padding: 2px 4px;
+  }
+  .top-nav .nav-controls {
+    gap: 4px;
+  }
+  .top-nav .util-pill {
+    padding: 5px 8px;
+    font-size: 0.7rem;
+    gap: 4px;
+  }
+  .top-nav .lang-btn {
+    padding: 3px 6px;
+    font-size: 0.67rem;
+  }
+  .mobile-page-dock {
+    width: calc(100% - 14px);
+    bottom: 8px;
+    padding: 5px;
+    gap: 3px;
+  }
+  .mobile-page-btn {
+    font-size: 0.59rem;
+    line-height: 1.15;
+    padding: 6px 2px;
+  }
+  .preloader-top {
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  .preloader-center {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 14px;
+  }
+  .preloader-bottom {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .hero-spec-strip {
+    gap: 14px;
+  }
+  .scrolly-narrative,
+  .scrolly-hud-card {
+    padding: 20px 16px;
+  }
+  .etalase-ribbon {
+    grid-auto-columns: minmax(min(256px, 78vw), 296px);
+    padding: 8px 16px 24px;
+  }
+  .twin-controls-bar {
+    padding: 12px 14px;
+    gap: 10px;
+  }
+  .mode-switch-group {
+    flex-wrap: wrap;
+    max-width: 100%;
+    border-radius: 16px;
+  }
+  .mode-btn {
+    padding: 5px 10px;
+    font-size: 0.72rem;
+  }
+  .explode-slider-wrap {
+    width: 100%;
+    justify-content: space-between;
+  }
+  .explode-slider-wrap input[type='range'] {
+    flex: 1;
+    min-width: 72px;
+    width: auto;
+  }
+  .twin-meta-strip {
+    grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+  }
+  .pamomong-query-form .pill-cta-white {
+    width: 100%;
+    justify-content: center;
+  }
+  .aksara-preview-shell {
+    flex-wrap: wrap;
+    padding: 16px;
+  }
+  .bridge-card {
+    padding: 16px 18px;
   }
 }
 

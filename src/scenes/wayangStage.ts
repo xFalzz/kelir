@@ -1,5 +1,10 @@
 import * as THREE from 'three';
-import { createSafeWebGLRenderer, disposeSceneObject, loadBudayaTextures } from './threeHelpers.ts';
+import {
+  createSafeWebGLRenderer,
+  disposeSceneObject,
+  hitungFovResponsif,
+  loadBudayaTextures,
+} from './threeHelpers.ts';
 import {
   buildGunungan3D,
   buildKidangKencana3D,
@@ -87,6 +92,8 @@ function buatTeksturGedebogPisang(): THREE.CanvasTexture | null {
   return tex;
 }
 
+export type MoodPanggungWayang = 'blencong' | 'kelir' | 'sorot';
+
 export class WayangStage {
   private renderer: THREE.WebGLRenderer | null = null;
   private scene = new THREE.Scene();
@@ -95,10 +102,13 @@ export class WayangStage {
   private sriRama!: WayangSriRamaRig;
   private kidang!: WayangKidangRig;
   private gunungan!: THREE.Group;
+  private ambientLight!: THREE.AmbientLight;
   private lampuBlencong!: THREE.SpotLight;
   private nyalaApi!: THREE.PointLight;
   private blencongGrup!: THREE.Group;
   private panahTerbang!: THREE.Group;
+  private moodCahaya: MoodPanggungWayang = 'blencong';
+  private baseApiIntensity = 2.8;
 
   private targetRamaX = 1.35;
   private targetKidangX = -1.45;
@@ -231,7 +241,8 @@ export class WayangStage {
     this.scene.add(this.blencongGrup);
 
     // 5. Pencahayaan Dramatis Pakeliran (Bayangan Tajam ke Layar Blacu)
-    this.scene.add(new THREE.AmbientLight(0xffe8c2, 0.68));
+    this.ambientLight = new THREE.AmbientLight(0xffe8c2, 0.68);
+    this.scene.add(this.ambientLight);
 
     this.lampuBlencong = new THREE.SpotLight(0xffb84d, 8.5, 25, Math.PI * 0.42, 0.52, 1.1);
     this.lampuBlencong.position.set(0, 1.85, 4.1);
@@ -322,11 +333,34 @@ export class WayangStage {
     this.panahTerbang.visible = true;
   }
 
+  public aturMoodCahaya(mood: MoodPanggungWayang): void {
+    this.moodCahaya = mood;
+    if (!this.lampuBlencong || !this.ambientLight || !this.nyalaApi) return;
+
+    if (mood === 'kelir') {
+      this.ambientLight.intensity = 0.24;
+      this.lampuBlencong.color.setHex(0xff9b35);
+      this.lampuBlencong.intensity = 11.2;
+      this.baseApiIntensity = 3.8;
+    } else if (mood === 'sorot') {
+      this.ambientLight.intensity = 1.38;
+      this.lampuBlencong.color.setHex(0xfff4de);
+      this.lampuBlencong.intensity = 7.4;
+      this.baseApiIntensity = 2.0;
+    } else {
+      this.ambientLight.intensity = 0.68;
+      this.lampuBlencong.color.setHex(0xffb84d);
+      this.lampuBlencong.intensity = 8.5;
+      this.baseApiIntensity = 2.8;
+    }
+  }
+
   public ubahUkuran(): void {
     if (!this.renderer) return;
-    const w = Math.max(this.container.clientWidth || 640, 280);
-    const h = Math.max(this.container.clientHeight || 360, 220);
+    const w = Math.max(this.container.clientWidth || 640, 1);
+    const h = Math.max(this.container.clientHeight || 360, 1);
     this.camera.aspect = w / h;
+    this.camera.fov = hitungFovResponsif(40, this.camera.aspect, 1.45, 56);
     this.camera.updateProjectionMatrix();
     this.renderer.setSize(w, h, false);
   }
@@ -338,7 +372,9 @@ export class WayangStage {
     const t = performance.now() * 0.001;
 
     // Kedip api minyak kelapa Blencong & goyangan lembut lampu gantung
-    this.nyalaApi.intensity = 2.8 + Math.sin(t * 7.4) * 0.42 + Math.cos(t * 12.1) * 0.22;
+    const faktorKedip = this.moodCahaya === 'sorot' ? 0.35 : 1;
+    this.nyalaApi.intensity =
+      this.baseApiIntensity + (Math.sin(t * 7.4) * 0.42 + Math.cos(t * 12.1) * 0.22) * faktorKedip;
     this.blencongGrup.rotation.z = Math.sin(t * 1.4) * 0.025;
 
     // Gerak Dalang mengayunkan Sri Rama (badan, bahu, siku, tuding)

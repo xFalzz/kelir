@@ -27,8 +27,8 @@
         <stop offset="0%" stop-color="#f7f4ed" />
         <stop offset="100%" stop-color="#eae4d7" />
       {:else}
-        <stop offset="0%" stop-color="#191b22" />
-        <stop offset="100%" stop-color="#101217" />
+        <stop offset="0%" stop-color="#221e19" />
+        <stop offset="100%" stop-color="#15120f" />
       {/if}
     </linearGradient>
     <linearGradient id="metal-{uid}" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -37,8 +37,8 @@
         <stop offset="52%" stop-color={accent} />
         <stop offset="100%" stop-color="#2c2a27" />
       {:else}
-        <stop offset="0%" stop-color="#f6e3b4" />
-        <stop offset="52%" stop-color="#d4a148" />
+        <stop offset="0%" stop-color="#f7e8c6" />
+        <stop offset="52%" stop-color="#e0b35a" />
         <stop offset="100%" stop-color={accent} />
       {/if}
     </linearGradient>
@@ -46,7 +46,7 @@
       <path
         d="M 32 0 L 0 0 0 32"
         fill="none"
-        stroke={variant === 'paper' ? 'rgba(20,21,24,0.065)' : 'rgba(255,255,255,0.045)'}
+        stroke={variant === 'paper' ? 'rgba(20,21,24,0.065)' : 'rgba(244,239,230,0.055)'}
         stroke-width="0.7"
       />
     </pattern>
@@ -61,7 +61,7 @@
     y1="26"
     x2="160"
     y2="348"
-    stroke={variant === 'paper' ? 'rgba(20,21,24,0.1)' : 'rgba(255,255,255,0.08)'}
+    stroke={variant === 'paper' ? 'rgba(20,21,24,0.1)' : 'rgba(244,239,230,0.1)'}
     stroke-width="0.75"
     stroke-dasharray="2 4"
   />
@@ -70,7 +70,7 @@
     y1="185"
     x2="286"
     y2="185"
-    stroke={variant === 'paper' ? 'rgba(20,21,24,0.1)' : 'rgba(255,255,255,0.08)'}
+    stroke={variant === 'paper' ? 'rgba(20,21,24,0.1)' : 'rgba(244,239,230,0.1)'}
     stroke-width="0.75"
     stroke-dasharray="2 4"
   />
@@ -79,14 +79,14 @@
     cy="185"
     r="106"
     fill="none"
-    stroke={variant === 'paper' ? 'rgba(20,21,24,0.14)' : 'rgba(255,255,255,0.1)'}
+    stroke={variant === 'paper' ? 'rgba(20,21,24,0.14)' : 'rgba(244,239,230,0.13)'}
     stroke-width="0.85"
     stroke-dasharray="3 6"
   />
-  <circle cx="160" cy="185" r="76" fill="none" stroke={accent} stroke-opacity="0.32" stroke-width="1" />
+  <circle cx="160" cy="185" r="76" fill="none" stroke={accent} stroke-opacity="0.38" stroke-width="1" />
 
   <!-- Corner registration ticks -->
-  <g stroke={variant === 'paper' ? 'rgba(20,21,24,0.28)' : 'rgba(255,255,255,0.22)'} stroke-width="1" fill="none">
+  <g stroke={variant === 'paper' ? 'rgba(20,21,24,0.28)' : 'rgba(244,239,230,0.28)'} stroke-width="1" fill="none">
     <path d="M18 32 L18 18 L32 18" />
     <path d="M288 18 L302 18 L302 32" />
     <path d="M18 388 L18 402 L32 402" />

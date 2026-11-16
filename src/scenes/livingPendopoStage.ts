@@ -5,6 +5,7 @@ import {
   attachCadWireframeLayer,
   createSafeWebGLRenderer,
   disposeSceneObject,
+  hitungFovResponsif,
   loadBudayaTextures,
 } from './threeHelpers.ts';
 
@@ -186,6 +187,8 @@ export class LivingPendopoStage {
   private batikClothMeshes: Array<{ mesh: THREE.Mesh; basePos: Float32Array; phase: number }> = [];
   private lampApiKelir: THREE.PointLight | null = null;
   private lampPrapen: THREE.PointLight | null = null;
+  private lampJoglo: THREE.PointLight | null = null;
+  private lampBoost = 1;
   private waterMesh: THREE.Mesh | null = null;
   private particlePoints: THREE.Points | null = null;
 
@@ -225,12 +228,40 @@ export class LivingPendopoStage {
   public setTheme(tema: 'malam' | 'terang'): void {
     if (tema === 'terang') {
       this.scene.fog = new THREE.FogExp2(0xf6f4ef, 0.0085);
-      if (this.hemiLight) this.hemiLight.intensity = 1.28;
-      if (this.sunLight) this.sunLight.intensity = 2.75;
+      this.lampBoost = 0.85;
+      if (this.hemiLight) {
+        this.hemiLight.color.setHex(0xdbeafe);
+        this.hemiLight.groundColor.setHex(0x3a2818);
+        this.hemiLight.intensity = 1.28;
+      }
+      if (this.sunLight) {
+        this.sunLight.color.setHex(0xffe9c7);
+        this.sunLight.intensity = 2.75;
+      }
+      if (this.lampJoglo) this.lampJoglo.intensity = 3.2;
+      if (this.particlePoints) {
+        const mat = this.particlePoints.material as THREE.PointsMaterial;
+        mat.color.setHex(0xd99b43);
+        mat.opacity = 0.34;
+      }
     } else {
-      this.scene.fog = new THREE.FogExp2(0x0a0b0e, 0.017);
-      if (this.hemiLight) this.hemiLight.intensity = 0.92;
-      if (this.sunLight) this.sunLight.intensity = 2.45;
+      this.scene.fog = new THREE.FogExp2(0x12100e, 0.0145);
+      this.lampBoost = 1.48;
+      if (this.hemiLight) {
+        this.hemiLight.color.setHex(0x8fa6cc);
+        this.hemiLight.groundColor.setHex(0x2a1c12);
+        this.hemiLight.intensity = 0.78;
+      }
+      if (this.sunLight) {
+        this.sunLight.color.setHex(0xf5dfc2);
+        this.sunLight.intensity = 1.75;
+      }
+      if (this.lampJoglo) this.lampJoglo.intensity = 5.4;
+      if (this.particlePoints) {
+        const mat = this.particlePoints.material as THREE.PointsMaterial;
+        mat.color.setHex(0xf3c677);
+        mat.opacity = 0.38;
+      }
     }
   }
 
@@ -256,9 +287,9 @@ export class LivingPendopoStage {
     rimEmber.position.set(-5.8, 4.4, -4.6);
     this.scene.add(rimEmber);
 
-    const lampJoglo = new THREE.PointLight(0xffbf5e, 3.8, 10);
-    lampJoglo.position.set(0, 2.15, 0);
-    this.islandRoot.add(lampJoglo);
+    this.lampJoglo = new THREE.PointLight(0xffbf5e, 3.8, 11);
+    this.lampJoglo.position.set(0, 2.15, 0);
+    this.islandRoot.add(this.lampJoglo);
 
     this.lampPrapen = new THREE.PointLight(0xff4d14, 3.4, 7.5);
     this.lampPrapen.position.set(-2.5, 0.95, -1.7);
@@ -988,7 +1019,7 @@ export class LivingPendopoStage {
     geoPartikel.setAttribute('position', new THREE.BufferAttribute(pos, 3));
     this.particlePoints = new THREE.Points(
       geoPartikel,
-      new THREE.PointsMaterial({ color: 0xffb347, size: 0.075, transparent: true, opacity: 0.72 }),
+      new THREE.PointsMaterial({ color: 0xf3c677, size: 0.055, transparent: true, opacity: 0.36 }),
     );
     this.islandRoot.add(this.particlePoints);
 
@@ -1041,9 +1072,10 @@ export class LivingPendopoStage {
 
   public ubahUkuran(): void {
     if (!this.renderer) return;
-    const w = Math.max(this.container.clientWidth || 800, 320);
-    const h = Math.max(this.container.clientHeight || 600, 320);
+    const w = Math.max(this.container.clientWidth || 800, 1);
+    const h = Math.max(this.container.clientHeight || 600, 1);
     this.camera.aspect = w / h;
+    this.camera.fov = hitungFovResponsif(35, this.camera.aspect, 1.15, 56);
     this.camera.updateProjectionMatrix();
     this.renderer.setSize(w, h, false);
 
@@ -1060,6 +1092,7 @@ export class LivingPendopoStage {
     if (!this.onPinCb || !this.renderer) return;
     const w = this.container.clientWidth || 800;
     const h = this.container.clientHeight || 600;
+    const marginX = Math.min(72, w * 0.14);
     const v = new THREE.Vector3();
     const hasil: ProyeksiPinDiorama[] = [];
 
@@ -1068,7 +1101,7 @@ export class LivingPendopoStage {
       v.project(this.camera);
       const x = (v.x * 0.5 + 0.5) * w;
       const y = (-v.y * 0.5 + 0.5) * h;
-      const terlihat = v.z > -1 && v.z < 1 && x >= 16 && x <= w - 16 && y >= 16 && y <= h - 16;
+      const terlihat = v.z > -1 && v.z < 1 && x >= marginX && x <= w - marginX && y >= 32 && y <= h - 16;
       hasil.push({ bendaId, x, y, terlihat });
     }
     this.onPinCb(hasil);
@@ -1121,10 +1154,10 @@ export class LivingPendopoStage {
     }
 
     if (this.lampApiKelir) {
-      this.lampApiKelir.intensity = 2.9 + Math.sin(t * 6.8) * 0.45;
+      this.lampApiKelir.intensity = (2.9 + Math.sin(t * 6.8) * 0.45) * this.lampBoost;
     }
     if (this.lampPrapen) {
-      this.lampPrapen.intensity = 3.2 + Math.cos(t * 8.2) * 0.55;
+      this.lampPrapen.intensity = (3.2 + Math.cos(t * 8.2) * 0.55) * this.lampBoost;
     }
     if (this.waterMesh) {
       this.waterMesh.position.y = 0.055 + Math.sin(t * 1.6) * 0.016;
