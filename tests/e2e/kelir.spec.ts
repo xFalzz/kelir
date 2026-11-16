@@ -325,6 +325,41 @@ test.describe('Kelir Multi-Page Spasial 3D — Verifikasi 5 Halaman & Realisme 3
     await page.waitForTimeout(350);
     await page.screenshot({ path: `${ARTIFACT_DIR}/mp-12-tablet-twin.png` });
 
+    // Verifikasi smooth scroll wheel di semua halaman & isolasi zoom 3D Digital Twin
+    await page.setViewportSize({ width: 1280, height: 800 });
+    for (const hal of ['beranda', 'koleksi', 'pakeliran', 'kawruh'] as const) {
+      await page.goto(`/?hal=${hal}`);
+      await expect(page.locator('.preloader-curtain')).toHaveAttribute('data-preloader-done', 'true', {
+        timeout: 10000,
+      });
+      await page.mouse.move(120, 420);
+      await page.mouse.wheel(0, 420);
+      await page.waitForTimeout(450);
+      const y = await page.evaluate(() => window.scrollY);
+      expect(y, `Smooth scroll aktif pada halaman ${hal}`).toBeGreaterThan(220);
+    }
+
+    await page.goto('/?hal=twin');
+    await expect(page.locator('.preloader-curtain')).toHaveAttribute('data-preloader-done', 'true', {
+      timeout: 10000,
+    });
+    const twinCanvas = page.locator('.twin-canvas-host canvas');
+    await twinCanvas.waitFor({ state: 'visible', timeout: 10000 });
+    await page.waitForTimeout(150);
+    const twinBox = await twinCanvas.boundingBox();
+    if (twinBox) {
+      await page.mouse.move(twinBox.x + 80, twinBox.y + 140);
+      await page.mouse.wheel(0, 240);
+      await page.waitForTimeout(250);
+      const scrollAfterCanvasWheel = await page.evaluate(() => window.scrollY);
+      expect(scrollAfterCanvasWheel).toBeLessThan(10);
+    }
+    await page.mouse.move(40, 260);
+    await page.mouse.wheel(0, 420);
+    await page.waitForTimeout(450);
+    const twinPageScroll = await page.evaluate(() => window.scrollY);
+    expect(twinPageScroll).toBeGreaterThan(220);
+
     expect(errors).toEqual([]);
   });
 });

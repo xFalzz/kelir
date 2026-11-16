@@ -19,6 +19,7 @@
   import { DAFTAR_CARAKAN, latinKeAksaraJawa, type KartuCarakan } from '../lib/aksara.ts';
   import { audioBudaya, NADA_SARON_SLENDRO } from '../lib/audioBudaya.ts';
   import type { FrameTangan, PengelolaTangan, StatusKamera } from '../lib/handTracker.ts';
+  import { pasangSmoothScroll, type SmoothScrollController } from '../lib/smoothScroll.ts';
   import { jawabDariKurasiLokal, tanyakanKeAsisten, type HasilTanya } from '../lib/tanya.ts';
   import type { DigitalTwinStage, ModeVisualTwin, ProyeksiPinTwin } from '../scenes/digitalTwinStage.ts';
   import { LivingPendopoStage, type ProyeksiPinDiorama } from '../scenes/livingPendopoStage.ts';
@@ -152,6 +153,7 @@
   let wayangStage: WayangStage | null = null;
   let orbStage: PamomongOrbStage | null = null;
   let pengelolaTangan: PengelolaTangan | null = null;
+  let smoothScrollCtrl: SmoothScrollController | null = null;
   let pendingTwinTitikId: string | null = null;
   let viewportWidth = $state(typeof window !== 'undefined' ? window.innerWidth : 1440);
 
@@ -322,11 +324,19 @@
         if (targetAnchorId) {
           const el = document.getElementById(targetAnchorId);
           if (el) {
-            el.scrollIntoView({ behavior: 'smooth' });
+            if (smoothScrollCtrl) {
+              smoothScrollCtrl.scrollToElement(el, 88);
+            } else {
+              el.scrollIntoView({ behavior: 'smooth' });
+            }
             return;
           }
         }
-        window.scrollTo({ top: 0, behavior: 'instant' as ScrollBehavior });
+        if (smoothScrollCtrl) {
+          smoothScrollCtrl.scrollTo(0, false);
+        } else {
+          window.scrollTo({ top: 0, behavior: 'instant' as ScrollBehavior });
+        }
       });
     }
   }
@@ -533,6 +543,7 @@
   // =========================================================================
   onMount(() => {
     document.documentElement.setAttribute('data-theme', tema);
+    smoothScrollCtrl = pasangSmoothScroll();
 
     // Baca parameter halaman dari URL jika ada (?hal=twin, dsb.)
     const params = new URLSearchParams(window.location.search);
@@ -548,6 +559,7 @@
       } else {
         halamanAktif = 'beranda';
       }
+      void tick().then(() => smoothScrollCtrl?.sync());
     };
     window.addEventListener('popstate', onPopState);
 
@@ -575,6 +587,8 @@
 
     return () => {
       window.removeEventListener('popstate', onPopState);
+      smoothScrollCtrl?.destroy();
+      smoothScrollCtrl = null;
     };
   });
 
@@ -1025,7 +1039,7 @@
 
       <div class="twin-workspace">
         <div class="twin-viewport-card">
-          <div class="twin-canvas-host" use:mountTwinStage>
+          <div class="twin-canvas-host" data-wheel-native="true" use:mountTwinStage>
             <div class="twin-viewport-hud">
               <span class="twin-viewport-spec">
                 {bendaAktif.nomorUrut} / 05 · SERET ORBIT · GULIR ZOOM

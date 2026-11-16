@@ -1762,6 +1762,9 @@ html[data-theme='malam'] .archive-plate-kicker {
   gap: clamp(24px, 5vw, 60px);
   align-items: center;
   overflow-y: auto;
+  scroll-behavior: smooth;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
 }
 
 html[data-theme='malam'] .modal-suluk-backdrop {
@@ -1911,7 +1914,9 @@ html[data-theme='malam'] .wordmark-colossal {
   gap: 18px;
   padding: 8px clamp(20px, 5vw, 64px) 28px;
   overflow-x: auto;
+  scroll-behavior: smooth;
   scroll-snap-type: x proximity;
+  -webkit-overflow-scrolling: touch;
   scrollbar-width: thin;
 }
 
