@@ -145,6 +145,7 @@
     let ringAngle = 0;
     let rafId: number | null = null;
     let lastMs = 0;
+    let lastHoverTarget: EventTarget | null = null;
     let rippleTimer: ReturnType<typeof setTimeout> | null = null;
 
     const updateMode = (target: EventTarget | null) => {
@@ -251,7 +252,10 @@
       if (nibEl) {
         nibEl.style.transform = `translate3d(${targetX.toFixed(1)}px, ${targetY.toFixed(1)}px, 0)`;
       }
-      updateMode(e.target);
+      if (e.target !== lastHoverTarget || isDraggingRail) {
+        lastHoverTarget = e.target;
+        updateMode(e.target);
+      }
       ensureLoop();
     };
 

@@ -49,14 +49,15 @@ function dapatDigulirInternal(target: EventTarget | null, deltaY: number): boole
     if (node.getAttribute('aria-modal') === 'true') {
       return true;
     }
-    const style = window.getComputedStyle(node);
-    const overflowY = style.overflowY;
-    if ((overflowY === 'auto' || overflowY === 'scroll') && node.scrollHeight > node.clientHeight + 1) {
+    if (node.scrollHeight > node.clientHeight + 1) {
       const keBawah = deltaY > 0;
       const masihAdaRuang = keBawah
         ? node.scrollTop + node.clientHeight < node.scrollHeight - 1
         : node.scrollTop > 1;
-      if (masihAdaRuang) return true;
+      if (masihAdaRuang) {
+        const overflowY = window.getComputedStyle(node).overflowY;
+        if (overflowY === 'auto' || overflowY === 'scroll') return true;
+      }
     }
     node = node.parentElement;
   }

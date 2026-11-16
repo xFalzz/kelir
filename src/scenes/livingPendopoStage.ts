@@ -198,6 +198,7 @@ export class LivingPendopoStage {
   private ububanKanan: THREE.Mesh | null = null;
   private gongAgengMesh: THREE.Group | null = null;
   private batikClothMeshes: Array<{ mesh: THREE.Mesh; basePos: Float32Array; phase: number }> = [];
+  private lastBatikWaveMs = 0;
   private lampApiKelir: THREE.PointLight | null = null;
   private lampPrapen: THREE.PointLight | null = null;
   private lampJoglo: THREE.PointLight | null = null;
@@ -1175,9 +1176,12 @@ export class LivingPendopoStage {
       this.gongAgengMesh.rotation.y = Math.sin(t * 1.5) * 0.05;
     }
 
-    // Animasi kain batik melambai tertiup angin (dibatasi separuh frame di GPU seluler)
-    const updateBatikWave = !isMobileGpuProfile() || ((Math.floor(t * 60) & 1) === 0);
+    // Animasi kain batik melambai tertiup angin (dibatasi ~30Hz agar unggahan buffer vertex GPU tetap ringan di layar 60/120Hz)
+    const nowMs = performance.now();
+    const waveInterval = isMobileGpuProfile() ? 45 : 32;
+    const updateBatikWave = nowMs - this.lastBatikWaveMs >= waveInterval;
     if (updateBatikWave) {
+      this.lastBatikWaveMs = nowMs;
       for (const item of this.batikClothMeshes) {
         const attr = item.mesh.geometry.attributes.position as THREE.BufferAttribute;
         for (let i = 0; i < attr.count; i++) {

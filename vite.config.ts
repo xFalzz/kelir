@@ -213,6 +213,16 @@ export default defineConfig(({ mode }) => {
                 priority: 25,
               },
               {
+                name: 'vendor-svelte',
+                test: /[\\/]node_modules[\\/]svelte[\\/]/,
+                priority: 24,
+              },
+              {
+                name: 'vendor-i18n',
+                test: /[\\/]node_modules[\\/]i18next[\\/]/,
+                priority: 22,
+              },
+              {
                 name: 'vendor-gsap',
                 test: /[\\/]node_modules[\\/]gsap[\\/]/,
                 priority: 20,
@@ -221,6 +231,11 @@ export default defineConfig(({ mode }) => {
                 name: 'vendor-mediapipe',
                 test: /[\\/]node_modules[\\/]@mediapipe[\\/]/,
                 priority: 20,
+              },
+              {
+                name: 'data-pusaka',
+                test: /[\\/]src[\\/]content[\\/]pusaka\.ts/,
+                priority: 15,
               },
             ],
           },

@@ -310,7 +310,14 @@ function buatDokumenKorpus(): {
   return { docs, idf, avgDocLen: Math.max(totalLen / Math.max(N, 1), 1) };
 }
 
-const KORPUS_INDEKS = buatDokumenKorpus();
+let cacheKorpusIndeks: ReturnType<typeof buatDokumenKorpus> | null = null;
+
+function getKorpusIndeks() {
+  if (!cacheKorpusIndeks) {
+    cacheKorpusIndeks = buatDokumenKorpus();
+  }
+  return cacheKorpusIndeks;
+}
 const BM25_K1 = 1.4;
 const BM25_B = 0.65;
 const AMBANG_ABSTAIN_BM25 = 1.05;
@@ -397,7 +404,8 @@ export function jawabDariKurasiLokal(
     cocok: string[];
   }> = [];
 
-  for (const doc of KORPUS_INDEKS.docs) {
+  const korpus = getKorpusIndeks();
+  for (const doc of korpus.docs) {
     let skor = 0;
     const cocokSet = new Set<string>();
     const dl = doc.tokens.length;
@@ -406,12 +414,12 @@ export function jawabDariKurasiLokal(
       const termFreq = doc.tf.get(term) ?? 0;
       const w = bobot.get(term) ?? 1;
       if (termFreq > 0) {
-        const idf = KORPUS_INDEKS.idf.get(term) ?? 1.0;
-        const tfNorm = (termFreq * (BM25_K1 + 1)) / (termFreq + BM25_K1 * (1 - BM25_B + BM25_B * (dl / KORPUS_INDEKS.avgDocLen)));
+        const idf = korpus.idf.get(term) ?? 1.0;
+        const tfNorm = (termFreq * (BM25_K1 + 1)) / (termFreq + BM25_K1 * (1 - BM25_B + BM25_B * (dl / korpus.avgDocLen)));
         skor += idf * tfNorm * w;
         cocokSet.add(term);
       } else if (term.length >= 5 && doc.teksNormal.includes(term)) {
-        const idf = KORPUS_INDEKS.idf.get(term) ?? 0.9;
+        const idf = korpus.idf.get(term) ?? 0.9;
         skor += idf * 0.48 * w;
         cocokSet.add(term);
       }

@@ -20,8 +20,9 @@
     type TitikInfoPusaka,
   } from '../content/pusaka.ts';
   import { DAFTAR_CARAKAN, latinKeAksaraJawa, type KartuCarakan } from '../lib/aksara.ts';
-  import { mintaSuaraDalangBabak, type LangkahRuteTur } from '../lib/aiStudio.ts';
+  import type { LangkahRuteTur } from '../lib/aiStudio.ts';
   import { audioBudaya } from '../lib/audioBudaya.ts';
+  import { mintaSuaraDalangBabak } from '../lib/dalangVoice.ts';
   import { type GendingId } from '../lib/gendingJawa.ts';
   import type { FrameTangan, PengelolaTangan, StatusKamera } from '../lib/handTracker.ts';
   import { DAFTAR_BAHASA, setI18nLanguage, tI18n } from '../lib/i18n.ts';
@@ -41,21 +42,16 @@
     hentikanWebSpeech,
     putarkanWebSpeech,
   } from '../lib/sulukNarasi.ts';
-  import { jawabDariKurasiLokal, tanyakanKeAsisten, type HasilTanya } from '../lib/tanya.ts';
+  import type { HasilTanya } from '../lib/tanya.ts';
   import type { CoverflowStage } from '../scenes/coverflowStage.ts';
   import type { DigitalTwinStage, ModeVisualTwin, ProyeksiPinTwin } from '../scenes/digitalTwinStage.ts';
   import { LivingPendopoStage, type ProyeksiPinDiorama } from '../scenes/livingPendopoStage.ts';
   import type { PamomongOrbStage } from '../scenes/pamomongOrbStage.ts';
   import type { MoodPanggungWayang, WayangStage } from '../scenes/wayangStage.ts';
   import BerandaWallEtalase, { type FilterEtalase } from './components/BerandaWallEtalase.svelte';
-  import CoverflowShowcase from './components/CoverflowShowcase.svelte';
-  import DigitalTwinStudio from './components/DigitalTwinStudio.svelte';
   import FooterSection from './components/FooterSection.svelte';
   import KarawitanBar from './components/KarawitanBar.svelte';
-  import KawruhOrbSection from './components/KawruhOrbSection.svelte';
   import KelirCursor from './components/KelirCursor.svelte';
-  import SearchModal from './components/SearchModal.svelte';
-  import SulukModal from './components/SulukModal.svelte';
   import PixelNumber from './PixelNumber.svelte';
 
   // =========================================================================
@@ -148,11 +144,113 @@
   // Lab Aksara Jawa & Pamomong AI State (Halaman 05)
   let inputAksaraLatin = $state('Kelir warisan budaya Jawa nusantara.');
   let kartuCarakanTerpilih: KartuCarakan = $state(DAFTAR_CARAKAN[4]);
+  type DigitalTwinStudioType = typeof import('./components/DigitalTwinStudio.svelte').default;
+  type CoverflowShowcaseType = typeof import('./components/CoverflowShowcase.svelte').default;
+  type KawruhOrbSectionType = typeof import('./components/KawruhOrbSection.svelte').default;
+  type SulukModalType = typeof import('./components/SulukModal.svelte').default;
+  type SearchModalType = typeof import('./components/SearchModal.svelte').default;
+  type TanyaModuleType = typeof import('../lib/tanya.ts');
+
+  let DigitalTwinStudioComp: DigitalTwinStudioType | null = $state(null);
+  let CoverflowShowcaseComp: CoverflowShowcaseType | null = $state(null);
+  let KawruhOrbSectionComp: KawruhOrbSectionType | null = $state(null);
+  let SulukModalComp: SulukModalType | null = $state(null);
+  let SearchModalComp: SearchModalType | null = $state(null);
+  let tanyaModulCache: TanyaModuleType | null = null;
+  let tanyaModulPromise: Promise<TanyaModuleType> | null = null;
+  let sudahTanyaPamomongManual = false;
+
+  function muatTanyaModul(): Promise<TanyaModuleType> {
+    if (tanyaModulCache) return Promise.resolve(tanyaModulCache);
+    if (!tanyaModulPromise) {
+      tanyaModulPromise = import('../lib/tanya.ts').then((mod) => {
+        tanyaModulCache = mod;
+        return mod;
+      });
+    }
+    return tanyaModulPromise;
+  }
+
+  function pastikanKomponenHalaman(hal: HalamanId): void {
+    if (hal === 'twin' && !DigitalTwinStudioComp) {
+      void import('./components/DigitalTwinStudio.svelte').then((m) => (DigitalTwinStudioComp = m.default));
+    } else if (hal === 'koleksi' && !CoverflowShowcaseComp) {
+      void import('./components/CoverflowShowcase.svelte').then((m) => (CoverflowShowcaseComp = m.default));
+    } else if (hal === 'kawruh') {
+      if (!KawruhOrbSectionComp) {
+        void import('./components/KawruhOrbSection.svelte').then((m) => (KawruhOrbSectionComp = m.default));
+      }
+      void muatTanyaModul().then(({ jawabDariKurasiLokal }) => {
+        if (!sudahTanyaPamomongManual) {
+          const queryToUse =
+            pertanyaanInput.trim() || ambilTeks(bendaPamomongAktif.pertanyaanContoh[0], bahasa);
+          jawabanPamomong = jawabDariKurasiLokal(bendaPamomongAktif.id, queryToUse, bahasa);
+        }
+      });
+    }
+  }
+
+  function pastikanModalSuluk(): void {
+    if (!SulukModalComp) {
+      void import('./components/SulukModal.svelte').then((m) => (SulukModalComp = m.default));
+    }
+  }
+
+  function pastikanSearchModal(): void {
+    if (!SearchModalComp) {
+      void import('./components/SearchModal.svelte').then((m) => (SearchModalComp = m.default));
+    }
+  }
+
+  function buatJawabanPamomongAwal(benda: BendaPusaka, nextLang: BahasaAktif): HasilTanya {
+    return {
+      jawaban: `${ambilTeks(benda.nama, nextLang)}: ${ambilTeks(benda.filosofi, nextLang)}`,
+      sumber: benda.sumber,
+      mode: 'bm25-kurasi-lokal',
+      modelNama: 'gemini-3.8-live',
+      statusGrounding: 'terbukti',
+      skorKeyakinan: 98,
+      kataKunciCocok: [benda.id],
+      latensiMs: 0.4,
+      butirBukti: [
+        {
+          id: `ringkas-${benda.id}`,
+          judul: ambilTeks(benda.nama, nextLang),
+          kategori: ambilTeks(benda.kategori, nextLang),
+          kutipan: ambilTeks(benda.sejarahSingkat, nextLang),
+          sumber: benda.sumber,
+          skorRelatif: 100,
+        },
+      ],
+      rujukan: benda.sumber.map((kode) => ({
+        kode,
+        judul: DAFTAR_SUMBER[kode].judul,
+        lembaga: DAFTAR_SUMBER[kode].lembaga,
+      })),
+    };
+  }
+
   let pertanyaanInput = $state('');
   let sediaTanya = $state(false);
-  let jawabanPamomong: HasilTanya = $state(
-    jawabDariKurasiLokal('keris', 'Mengapa Keris Luk 5 identik dengan filosofi Pandawa?', 'id'),
-  );
+  let jawabanPamomong: HasilTanya = $state(buatJawabanPamomongAwal(DAFTAR_BENDA[0], 'id'));
+
+  $effect(() => {
+    if (halamanAktif === 'twin' || halamanAktif === 'koleksi' || halamanAktif === 'kawruh') {
+      pastikanKomponenHalaman(halamanAktif);
+    }
+  });
+
+  $effect(() => {
+    if (modalSulukBuka) {
+      pastikanModalSuluk();
+    }
+  });
+
+  $effect(() => {
+    if (searchModalBuka) {
+      pastikanSearchModal();
+    }
+  });
 
   // Hand Tracker Webcam State (Global Utility)
   let statusKamera: StatusKamera = $state('nonaktif');
@@ -580,7 +678,15 @@
     if (defaultIdx >= 0 && qTrim) {
       pertanyaanInput = queryToUse;
     }
-    jawabanPamomong = jawabDariKurasiLokal(bendaPamomongAktif.id, queryToUse, nextLang);
+    if (halamanAktif === 'kawruh' || tanyaModulCache) {
+      void muatTanyaModul().then(({ jawabDariKurasiLokal }) => {
+        if (bahasa === nextLang) {
+          jawabanPamomong = jawabDariKurasiLokal(bendaPamomongAktif.id, queryToUse, nextLang);
+        }
+      });
+    } else {
+      jawabanPamomong = buatJawabanPamomongAwal(bendaPamomongAktif, nextLang);
+    }
   }
 
   function tutupPreloaderSeketika(): void {
@@ -772,8 +878,10 @@
     const fallbackQ = ambilTeks(bendaPamomongAktif.pertanyaanContoh[0], bahasa);
     const q = pertanyaanInput.trim() || fallbackQ;
     if (!pertanyaanInput.trim()) pertanyaanInput = q;
+    sudahTanyaPamomongManual = true;
     sediaTanya = true;
     orbStage?.picuDenyutBerpikir();
+    const { tanyakanKeAsisten } = await muatTanyaModul();
     jawabanPamomong = await tanyakanKeAsisten(bendaPamomongAktif.id, q, bahasa);
     sediaTanya = false;
   }
@@ -912,8 +1020,12 @@
     };
     window.addEventListener('popstate', onPopState);
 
-    // Preload malas modul 3D sub-halaman ketika idle agar perpindahan halaman bebas jeda
+    // Preload malas modul 3D & UI sub-halaman ketika idle agar perpindahan halaman bebas jeda
     const muatSubPanggungIdle = () => {
+      pastikanKomponenHalaman('twin');
+      pastikanKomponenHalaman('koleksi');
+      pastikanModalSuluk();
+      pastikanSearchModal();
       void import('../scenes/digitalTwinStage.ts');
       void import('../scenes/coverflowStage.ts');
       void import('../scenes/sulukShowcaseStage.ts');
@@ -1075,6 +1187,7 @@
         class="nav-page-tab"
         class:is-active={halamanAktif === hal.id}
         aria-current={halamanAktif === hal.id ? 'page' : undefined}
+        onpointerenter={() => pastikanKomponenHalaman(hal.id)}
         onclick={() => pindahHalaman(hal.id)}
         data-testid="page-tab-{hal.id}"
       >
@@ -1088,6 +1201,7 @@
     <button
       type="button"
       class="util-pill nav-search-btn"
+      onpointerenter={pastikanSearchModal}
       onclick={() => (searchModalBuka = true)}
       aria-label={tI18n(bahasa, 'nav.searchAria')}
       title={tI18n(bahasa, 'nav.searchAria')}
@@ -1443,72 +1557,80 @@
        HALAMAN 02: STUDIO KEMBARAN DIGITAL 3D (CAD & PBR STUDIO · 7 KOLEKSI)
        ======================================================================= -->
   {#if halamanAktif === 'twin'}
-    <DigitalTwinStudio
-      specimens={DAFTAR_BEDAH_TWIN}
-      {bendaAktifId}
-      {bendaAktif}
-      {titikAktifId}
-      {titikAktif}
-      {modeVisualTwin}
-      {faktorLedak}
-      {aksiHidupTwin}
-      {twinPins}
-      {tema}
-      {bahasa}
-      keunggulan={KEUNGGULAN_SISTEM}
-      pilar={PILAR_NILAI}
-      mountStage={mountTwinStage}
-      onPilihPusaka={(id) => pilihPusaka(id)}
-      onResetKamera={() => twinStage?.resetKamera()}
-      onPilihTitik={pilihTitikInfo}
-      onModeVisual={aturModeVisualTwin}
-      onUbahLedak={(val) => {
-        faktorLedak = val;
-        twinStage?.aturLedakAnatomi(val);
-      }}
-      onPicuEfek={() => {
-        twinStage?.picuEfekKhusus3D();
-        if (!audioAktif) {
-          audioAktif = true;
-          audioBudaya.aturAktif(true);
-        }
-        picuSuaraBenda(bendaAktif.id);
-      }}
-      onToggleAksiHidup={() => {
-        aksiHidupTwin = twinStage?.toggleAksiHidup() ?? !aksiHidupTwin;
-      }}
-      onBunyikanWilah={bunyikanWilahTwin}
-      onBukaSulukSpesimen={bukaSulukSpesimen}
-      isFavorit={(jejakKurasi.favoritIds ?? []).includes(bendaAktif.id)}
-      onToggleFavorit={() => toggleFavoritSpesimen(bendaAktif.id)}
-      onTangkapPotret={() => twinStage?.tangkapPotretPng() ?? null}
-      onPindahHalaman={(hal, anchor) => pindahHalaman(hal, anchor)}
-      onScrollProgres={(p) => twinStage?.aturProgresGulir(p)}
-    />
+    {#if DigitalTwinStudioComp}
+      <DigitalTwinStudioComp
+        specimens={DAFTAR_BEDAH_TWIN}
+        {bendaAktifId}
+        {bendaAktif}
+        {titikAktifId}
+        {titikAktif}
+        {modeVisualTwin}
+        {faktorLedak}
+        {aksiHidupTwin}
+        {twinPins}
+        {tema}
+        {bahasa}
+        keunggulan={KEUNGGULAN_SISTEM}
+        pilar={PILAR_NILAI}
+        mountStage={mountTwinStage}
+        onPilihPusaka={(id) => pilihPusaka(id)}
+        onResetKamera={() => twinStage?.resetKamera()}
+        onPilihTitik={pilihTitikInfo}
+        onModeVisual={aturModeVisualTwin}
+        onUbahLedak={(val) => {
+          faktorLedak = val;
+          twinStage?.aturLedakAnatomi(val);
+        }}
+        onPicuEfek={() => {
+          twinStage?.picuEfekKhusus3D();
+          if (!audioAktif) {
+            audioAktif = true;
+            audioBudaya.aturAktif(true);
+          }
+          picuSuaraBenda(bendaAktif.id);
+        }}
+        onToggleAksiHidup={() => {
+          aksiHidupTwin = twinStage?.toggleAksiHidup() ?? !aksiHidupTwin;
+        }}
+        onBunyikanWilah={bunyikanWilahTwin}
+        onBukaSulukSpesimen={bukaSulukSpesimen}
+        isFavorit={(jejakKurasi.favoritIds ?? []).includes(bendaAktif.id)}
+        onToggleFavorit={() => toggleFavoritSpesimen(bendaAktif.id)}
+        onTangkapPotret={() => twinStage?.tangkapPotretPng() ?? null}
+        onPindahHalaman={(hal, anchor) => pindahHalaman(hal, anchor)}
+        onScrollProgres={(p) => twinStage?.aturProgresGulir(p)}
+      />
+    {:else}
+      <section class="band-section" style="min-height: 68vh;" aria-busy="true"></section>
+    {/if}
   {/if}
 
   <!-- =======================================================================
        HALAMAN 03: GALERI COVERFLOW 3D REALISTIS & REPERTOAR SULUK (7 KOLEKSI)
        ======================================================================= -->
   {#if halamanAktif === 'koleksi'}
-    <CoverflowShowcase
-      items={KOLEKSI_COVERFLOW}
-      {coverflowIdx}
-      {tema}
-      {bahasa}
-      {suasanaPendopoAktif}
-      favoritIds={jejakKurasi.favoritIds ?? []}
-      mountStage={mountCoverflowStage}
-      onSelectIndex={pilihIndeksCoverflow}
-      onGeser={geserCoverflow}
-      onBukaModalSuluk={bukaModalSuluk}
-      onToggleSuasanaGending={toggleSuasanaGending}
-      onToggleFavorit={toggleFavoritSpesimen}
-      onBukaItem={bukaItemCoverflow}
-      onFokusAnatomi={(item, titikId) => pilihPusaka(item.artefakId, true, titikId ?? item.titikId)}
-      onParalaks={(nx, ny) => coverflowStage?.aturParalaks(nx, ny)}
-      onScrollProgres={(p) => coverflowStage?.aturProgresGulir(p)}
-    />
+    {#if CoverflowShowcaseComp}
+      <CoverflowShowcaseComp
+        items={KOLEKSI_COVERFLOW}
+        {coverflowIdx}
+        {tema}
+        {bahasa}
+        {suasanaPendopoAktif}
+        favoritIds={jejakKurasi.favoritIds ?? []}
+        mountStage={mountCoverflowStage}
+        onSelectIndex={pilihIndeksCoverflow}
+        onGeser={geserCoverflow}
+        onBukaModalSuluk={bukaModalSuluk}
+        onToggleSuasanaGending={toggleSuasanaGending}
+        onToggleFavorit={toggleFavoritSpesimen}
+        onBukaItem={bukaItemCoverflow}
+        onFokusAnatomi={(item, titikId) => pilihPusaka(item.artefakId, true, titikId ?? item.titikId)}
+        onParalaks={(nx, ny) => coverflowStage?.aturParalaks(nx, ny)}
+        onScrollProgres={(p) => coverflowStage?.aturProgresGulir(p)}
+      />
+    {:else}
+      <section class="band-section" style="min-height: 68vh;" aria-busy="true"></section>
+    {/if}
   {/if}
 
   <!-- =======================================================================
@@ -1697,30 +1819,34 @@
        HALAMAN 05: LAB AKSARA HANACARAKA, PAMOMONG AI ORB & PUSTAKA S1-S7
        ======================================================================= -->
   {#if halamanAktif === 'kawruh'}
-    <KawruhOrbSection
-      {bahasa}
-      bendaAktif={bendaPamomongAktif}
-      bind:pertanyaanInput
-      {sediaTanya}
-      {jawabanPamomong}
-      onKirimTanya={kirimTanyaPamomong}
-      onPilihContohPertanyaan={(contohQ) => {
-        pertanyaanInput = contohQ;
-        void kirimTanyaPamomong();
-      }}
-      {mountOrbStage}
-      bind:inputAksaraLatin
-      {aksaraTerkonversi}
-      {kartuCarakanTerpilih}
-      onPilihCarakan={(c) => {
-        kartuCarakanTerpilih = c;
-        inputAksaraLatin = c.contohKata;
-        if (audioAktif) audioBudaya.bunyikanWilahSaron(Math.floor(Math.random() * 6), 0.14);
-      }}
-      {formatSumberLabel}
-      onSimpanSkorKuis={catatSkorKuis}
-      onMasukLangkahTur={bukaLangkahTur}
-    />
+    {#if KawruhOrbSectionComp}
+      <KawruhOrbSectionComp
+        {bahasa}
+        bendaAktif={bendaPamomongAktif}
+        bind:pertanyaanInput
+        {sediaTanya}
+        {jawabanPamomong}
+        onKirimTanya={kirimTanyaPamomong}
+        onPilihContohPertanyaan={(contohQ) => {
+          pertanyaanInput = contohQ;
+          void kirimTanyaPamomong();
+        }}
+        {mountOrbStage}
+        bind:inputAksaraLatin
+        {aksaraTerkonversi}
+        {kartuCarakanTerpilih}
+        onPilihCarakan={(c) => {
+          kartuCarakanTerpilih = c;
+          inputAksaraLatin = c.contohKata;
+          if (audioAktif) audioBudaya.bunyikanWilahSaron(Math.floor(Math.random() * 6), 0.14);
+        }}
+        {formatSumberLabel}
+        onSimpanSkorKuis={catatSkorKuis}
+        onMasukLangkahTur={bukaLangkahTur}
+      />
+    {:else}
+      <section class="band-section" style="min-height: 68vh;" aria-busy="true"></section>
+    {/if}
   {/if}
 
   <!-- =======================================================================
@@ -1767,8 +1893,8 @@
 <!-- =========================================================================
      MODAL SULUK LAYAR PENUH 3D PBR & MUSIKOLOGIA KARAWITAN
      ========================================================================= -->
-{#if modalSulukBuka}
-  <SulukModal
+{#if modalSulukBuka && SulukModalComp}
+  <SulukModalComp
     tracks={KOLEKSI_COVERFLOW}
     trackIdx={modalSulukTrackIdx}
     {sulukLarikAktif}
@@ -1808,15 +1934,17 @@
   onPilihGending={pilihGendingLatar}
 />
 
-<SearchModal
-  {bahasa}
-  {tema}
-  terbuka={searchModalBuka}
-  jejak={jejakKurasi}
-  {skalaTeks}
-  onUbahSkalaTeks={aturSkalaTeks}
-  onClose={() => (searchModalBuka = false)}
-  onEksekusiAksi={eksekusiAksiPencarian}
-/>
+{#if searchModalBuka && SearchModalComp}
+  <SearchModalComp
+    {bahasa}
+    {tema}
+    terbuka={searchModalBuka}
+    jejak={jejakKurasi}
+    {skalaTeks}
+    onUbahSkalaTeks={aturSkalaTeks}
+    onClose={() => (searchModalBuka = false)}
+    onEksekusiAksi={eksekusiAksiPencarian}
+  />
+{/if}
 
 <KelirCursor {tema} />

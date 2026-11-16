@@ -38,16 +38,20 @@ export function createSafeWebGLRenderer(
     const width = Math.max(container.clientWidth || 320, 1);
     const height = Math.max(container.clientHeight || 240, 1);
     const mobile = isMobileGpuProfile();
+    const dpr = window.devicePixelRatio || 1;
+    // Pada layar HiDPI seluler (>=2x), nonaktifkan MSAA berat agar fillrate tetap ringan & tajam
+    const useAntialias = mobile && dpr >= 2 ? false : (opts.antialias ?? true);
 
     const renderer = new THREE.WebGLRenderer({
       canvas,
-      antialias: opts.antialias ?? true,
+      antialias: useAntialias,
       alpha: opts.alpha ?? true,
+      stencil: false,
       powerPreference: 'high-performance',
     });
 
     const maxDpr = mobile ? 1.2 : 1.5;
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, maxDpr));
+    renderer.setPixelRatio(Math.min(dpr, maxDpr));
     renderer.setSize(width, height, false);
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 1.12;
@@ -161,7 +165,7 @@ export function attachCadWireframeLayer(
   });
 
   for (const mesh of meshes) {
-    const edges = new THREE.EdgesGeometry(mesh.geometry, 12);
+    const edges = new THREE.EdgesGeometry(mesh.geometry, 18);
     const segments = new THREE.LineSegments(edges, lineMat);
     segments.userData.isCadOverlay = true;
     segments.renderOrder = 4;
@@ -243,6 +247,10 @@ export function pinProyeksiBerubah<T extends { x: number; y: number; terlihat: b
 }
 
 export function disposeSceneObject(obj: THREE.Object3D): void {
+  if (obj instanceof THREE.Scene && obj.environment) {
+    obj.environment.dispose();
+    obj.environment = null;
+  }
   obj.traverse((node) => {
     const mesh = node as THREE.Mesh;
     if (mesh.geometry) {
