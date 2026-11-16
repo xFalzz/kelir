@@ -4,6 +4,7 @@ import {
   disposeSceneObject,
   hitungFovResponsif,
   loadBudayaTextures,
+  pasangObservasiPanggung,
 } from './threeHelpers.ts';
 import {
   buildGunungan3D,
@@ -116,6 +117,8 @@ export class WayangStage {
   private panahAktif = false;
   private progresPanah = 0;
   private rafId: number | null = null;
+  private loopAktif = true;
+  private stopObservasi: (() => void) | null = null;
 
   constructor(container: HTMLElement) {
     this.container = container;
@@ -129,6 +132,15 @@ export class WayangStage {
 
     this.bangunPanggungKelir();
     this.ubahUkuran();
+    this.stopObservasi = pasangObservasiPanggung(container, (aktif) => {
+      this.loopAktif = aktif;
+      if (aktif && this.rafId === null) {
+        this.loop();
+      } else if (!aktif && this.rafId !== null) {
+        window.cancelAnimationFrame(this.rafId);
+        this.rafId = null;
+      }
+    });
     this.loop();
   }
 
@@ -366,8 +378,11 @@ export class WayangStage {
   }
 
   private loop = (): void => {
+    if (!this.renderer || !this.loopAktif) {
+      this.rafId = null;
+      return;
+    }
     this.rafId = window.requestAnimationFrame(this.loop);
-    if (!this.renderer) return;
 
     const t = performance.now() * 0.001;
 
@@ -427,6 +442,9 @@ export class WayangStage {
   };
 
   public destroy(): void {
+    this.loopAktif = false;
+    this.stopObservasi?.();
+    this.stopObservasi = null;
     if (this.rafId !== null) window.cancelAnimationFrame(this.rafId);
     disposeSceneObject(this.scene);
     this.renderer?.dispose();

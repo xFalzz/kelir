@@ -1,5 +1,6 @@
 <script lang="ts">
-  import { DAFTAR_BENDA, ambilTeks, type BendaPusaka } from '../../content/pusaka.ts';
+  import { DAFTAR_BENDA, ambilTeks, type BahasaAktif, type BendaPusaka } from '../../content/pusaka.ts';
+  import { tI18n } from '../../lib/i18n.ts';
 
   interface HalamanSummary {
     id: string;
@@ -8,27 +9,28 @@
   }
 
   interface Props {
+    bahasa: BahasaAktif;
     daftarHalaman: HalamanSummary[];
     onPindahHalaman: (id: string) => void;
     onPilihPusaka: (id: BendaPusaka['id'], bukaTwin?: boolean) => void;
   }
 
-  let { daftarHalaman, onPindahHalaman, onPilihPusaka }: Props = $props();
+  let { bahasa, daftarHalaman, onPindahHalaman, onPilihPusaka }: Props = $props();
 </script>
 
 <footer class="site-footer">
   <div class="footer-columns">
     <div>
       <div style="font-family: var(--font-display); font-size: 1.85rem; font-weight: 700; line-height: 1.08;">
-        Pelestarian Budaya Jawa di Ruang Spasial 3D.
+        {tI18n(bahasa, 'footer.headline')}
       </div>
       <p style="color: var(--text-secondary); font-size: 0.88rem; margin-top: 10px; line-height: 1.55;">
-        Eksibisi lima ruang tematik yang memadukan diorama arsitektur Pendopo, bedah anatomi CAD berpresisi, audio karawitan prosedural, serta pelacakan tangan lokal di peramban.
+        {tI18n(bahasa, 'footer.lead')}
       </p>
     </div>
 
     <div>
-      <div class="eyebrow-mono" style="margin-bottom: 12px;">5 RUANG KURASI</div>
+      <div class="eyebrow-mono" style="margin-bottom: 12px;">{tI18n(bahasa, 'footer.colSpaces')}</div>
       <div style="display: grid; gap: 8px; font-size: 0.88rem; color: var(--text-secondary);">
         {#each daftarHalaman as hal}
           <button
@@ -43,7 +45,7 @@
     </div>
 
     <div>
-      <div class="eyebrow-mono" style="margin-bottom: 12px;">KOLEKSI PUSAKA 3D</div>
+      <div class="eyebrow-mono" style="margin-bottom: 12px;">{tI18n(bahasa, 'footer.colArtifacts')}</div>
       <div style="display: grid; gap: 8px; font-size: 0.88rem; color: var(--text-secondary);">
         {#each DAFTAR_BENDA as b}
           <button
@@ -51,23 +53,23 @@
             class="footer-page-link"
             onclick={() => onPilihPusaka(b.id, true)}
           >
-            {b.nomorUrut} · {ambilTeks(b.nama, 'id')}
+            {b.nomorUrut} · {ambilTeks(b.nama, bahasa)}
           </button>
         {/each}
       </div>
     </div>
 
     <div>
-      <div class="eyebrow-mono" style="margin-bottom: 12px;">KEPUSTAKAAN &amp; PRIVASI</div>
+      <div class="eyebrow-mono" style="margin-bottom: 12px;">{tI18n(bahasa, 'footer.colPrivacy')}</div>
       <div style="font-size: 0.84rem; color: var(--text-secondary); line-height: 1.55;">
-        Terhubung ke arsip UNESCO ICH, Museum Sonobudoyo, Kemdikbud RI, dan Perpusnas RI (S1–S7). Kamera dan audio berjalan 100% lokal di perangkat Anda.
+        {tI18n(bahasa, 'footer.privacyCopy')}
       </div>
     </div>
   </div>
 
   <div class="footer-colophon-bar">
-    <span>KELIR · ꦏꦼꦭꦶꦂ · ARSIP SPASIAL WARISAN NUSANTARA</span>
-    <span>KODE ARSIP KLR-01 — KLR-12 · STANDAR HANACARAKA UNICODE U+A980</span>
+    <span>{tI18n(bahasa, 'footer.colophon1')}</span>
+    <span>{tI18n(bahasa, 'footer.colophon2')}</span>
   </div>
 
   <div class="footer-giant-logo" aria-hidden="true">KELIR</div>

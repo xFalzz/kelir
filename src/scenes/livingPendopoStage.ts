@@ -7,6 +7,8 @@ import {
   disposeSceneObject,
   hitungFovResponsif,
   loadBudayaTextures,
+  pasangObservasiPanggung,
+  pinProyeksiBerubah,
 } from './threeHelpers.ts';
 
 export interface ProyeksiPinDiorama {
@@ -203,6 +205,11 @@ export class LivingPendopoStage {
   private currentWireframe = 0.08;
   private onPinCb: ((pins: ProyeksiPinDiorama[]) => void) | null = null;
   private rafId: number | null = null;
+  private loopAktif = true;
+  private stopObservasi: (() => void) | null = null;
+  private prevPins: ProyeksiPinDiorama[] = [];
+  private readonly goalPosScratch = new THREE.Vector3();
+  private readonly pinProjScratch = new THREE.Vector3();
 
   private heroCamPos = new THREE.Vector3(9.2, 6.85, 12.65);
   private heroLookAt = new THREE.Vector3(-2.35, 0.72, 0.35);
@@ -222,6 +229,15 @@ export class LivingPendopoStage {
     this.camera.position.copy(this.curCamPos);
     this.camera.lookAt(this.curLookAt);
     this.ubahUkuran();
+    this.stopObservasi = pasangObservasiPanggung(container, (aktif) => {
+      this.loopAktif = aktif;
+      if (aktif && this.rafId === null) {
+        this.loop();
+      } else if (!aktif && this.rafId !== null) {
+        window.cancelAnimationFrame(this.rafId);
+        this.rafId = null;
+      }
+    });
     this.loop();
   }
 
@@ -1093,7 +1109,7 @@ export class LivingPendopoStage {
     const w = this.container.clientWidth || 800;
     const h = this.container.clientHeight || 600;
     const marginX = Math.min(72, w * 0.14);
-    const v = new THREE.Vector3();
+    const v = this.pinProjScratch;
     const hasil: ProyeksiPinDiorama[] = [];
 
     for (const [bendaId, data] of this.bangunanMap.entries()) {
@@ -1104,20 +1120,26 @@ export class LivingPendopoStage {
       const terlihat = v.z > -1 && v.z < 1 && x >= marginX && x <= w - marginX && y >= 32 && y <= h - 16;
       hasil.push({ bendaId, x, y, terlihat });
     }
-    this.onPinCb(hasil);
+    if (pinProyeksiBerubah(this.prevPins, hasil)) {
+      this.prevPins = hasil;
+      this.onPinCb(hasil);
+    }
   }
 
   private loop = (): void => {
+    if (!this.renderer || !this.loopAktif) {
+      this.rafId = null;
+      return;
+    }
     this.rafId = window.requestAnimationFrame(this.loop);
-    if (!this.renderer) return;
 
     const t = performance.now() * 0.001;
 
-    const goalPos = this.targetCamPos.clone();
-    goalPos.x += this.pointerNormX * 0.65;
-    goalPos.y += this.pointerNormY * 0.35;
+    this.goalPosScratch.copy(this.targetCamPos);
+    this.goalPosScratch.x += this.pointerNormX * 0.65;
+    this.goalPosScratch.y += this.pointerNormY * 0.35;
 
-    this.curCamPos.lerp(goalPos, 0.06);
+    this.curCamPos.lerp(this.goalPosScratch, 0.06);
     this.curLookAt.lerp(this.targetLookAt, 0.06);
     this.camera.position.copy(this.curCamPos);
     this.camera.lookAt(this.curLookAt);
@@ -1182,6 +1204,9 @@ export class LivingPendopoStage {
   };
 
   public destroy(): void {
+    this.loopAktif = false;
+    this.stopObservasi?.();
+    this.stopObservasi = null;
     if (this.rafId !== null) window.cancelAnimationFrame(this.rafId);
     disposeSceneObject(this.scene);
     this.renderer?.dispose();

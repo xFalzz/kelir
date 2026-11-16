@@ -1,12 +1,24 @@
 import {
+  DAFTAR_BEDAH_TWIN,
   DAFTAR_BENDA,
   DAFTAR_SUMBER,
   KAWRUH_FILOSOFI,
   KRONIK_SEJARAH_BUDAYA,
   LAKON_KIJANG_KENCANA,
+  ambilTeks,
+  type BahasaAktif,
   type BendaPusaka,
   type KodeSumber,
+  type MultiTeks,
+  type TeksLokal,
 } from '../content/pusaka.ts';
+
+export const MODEL_AI_PAMOMONG = 'gemini-3.8-live' as const;
+
+export type ModePenyediaPamomong =
+  | 'gemini-3.8-live'
+  | 'bm25-kurasi-lokal'
+  | 'bm25-api-terverifikasi';
 
 export interface ButirBuktiTanya {
   id: string;
@@ -20,7 +32,8 @@ export interface ButirBuktiTanya {
 export interface HasilTanya {
   jawaban: string;
   sumber: KodeSumber[];
-  mode: 'bm25-kurasi-lokal' | 'bm25-api-terverifikasi';
+  mode: ModePenyediaPamomong;
+  modelNama: typeof MODEL_AI_PAMOMONG;
   statusGrounding: 'terbukti' | 'ringkasan-benda' | 'luar-korpus';
   skorKeyakinan: number;
   kataKunciCocok: string[];
@@ -32,9 +45,9 @@ export interface HasilTanya {
 interface DokumenKorpus {
   id: string;
   bendaId?: BendaPusaka['id'];
-  judul: string;
-  kategori: string;
-  teks: string;
+  judul: MultiTeks;
+  kategori: MultiTeks;
+  teks: MultiTeks;
   sumber: KodeSumber[];
   tokens: string[];
   tf: Map<string, number>;
@@ -42,59 +55,65 @@ interface DokumenKorpus {
 }
 
 const STOPWORDS = new Set([
-  'apa',
-  'mengapa',
-  'kenapa',
-  'bagaimana',
-  'siapa',
-  'kapan',
-  'dimana',
-  'di',
-  'ke',
-  'dari',
-  'yang',
-  'dan',
-  'pada',
-  'untuk',
-  'dengan',
-  'tentang',
-  'ini',
-  'itu',
-  'atau',
-  'dalam',
-  'seperti',
-  'adalah',
-  'agar',
-  'secara',
-  'juga',
-  'oleh',
-  'soal',
-  'berapa',
-  'dapat',
-  'bisa',
+  'apa', 'mengapa', 'kenapa', 'bagaimana', 'siapa', 'kapan', 'dimana', 'di', 'ke',
+  'dari', 'yang', 'dan', 'pada', 'untuk', 'dengan', 'tentang', 'ini', 'itu', 'atau',
+  'dalam', 'seperti', 'adalah', 'agar', 'secara', 'juga', 'oleh', 'soal', 'berapa',
+  'dapat', 'bisa', 'menapa', 'kenging', 'kados', 'pundi', 'wonten', 'lan', 'kalih',
+  'ing', 'saha', 'inggih', 'kangge',
+  // English stopwords
+  'the', 'why', 'how', 'what', 'who', 'where', 'when', 'is', 'are', 'was', 'were',
+  'does', 'do', 'did', 'into', 'from', 'with', 'about', 'for', 'and', 'between',
+  'that', 'this', 'can', 'many', 'within', 'their', 'these', 'such', 'have',
 ]);
 
-/** Peta ekspansi sinonim lintas Indonesia-Jawa untuk akurasi temu balik semantik lokal. */
+/** Peta ekspansi sinonim lintas Indonesia–Jawa–Inggris untuk akurasi temu balik semantik lokal. */
 const SINONIM_BUDAYA: Record<string, string[]> = {
-  gempa: ['seismik', 'lindhu', 'getaran', 'umpak', 'lentur'],
+  gempa: ['seismik', 'lindhu', 'getaran', 'umpak', 'lentur', 'earthquake', 'seismic'],
+  earthquake: ['gempa', 'seismic', 'seismik', 'lindhu', 'umpak', 'joglo'],
+  earthquakes: ['gempa', 'seismic', 'seismik', 'lindhu', 'umpak', 'joglo'],
+  seismic: ['gempa', 'lindhu', 'umpak', 'joglo', 'saka'],
   seismik: ['gempa', 'getaran', 'umpak'],
-  paku: ['purus', 'pasak', 'sambungan', 'konstruksi'],
-  purus: ['pasak', 'paku', 'sambungan', 'kayu'],
-  pasak: ['purus', 'paku', 'sambungan'],
-  pamor: ['nikel', 'meteorit', 'warangan', 'besi', 'tempa', 'wutah'],
-  meteorit: ['nikel', 'pamor', 'besi'],
-  pandawa: ['luk', 'lima', 'keris', 'kesatria'],
-  slendro: ['laras', 'gamelan', 'karawitan', 'gangsa', 'saron', 'perunggu'],
-  gamelan: ['slendro', 'saron', 'gangsa', 'karawitan', 'gong'],
-  krawangan: ['tatahan', 'wacucal', 'kulit', 'wayang', 'cempurit'],
-  blencong: ['pelita', 'minyak', 'lampu', 'bayangan', 'kelir'],
+  lindhu: ['gempa', 'umpak', 'joglo', 'saka'],
+  paku: ['purus', 'pasak', 'sambungan', 'konstruksi', 'nail', 'nails', 'peg', 'joinery'],
+  nail: ['paku', 'purus', 'pasak', 'joinery', 'joglo'],
+  nails: ['paku', 'purus', 'pasak', 'joinery', 'joglo'],
+  joinery: ['purus', 'pasak', 'sambungan', 'joglo', 'tumpang'],
+  purus: ['pasak', 'paku', 'sambungan', 'kayu', 'mortise'],
+  pasak: ['purus', 'paku', 'sambungan', 'peg'],
+  pamor: ['nikel', 'meteorit', 'warangan', 'besi', 'tempa', 'wutah', 'meteorite', 'nickel'],
+  meteorite: ['meteorit', 'pamor', 'nikel', 'nickel', 'keris'],
+  pandawa: ['luk', 'lima', 'keris', 'kesatria', 'pandava', 'wave'],
+  pandava: ['pandawa', 'luk', 'lima', 'keris', 'dhuwung'],
+  keris: ['dhuwung', 'wilah', 'ganja', 'pamor', 'pandawa', 'luk'],
+  dhuwung: ['keris', 'wilah', 'ganja', 'pamor', 'pandawa'],
+  blade: ['wilah', 'bilah', 'keris', 'pamor', 'ganja'],
+  ganja: ['wilah', 'bilah', 'manunggaling', 'keris'],
+  slendro: ['laras', 'gamelan', 'karawitan', 'gangsa', 'saron', 'perunggu', 'bronze'],
+  gamelan: ['slendro', 'saron', 'gangsa', 'karawitan', 'gong', 'bronze', 'pijetan'],
+  bronze: ['gangsa', 'perunggu', 'saron', 'slendro', 'copper', 'tin'],
+  saron: ['gangsa', 'slendro', 'gamelan', 'wilah', 'pijetan'],
+  krawangan: ['tatahan', 'wacucal', 'kulit', 'wayang', 'cempurit', 'leather', 'buffalo'],
+  wayang: ['ringgit', 'kelir', 'blencong', 'cempurit', 'tuding', 'puppet', 'shadow'],
+  puppet: ['wayang', 'kulit', 'blencong', 'kelir', 'cempurit', 'tuding'],
+  shadow: ['wayang', 'kelir', 'blencong', 'bayangan', 'silhouette'],
+  blencong: ['pelita', 'minyak', 'lampu', 'bayangan', 'kelir', 'lamp', 'flame', 'coconut'],
   ramayana: ['rama', 'shinta', 'kidang', 'kencana', 'marica', 'aranya', 'kanda', 'gendewa'],
-  kijang: ['kidang', 'kencana', 'marica', 'ramayana'],
-  kidang: ['kijang', 'kencana', 'marica'],
-  aksara: ['hanacaraka', 'carakan', 'unicode', 'sandhangan', 'pasangan', 'nglegena'],
-  hanacaraka: ['aksara', 'carakan', 'unicode', 's7'],
-  batik: ['kawung', 'canting', 'malam', 'soga', 'wastra', 'kiblat'],
+  kijang: ['kidang', 'kencana', 'marica', 'ramayana', 'deer', 'golden'],
+  kidang: ['kijang', 'kencana', 'marica', 'deer', 'golden'],
+  deer: ['kidang', 'kijang', 'kencana', 'marica', 'aranya'],
+  aksara: ['hanacaraka', 'carakan', 'unicode', 'sandhangan', 'pasangan', 'nglegena', 'script'],
+  hanacaraka: ['aksara', 'carakan', 'unicode', 's7', 'nglegena', 'pasangan', 'sandhangan'],
+  unicode: ['a980', 'hanacaraka', 'carakan', 'aksara', 'nglegena'],
+  script: ['aksara', 'hanacaraka', 'carakan', 'nglegena', 'unicode'],
+  batik: ['kawung', 'canting', 'malam', 'soga', 'wastra', 'kiblat', 'wax', 'nglorod'],
+  kawung: ['batik', 'kiblat', 'pancer', 'canting', 'soga', 'larangan', 'forbidden'],
+  wax: ['malam', 'canting', 'batik', 'nglorod', 'beeswax'],
 };
+
+function asMulti(v: TeksLokal): MultiTeks {
+  if (typeof v === 'string') return { id: v, en: v, jw: v };
+  return v;
+}
 
 function normalisasiToken(teks: string): string[] {
   return teks
@@ -136,35 +155,67 @@ function buatDokumenKorpus(): {
 } {
   const rawDocs: Array<Omit<DokumenKorpus, 'tokens' | 'tf' | 'teksNormal'>> = [];
 
-  for (const b of DAFTAR_BENDA) {
-    for (const t of b.titikInfo) {
+  for (const sp of DAFTAR_BEDAH_TWIN) {
+    const mappedBendaId: BendaPusaka['id'] =
+      sp.id === 'kidang' ? 'wayang' : sp.id === 'hanacaraka' ? 'keris' : sp.id;
+
+    for (const t of sp.titikInfo) {
       rawDocs.push({
         id: `titik-${t.id}`,
-        bendaId: b.id,
-        judul: `${b.nama.id} · ${t.judul.id}`,
-        kategori: b.kategori.id,
-        teks: `${t.judul.id} — ${t.ringkasan.id}`,
+        bendaId: mappedBendaId,
+        judul: {
+          id: `${sp.nama.id} · ${t.judul.id}`,
+          en: `${sp.nama.en} · ${t.judul.en}`,
+          jw: `${sp.nama.jw} · ${t.judul.jw}`,
+        },
+        kategori: sp.kategori,
+        teks: {
+          id: `${t.judul.id} — ${t.ringkasan.id}`,
+          en: `${t.judul.en} — ${t.ringkasan.en}`,
+          jw: `${t.judul.jw} — ${t.ringkasan.jw}`,
+        },
         sumber: t.sumber,
       });
     }
 
     rawDocs.push({
-      id: `sejarah-${b.id}`,
-      bendaId: b.id,
-      judul: `Sejarah & Filosofi ${b.nama.id}`,
-      kategori: b.kategori.id,
-      teks: `${b.sejarahSingkat.id} Secara filosofis, ${b.filosofi.id}`,
-      sumber: b.sumber,
+      id: `sejarah-${sp.id}`,
+      bendaId: mappedBendaId,
+      judul: {
+        id: `Sejarah & Filosofi ${sp.nama.id}`,
+        en: `History & Philosophy of ${sp.nama.en}`,
+        jw: `Sejarah saha Falsafah ${sp.nama.jw}`,
+      },
+      kategori: sp.kategori,
+      teks: {
+        id: `${sp.sejarahSingkat.id} Secara filosofis, ${sp.filosofi.id}`,
+        en: `${sp.sejarahSingkat.en} Philosophically, ${sp.filosofi.en}`,
+        jw: `${sp.sejarahSingkat.jw} Kanthi falsafah, ${sp.filosofi.jw}`,
+      },
+      sumber: sp.sumber,
     });
   }
 
   for (const bab of LAKON_KIJANG_KENCANA.daftarBabak) {
+    const sulukMt = asMulti(bab.suluk);
     rawDocs.push({
       id: `lakon-${bab.id}`,
       bendaId: 'wayang',
-      judul: `${bab.judul.id} (${bab.lokasi.id})`,
-      kategori: 'Pakeliran Ramayana',
-      teks: `${bab.narasiDalang.id} ${bab.suluk}`,
+      judul: {
+        id: `${bab.judul.id} (${bab.lokasi.id})`,
+        en: `${bab.judul.en} (${bab.lokasi.en})`,
+        jw: `${bab.judul.jw} (${bab.lokasi.jw})`,
+      },
+      kategori: {
+        id: 'Pakeliran Ramayana',
+        en: 'Ramayana Shadow Theatre',
+        jw: 'Pakeliran Ramayana',
+      },
+      teks: {
+        id: `${bab.narasiDalang.id} ${sulukMt.id}`,
+        en: `${bab.narasiDalang.en} "${sulukMt.en}"`,
+        jw: `${bab.narasiDalang.jw} ${sulukMt.jw}`,
+      },
       sumber: bab.sumber,
     });
   }
@@ -172,9 +223,21 @@ function buatDokumenKorpus(): {
   for (const k of KAWRUH_FILOSOFI) {
     rawDocs.push({
       id: `kawruh-${k.id}`,
-      judul: `Kawruh ${k.istilah}: ${k.judul.id}`,
-      kategori: 'Filsafat Kebudayaan Jawa',
-      teks: `${k.makna.id} ${k.keterkaitan.id}`,
+      judul: {
+        id: `Kawruh ${k.istilah}: ${k.judul.id}`,
+        en: `${k.istilah}: ${k.judul.en}`,
+        jw: `Kawruh ${k.istilah}: ${k.judul.jw}`,
+      },
+      kategori: {
+        id: 'Filsafat Kebudayaan Jawa',
+        en: 'Javanese Cultural Philosophy',
+        jw: 'Falsafah Kabudayan Jawi',
+      },
+      teks: {
+        id: `${k.makna.id} ${k.keterkaitan.id}`,
+        en: `${k.makna.en} ${k.keterkaitan.en}`,
+        jw: `${k.makna.jw} ${k.keterkaitan.jw}`,
+      },
       sumber: k.sumber,
     });
   }
@@ -183,19 +246,28 @@ function buatDokumenKorpus(): {
     rawDocs.push({
       id: `kronik-${kr.nomor}`,
       bendaId: kr.bendaId,
-      judul: `Kronik ${kr.nomor} · ${kr.judul.id}`,
-      kategori: kr.kodeArsip,
-      teks: `${kr.sorotan.id} ${kr.narasiMendalam.id}`,
+      judul: {
+        id: `Kronik ${kr.nomor} · ${kr.judul.id}`,
+        en: `Chronicle ${kr.nomor} · ${kr.judul.en}`,
+        jw: `Kronik ${kr.nomor} · ${kr.judul.jw}`,
+      },
+      kategori: { id: kr.kodeArsip, en: kr.kodeArsip, jw: kr.kodeArsip },
+      teks: {
+        id: `${kr.sorotan.id} ${kr.narasiMendalam.id}`,
+        en: `${kr.sorotan.en} ${kr.narasiMendalam.en}`,
+        jw: `${kr.sorotan.jw} ${kr.narasiMendalam.jw}`,
+      },
       sumber: kr.sumber,
     });
   }
 
   for (const s of Object.values(DAFTAR_SUMBER)) {
+    const r = asMulti(s.ringkasan);
     rawDocs.push({
       id: `sumber-${s.kode}`,
-      judul: `${s.kode} · ${s.judul}`,
-      kategori: s.lembaga,
-      teks: s.ringkasan,
+      judul: { id: `${s.kode} · ${s.judul}`, en: `${s.kode} · ${s.judul}`, jw: `${s.kode} · ${s.judul}` },
+      kategori: { id: s.lembaga, en: s.lembaga, jw: s.lembaga },
+      teks: r,
       sumber: [s.kode],
     });
   }
@@ -204,7 +276,7 @@ function buatDokumenKorpus(): {
   let totalLen = 0;
 
   const docs: DokumenKorpus[] = rawDocs.map((d) => {
-    const gabungan = `${d.judul} ${d.kategori} ${d.teks}`;
+    const gabungan = `${d.judul.id} ${d.judul.en} ${d.judul.jw} ${d.kategori.id} ${d.kategori.en} ${d.teks.id} ${d.teks.en} ${d.teks.jw}`;
     const tokens = normalisasiToken(gabungan);
     totalLen += tokens.length;
     const tf = new Map<string, number>();
@@ -234,12 +306,26 @@ function buatDokumenKorpus(): {
 const KORPUS_INDEKS = buatDokumenKorpus();
 const BM25_K1 = 1.4;
 const BM25_B = 0.65;
-const AMBANG_ABSTAIN_BM25 = 0.85;
+const AMBANG_ABSTAIN_BM25 = 1.05;
+
+const KATA_DOMAIN_BUDAYA = new Set([
+  'keris', 'dhuwung', 'luk', 'pamor', 'ganja', 'wilah', 'pandawa', 'pandava', 'empu', 'warangka', 'besalen',
+  'saron', 'slendro', 'pelog', 'gamelan', 'gangsa', 'karawitan', 'pijetan', 'balungan', 'gong', 'barung', 'demung', 'peking',
+  'batik', 'kawung', 'canting', 'malam', 'soga', 'indigo', 'nglorod', 'wastra', 'kiblat', 'pancer', 'anglo', 'gawangan',
+  'joglo', 'pendopo', 'pendhapa', 'saka', 'tumpang', 'sari', 'umpak', 'purus', 'pasak', 'tajug', 'brunjung', 'gempa', 'seismic', 'earthquake', 'earthquakes', 'lindhu', 'joinery', 'nails', 'nail',
+  'wayang', 'ringgit', 'blencong', 'kelir', 'cempurit', 'tuding', 'tatahan', 'sunggingan', 'ramayana', 'rama', 'shinta', 'sita', 'marica', 'kidang', 'kijang', 'aranya', 'kanda', 'gendewa', 'guwawijaya', 'puppet', 'shadow', 'deer',
+  'hanacaraka', 'aksara', 'carakan', 'unicode', 'a980', 'sandhangan', 'pasangan', 'nglegena', 'suluk', 'dalang', 'dhalang', 'pakeliran', 'sabetan', 'keprak',
+  'unesco', 'sonobudoyo', 'perpusnas', 'kemdikbud', 'manunggaling', 'memayu', 'nusantara', 'jawa', 'javanese', 'pusaka', 'blade', 'bronze', 'script',
+]);
 
 /**
- * Mesin retrieval BM25 + ekspansi sinonim budaya & guard halusinasi terikat sumber S1-S7.
+ * Mesin retrieval BM25 lintas bahasa + ekspansi sinonim budaya & guard halusinasi terikat sumber S1–S7.
  */
-export function jawabDariKurasiLokal(bendaId: BendaPusaka['id'], pertanyaanRaw: string): HasilTanya {
+export function jawabDariKurasiLokal(
+  bendaId: BendaPusaka['id'],
+  pertanyaanRaw: string,
+  bahasa: BahasaAktif = 'id',
+): HasilTanya {
   const mulai = typeof performance !== 'undefined' ? performance.now() : Date.now();
   const benda = DAFTAR_BENDA.find((item) => item.id === bendaId) ?? DAFTAR_BENDA[0];
   const pertanyaan = pertanyaanRaw.trim();
@@ -248,9 +334,10 @@ export function jawabDariKurasiLokal(bendaId: BendaPusaka['id'], pertanyaanRaw: 
 
   if (!pertanyaan) {
     return {
-      jawaban: `${benda.nama.id} (${benda.subjudul.id}): ${benda.ringkas.id} ${benda.filosofi.id}`,
+      jawaban: `${ambilTeks(benda.nama, bahasa)} (${ambilTeks(benda.subjudul, bahasa)}): ${ambilTeks(benda.ringkas, bahasa)} ${ambilTeks(benda.filosofi, bahasa)}`,
       sumber: benda.sumber,
       mode: 'bm25-kurasi-lokal',
+      modelNama: MODEL_AI_PAMOMONG,
       statusGrounding: 'ringkasan-benda',
       skorKeyakinan: 92,
       kataKunciCocok: [benda.id],
@@ -258,9 +345,16 @@ export function jawabDariKurasiLokal(bendaId: BendaPusaka['id'], pertanyaanRaw: 
       butirBukti: [
         {
           id: `ringkas-${benda.id}`,
-          judul: `${benda.nama.id} · Ringkasan Kuratorial`,
-          kategori: benda.kategori.id,
-          kutipan: benda.sejarahSingkat.id,
+          judul: ambilTeks(
+            {
+              id: `${benda.nama.id} · Ringkasan Kuratorial`,
+              en: `${benda.nama.en} · Curatorial Summary`,
+              jw: `${benda.nama.jw} · Ringkesan Kuratorial`,
+            },
+            bahasa,
+          ),
+          kategori: ambilTeks(benda.kategori, bahasa),
+          kutipan: ambilTeks(benda.sejarahSingkat, bahasa),
           sumber: benda.sumber,
           skorRelatif: 100,
         },
@@ -293,7 +387,6 @@ export function jawabDariKurasiLokal(bendaId: BendaPusaka['id'], pertanyaanRaw: 
         skor += idf * tfNorm * w;
         cocokSet.add(term);
       } else if (term.length >= 4 && doc.teksNormal.includes(term)) {
-        // Kecocokan morfologi prefiks/infiks bahasa Jawa-Indonesia
         const idf = KORPUS_INDEKS.idf.get(term) ?? 0.9;
         skor += idf * 0.48 * w;
         cocokSet.add(term);
@@ -304,7 +397,6 @@ export function jawabDariKurasiLokal(bendaId: BendaPusaka['id'], pertanyaanRaw: 
       if (kueriNormal.length > 5 && doc.teksNormal.includes(kueriNormal)) {
         skor += 2.2;
       }
-      // Bonus konteks halus hanya jika ada kecocokan substansial, bukan pemicu halusinasi
       if (doc.bendaId === benda.id) {
         skor += 0.35;
       }
@@ -314,11 +406,28 @@ export function jawabDariKurasiLokal(bendaId: BendaPusaka['id'], pertanyaanRaw: 
 
   terperingkat.sort((a, b) => b.skor - a.skor);
 
-  if (terperingkat.length === 0 || terperingkat[0].skor < AMBANG_ABSTAIN_BM25) {
+  const hasDomainToken =
+    tokensDasar.some((t) => KATA_DOMAIN_BUDAYA.has(t)) ||
+    semuaToken.some((t) => KATA_DOMAIN_BUDAYA.has(t));
+  const topHit = terperingkat[0];
+  const lolosValidasiKorpus =
+    Boolean(topHit) &&
+    topHit.skor >= AMBANG_ABSTAIN_BM25 &&
+    (hasDomainToken || (topHit.cocok.length >= 2 && topHit.skor >= 1.8));
+
+  if (!lolosValidasiKorpus) {
     return {
-      jawaban: `Pertanyaan "${pertanyaan}" berada di luar cakupan korpus terverifikasi S1–S7. Untuk menjaga akurasi tanpa halusinasi, ajukan topik seputar Keris, Gamelan Saron, Batik Kawung, Pendopo Joglo, Lakon Wayang Kulit, atau Aksara Hanacaraka.`,
+      jawaban: ambilTeks(
+        {
+          id: `Pertanyaan "${pertanyaan}" berada di luar cakupan korpus terverifikasi S1–S7. Untuk menjaga akurasi tanpa halusinasi, ajukan topik seputar Keris, Gamelan Saron, Batik Kawung, Pendopo Joglo, Lakon Wayang Kulit, atau Aksara Hanacaraka.`,
+          en: `The query "${pertanyaan}" lies outside our verified S1–S7 curatorial corpus. To preserve strict zero-hallucination accuracy, ask about the Keris blade, Saron Slendro gamelan, Batik Kawung, Joglo architecture, Shadow Puppetry, or the Hanacaraka script.`,
+          jw: `Pitakonan "${pertanyaan}" dumunung ing njaba cakupan korpus S1–S7. Kangge njagi leresipun katrangan tanpa pangira-ira, mangga tanglet babagan Dhuwung, Saron Slendro, Batik Kawung, Pendhapa Joglo, Pakeliran Wayang, utawa Aksara Hanacaraka.`,
+        },
+        bahasa,
+      ),
       sumber: benda.sumber,
       mode: 'bm25-kurasi-lokal',
+      modelNama: MODEL_AI_PAMOMONG,
       statusGrounding: 'luar-korpus',
       skorKeyakinan: 0,
       kataKunciCocok: [],
@@ -337,11 +446,17 @@ export function jawabDariKurasiLokal(bendaId: BendaPusaka['id'], pertanyaanRaw: 
     ...new Set(buktiPilihan.flatMap((item) => item.doc.sumber)),
   ];
 
-  // Sintesis terstruktur 1-2 bukti terkuat bila bukti kedua juga sangat relevan
   const sintesisTeks =
     kedua && kedua.skor >= topSkor * 0.62 && kedua.doc.id !== utama.doc.id
-      ? `${utama.doc.judul}: ${utama.doc.teks}\n\nKonteks penguat dari arsip ${kedua.doc.judul}: ${kedua.doc.teks}`
-      : `${utama.doc.judul}: ${utama.doc.teks}`;
+      ? `${ambilTeks(utama.doc.judul, bahasa)}: ${ambilTeks(utama.doc.teks, bahasa)}\n\n${ambilTeks(
+          {
+            id: `Konteks penguat dari arsip ${kedua.doc.judul.id}: ${kedua.doc.teks.id}`,
+            en: `Corroborating passage from ${kedua.doc.judul.en}: ${kedua.doc.teks.en}`,
+            jw: `Katrangan panyengkuyung saking arsip ${kedua.doc.judul.jw}: ${kedua.doc.teks.jw}`,
+          },
+          bahasa,
+        )}`
+      : `${ambilTeks(utama.doc.judul, bahasa)}: ${ambilTeks(utama.doc.teks, bahasa)}`;
 
   const skorKeyakinan = Math.min(99, Math.max(54, Math.round(52 + Math.min(topSkor, 9.5) * 4.9)));
 
@@ -349,15 +464,16 @@ export function jawabDariKurasiLokal(bendaId: BendaPusaka['id'], pertanyaanRaw: 
     jawaban: sintesisTeks,
     sumber: sumberGabungan,
     mode: 'bm25-kurasi-lokal',
+    modelNama: MODEL_AI_PAMOMONG,
     statusGrounding: 'terbukti',
     skorKeyakinan,
     kataKunciCocok: [...new Set(buktiPilihan.flatMap((item) => item.cocok))].slice(0, 6),
     latensiMs: selesai(),
     butirBukti: buktiPilihan.map((item) => ({
       id: item.doc.id,
-      judul: item.doc.judul,
-      kategori: item.doc.kategori,
-      kutipan: item.doc.teks,
+      judul: ambilTeks(item.doc.judul, bahasa),
+      kategori: ambilTeks(item.doc.kategori, bahasa),
+      kutipan: ambilTeks(item.doc.teks, bahasa),
       sumber: item.doc.sumber,
       skorRelatif: Math.round((item.skor / topSkor) * 100),
     })),
@@ -373,22 +489,27 @@ export const jawabLokalDariKurasi = jawabDariKurasiLokal;
 export async function tanyakanKeAsisten(
   bendaId: BendaPusaka['id'],
   pertanyaan: string,
+  bahasa: BahasaAktif = 'id',
 ): Promise<HasilTanya> {
   try {
     const resp = await fetch('/api/tanya', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ bendaId, pertanyaan }),
+      body: JSON.stringify({ bendaId, pertanyaan, bahasa }),
     });
     if (resp.ok) {
-      const data = (await resp.json()) as HasilTanya;
+      const data = (await resp.json()) as Partial<HasilTanya>;
       if (data && typeof data.jawaban === 'string' && Array.isArray(data.butirBukti)) {
-        return { ...data, mode: 'bm25-api-terverifikasi' };
+        return {
+          ...(data as HasilTanya),
+          mode: data.mode === 'gemini-3.8-live' ? 'gemini-3.8-live' : 'bm25-api-terverifikasi',
+          modelNama: MODEL_AI_PAMOMONG,
+        };
       }
     }
   } catch {
-    // Mode pratinjau statis atau luring: gunakan indeks BM25 lokal langsung
+    // Mode pratinjau statis atau luring: gunakan indeks BM25 lokal tanpa mengganti model AI
   }
 
-  return jawabDariKurasiLokal(bendaId, pertanyaan);
+  return jawabDariKurasiLokal(bendaId, pertanyaan, bahasa);
 }

@@ -1,11 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import {
+  DAFTAR_BEDAH_TWIN,
   DAFTAR_BENDA,
   DAFTAR_SUMBER,
   DINDING_MATRIX,
+  KOLEKSI_COVERFLOW,
   KOLEKSI_ETALASE,
   KRONIK_SEJARAH_BUDAYA,
   LAKON_KIJANG_KENCANA,
+  ambilTeks,
 } from '../../src/content/pusaka.ts';
 import { jawabDariKurasiLokal } from '../../src/lib/tanya.ts';
 
@@ -58,6 +61,63 @@ describe('Kurasi Pusaka, Kronik & Asisten BM25 Terikat Sumber S1-S7', () => {
     }
     for (const k of KRONIK_SEJARAH_BUDAYA) {
       expect(k.kodeArsip).not.toContain('.id');
+    }
+  });
+
+  it('memuat 7 koleksi Coverflow 3D lengkap termasuk Kidang & Blencong serta Prasasti Hanacaraka U+A980', () => {
+    expect(KOLEKSI_COVERFLOW).toHaveLength(7);
+    expect(KOLEKSI_COVERFLOW.map((c) => c.id)).toContain('cf-kidang');
+    expect(KOLEKSI_COVERFLOW.map((c) => c.id)).toContain('cf-hanacaraka');
+    for (const item of KOLEKSI_COVERFLOW) {
+      expect(item.metrikKurasi).toHaveLength(4);
+      expect(item.anatomiKritis.length).toBeGreaterThanOrEqual(4);
+      for (const part of item.anatomiKritis) {
+        expect(part.titikId && part.titikId.length > 3).toBe(true);
+        expect(part.material && ambilTeks(part.material, 'id').length > 5).toBe(true);
+        expect(part.material && ambilTeks(part.material, 'en').length > 5).toBe(true);
+        expect(part.fungsiTeknis && ambilTeks(part.fungsiTeknis, 'id').length > 5).toBe(true);
+        expect(part.fungsiTeknis && ambilTeks(part.fungsiTeknis, 'en').length > 5).toBe(true);
+      }
+      expect(item.sulukLarik.length).toBeGreaterThanOrEqual(5);
+      expect(ambilTeks(item.jenisSuluk, 'id').length).toBeGreaterThan(8);
+      expect(ambilTeks(item.jenisSuluk, 'en').length).toBeGreaterThan(8);
+      expect(item.larasPathet).toContain('Slendro');
+      expect(item.catatanDalang.id.length).toBeGreaterThan(25);
+      expect(item.catatanDalang.en.length).toBeGreaterThan(25);
+      expect(item.catatanDalang.jw.length).toBeGreaterThan(20);
+      expect(item.kodeArsip).not.toContain('.id');
+      expect(item.penjelasanLengkap.id.length).toBeGreaterThan(80);
+      expect(item.penjelasanLengkap.en.length).toBeGreaterThan(80);
+      for (const s of item.sumber) {
+        expect(DAFTAR_SUMBER[s]).toBeDefined();
+      }
+    }
+  });
+
+  it('memuat 7 spesimen Digital Twin Bedah 3D beranatomi teknis lengkap S1-S7', () => {
+    expect(DAFTAR_BEDAH_TWIN).toHaveLength(7);
+    expect(DAFTAR_BEDAH_TWIN.map((s) => s.id)).toEqual([
+      'keris',
+      'saron',
+      'batik',
+      'joglo',
+      'wayang',
+      'kidang',
+      'hanacaraka',
+    ]);
+    for (const sp of DAFTAR_BEDAH_TWIN) {
+      expect(sp.titikInfo.length).toBeGreaterThanOrEqual(4);
+      expect(sp.parameterCad?.length).toBeGreaterThanOrEqual(3);
+      expect(sp.zonaKode).not.toContain('.id');
+      for (const t of sp.titikInfo) {
+        expect(t.material && ambilTeks(t.material, 'id').length > 5).toBe(true);
+        expect(t.material && ambilTeks(t.material, 'en').length > 5).toBe(true);
+        expect(t.fungsiTeknis && ambilTeks(t.fungsiTeknis, 'id').length > 5).toBe(true);
+        expect(t.fungsiTeknis && ambilTeks(t.fungsiTeknis, 'en').length > 5).toBe(true);
+        for (const s of t.sumber) {
+          expect(DAFTAR_SUMBER[s]).toBeDefined();
+        }
+      }
     }
   });
 

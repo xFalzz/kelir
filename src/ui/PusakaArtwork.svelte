@@ -2,194 +2,127 @@
   import type { BendaPusaka } from '../content/pusaka.ts';
 
   interface Props {
-    bendaId: BendaPusaka['id'];
+    bendaId: BendaPusaka['id'] | 'kidang' | 'hanacaraka';
+    itemId?: string;
     accent?: string;
     compact?: boolean;
     variant?: 'paper' | 'dark';
   }
 
-  let { bendaId, accent = '#d1491b', compact = false, variant = 'dark' }: Props = $props();
+  let { bendaId, itemId = '', accent = '#d1491b', compact = false, variant = 'dark' }: Props = $props();
 
-  let uid = $derived(`${bendaId}-${compact ? 'c' : 'f'}-${variant}`);
+  let tipeEfektif = $derived(
+    itemId === 'et-wayang-kidang'
+      ? 'kidang'
+      : itemId === 'et-keris-warangka'
+        ? 'warangka'
+        : itemId === 'et-joglo-umpak'
+          ? 'umpak'
+          : bendaId,
+  );
+  let uid = $derived(`${tipeEfektif}-${compact ? 'c' : 'f'}-${variant}`);
 </script>
 
 <svg
   class="pusaka-artwork"
   class:is-compact={compact}
   class:is-paper={variant === 'paper'}
-  viewBox="0 0 320 420"
-  preserveAspectRatio={compact ? 'xMidYMid slice' : 'xMidYMid meet'}
+  viewBox="0 0 320 220"
+  preserveAspectRatio="xMidYMid slice"
   aria-hidden="true"
 >
   <defs>
-    <linearGradient id="bg-{uid}" x1="0%" y1="0%" x2="100%" y2="100%">
+    <radialGradient id="studio-{uid}" cx="50%" cy="42%" r="65%">
       {#if variant === 'paper'}
-        <stop offset="0%" stop-color="#f7f4ed" />
-        <stop offset="100%" stop-color="#eae4d7" />
+        <stop offset="0%" stop-color="#fbf8f2" />
+        <stop offset="68%" stop-color="#efe8da" />
+        <stop offset="100%" stop-color="#e3d8c5" />
       {:else}
-        <stop offset="0%" stop-color="#221e19" />
-        <stop offset="100%" stop-color="#15120f" />
+        <stop offset="0%" stop-color="#2a241d" />
+        <stop offset="70%" stop-color="#191511" />
+        <stop offset="100%" stop-color="#110e0b" />
       {/if}
+    </radialGradient>
+    <linearGradient id="brass-{uid}" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fff1c2" />
+      <stop offset="45%" stop-color="#d8a84a" />
+      <stop offset="100%" stop-color="#6b4b12" />
     </linearGradient>
-    <linearGradient id="metal-{uid}" x1="0%" y1="0%" x2="100%" y2="100%">
-      {#if variant === 'paper'}
-        <stop offset="0%" stop-color="#9a6c1d" />
-        <stop offset="52%" stop-color={accent} />
-        <stop offset="100%" stop-color="#2c2a27" />
-      {:else}
-        <stop offset="0%" stop-color="#f7e8c6" />
-        <stop offset="52%" stop-color="#e0b35a" />
-        <stop offset="100%" stop-color={accent} />
-      {/if}
+    <linearGradient id="wood-{uid}" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#7c4724" />
+      <stop offset="55%" stop-color="#4e2a13" />
+      <stop offset="100%" stop-color="#2a1508" />
     </linearGradient>
-    <pattern id="grid-{uid}" width="32" height="32" patternUnits="userSpaceOnUse">
-      <path
-        d="M 32 0 L 0 0 0 32"
-        fill="none"
-        stroke={variant === 'paper' ? 'rgba(20,21,24,0.065)' : 'rgba(244,239,230,0.055)'}
-        stroke-width="0.7"
-      />
-    </pattern>
+    <linearGradient id="blade-{uid}" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#1e1e24" />
+      <stop offset="38%" stop-color="#d4d4dc" />
+      <stop offset="52%" stop-color="#45454d" />
+      <stop offset="85%" stop-color="#ededf4" />
+      <stop offset="100%" stop-color="#1a1a20" />
+    </linearGradient>
+    <filter id="drop-{uid}" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="6" stdDeviation="5" flood-color="#000" flood-opacity={variant === 'paper' ? '0.18' : '0.48'} />
+    </filter>
   </defs>
 
-  <rect width="320" height="420" fill="url(#bg-{uid})" />
-  <rect width="320" height="420" fill="url(#grid-{uid})" />
+  <rect width="320" height="220" fill="url(#studio-{uid})" />
+  <ellipse cx="160" cy="184" rx="108" ry="18" fill={variant === 'paper' ? 'rgba(40,30,18,0.12)' : 'rgba(0,0,0,0.45)'} />
 
-  <!-- Retikel kalibrasi arsitektural (drafting crosshair & corner ticks) -->
-  <line
-    x1="160"
-    y1="26"
-    x2="160"
-    y2="348"
-    stroke={variant === 'paper' ? 'rgba(20,21,24,0.1)' : 'rgba(244,239,230,0.1)'}
-    stroke-width="0.75"
-    stroke-dasharray="2 4"
-  />
-  <line
-    x1="34"
-    y1="185"
-    x2="286"
-    y2="185"
-    stroke={variant === 'paper' ? 'rgba(20,21,24,0.1)' : 'rgba(244,239,230,0.1)'}
-    stroke-width="0.75"
-    stroke-dasharray="2 4"
-  />
-  <circle
-    cx="160"
-    cy="185"
-    r="106"
-    fill="none"
-    stroke={variant === 'paper' ? 'rgba(20,21,24,0.14)' : 'rgba(244,239,230,0.13)'}
-    stroke-width="0.85"
-    stroke-dasharray="3 6"
-  />
-  <circle cx="160" cy="185" r="76" fill="none" stroke={accent} stroke-opacity="0.38" stroke-width="1" />
-
-  <!-- Corner registration ticks -->
-  <g stroke={variant === 'paper' ? 'rgba(20,21,24,0.28)' : 'rgba(244,239,230,0.28)'} stroke-width="1" fill="none">
-    <path d="M18 32 L18 18 L32 18" />
-    <path d="M288 18 L302 18 L302 32" />
-    <path d="M18 388 L18 402 L32 402" />
-    <path d="M288 402 L302 402 L302 388" />
-  </g>
-
-  {#if bendaId === 'keris'}
-    <path
-      d="M160 44 C172 78, 146 105, 168 140 C184 166, 142 195, 166 226 C178 244, 149 266, 160 288 L126 298 L196 290 L166 306 L160 356"
-      fill="none"
-      stroke="url(#metal-{uid})"
-      stroke-width="9"
-      stroke-linecap="round"
-      stroke-linejoin="round"
-    />
-    <path
-      d="M160 52 C170 82, 148 106, 166 138 C180 164, 146 196, 164 226"
-      fill="none"
-      stroke={variant === 'paper' ? '#faf7f0' : '#fffbeb'}
-      stroke-width="1.4"
-      stroke-dasharray="3 4"
-    />
-    <rect
-      x="148"
-      y="302"
-      width="24"
-      height="48"
-      rx="6"
-      fill={variant === 'paper' ? '#3a2315' : '#451a03'}
-      stroke={accent}
-      stroke-width="1.4"
-    />
-  {:else if bendaId === 'saron'}
-    <path
-      d="M52 246 L268 246 L252 290 L68 290 Z"
-      fill={variant === 'paper' ? '#352216' : '#27160b'}
-      stroke={accent}
-      stroke-width="1.8"
-    />
-    {#each [0, 1, 2, 3, 4, 5] as i}
-      <rect
-        x={72 + i * 31}
-        y={214 - i * 4}
-        width="23"
-        height={32 + i * 2}
-        rx="3"
-        fill="url(#metal-{uid})"
-      />
-    {/each}
-    <circle
-      cx="160"
-      cy="135"
-      r="44"
-      fill={variant === 'paper' ? '#2c2214' : '#2a1c08'}
-      stroke="url(#metal-{uid})"
-      stroke-width="4.5"
-    />
-    <circle cx="160" cy="135" r="13" fill="url(#metal-{uid})" />
-  {:else if bendaId === 'batik'}
-    {#each [0, 90, 180, 270] as deg}
-      <ellipse
-        cx="160"
-        cy="126"
-        rx="28"
-        ry="56"
-        transform="rotate({deg + 45} 160 185)"
-        fill={variant === 'paper' ? 'rgba(184,93,40,0.18)' : 'rgba(232,93,42,0.22)'}
-        stroke="url(#metal-{uid})"
-        stroke-width="2.6"
-      />
-    {/each}
-    <circle cx="160" cy="185" r="15" fill={variant === 'paper' ? '#f7f4ed' : '#fef3c7'} stroke={accent} stroke-width="2.8" />
-    <circle cx="160" cy="185" r="4" fill="#1c1917" />
-  {:else if bendaId === 'joglo'}
-    <polygon
-      points="160,64 234,158 86,158"
-      fill={variant === 'paper' ? 'rgba(81,103,120,0.16)' : 'rgba(124,146,163,0.18)'}
-      stroke="url(#metal-{uid})"
-      stroke-width="2.6"
-    />
-    <polygon
-      points="86,158 234,158 274,198 46,198"
-      fill={variant === 'paper' ? 'rgba(81,103,120,0.08)' : 'rgba(124,146,163,0.09)'}
-      stroke={accent}
-      stroke-width="1.8"
-    />
-    <line x1="104" y1="198" x2="104" y2="296" stroke={variant === 'paper' ? '#272a30' : '#f1f5f9'} stroke-width="5" />
-    <line x1="216" y1="198" x2="216" y2="296" stroke={variant === 'paper' ? '#272a30' : '#f1f5f9'} stroke-width="5" />
-    <line x1="70" y1="298" x2="250" y2="298" stroke={accent} stroke-width="3.5" />
+  {#if tipeEfektif === 'keris' || tipeEfektif === 'warangka'}
+    <g filter="url(#drop-{uid})">
+      {#if tipeEfektif === 'warangka'}
+        <path d="M128 74 Q166 56 226 68 Q210 92 178 96 L142 96 Q120 92 128 74 Z" fill="url(#wood-{uid})" stroke="#d8a84a" stroke-width="1.2" />
+        <path d="M160 94 L182 94 L172 204 L162 204 Z" fill="url(#brass-{uid})" />
+      {/if}
+      <path d="M150 22 C164 50, 140 72, 160 98 C176 118, 138 140, 158 162 L130 169 L186 164 L152 175 L154 202 L144 202 L144 172 Z" fill="url(#blade-{uid})" />
+      <path d="M126 168 L188 162 L182 170 L129 175 Z" fill="url(#wood-{uid})" stroke="#d8a84a" stroke-width="1" />
+      <ellipse cx="152" cy="180" rx="10" ry="6" fill="url(#brass-{uid})" />
+    </g>
+  {:else if tipeEfektif === 'saron'}
+    <g filter="url(#drop-{uid})">
+      <path d="M54 142 L266 142 L250 184 L70 184 Z" fill="url(#wood-{uid})" stroke="#d8a84a" stroke-width="1.4" />
+      {#each [0, 1, 2, 3, 4, 5] as i}
+        <rect x={76 + i * 29} y={118 - i * 2} width="22" height="24" rx="3" fill="url(#brass-{uid})" />
+      {/each}
+      <circle cx="160" cy="64" r="30" fill="#2a1f12" stroke="url(#brass-{uid})" stroke-width="3.2" />
+      <circle cx="160" cy="64" r="10" fill="url(#brass-{uid})" />
+    </g>
+  {:else if tipeEfektif === 'batik'}
+    <g filter="url(#drop-{uid})">
+      <rect x="64" y="42" width="192" height="132" rx="6" fill={variant === 'paper' ? '#3d2415' : '#2a180d'} stroke="url(#brass-{uid})" stroke-width="1.8" />
+      {#each [0, 90, 180, 270] as deg}
+        <ellipse cx="160" cy="70" rx="18" ry="38" transform="rotate({deg + 45} 160 108)" fill="rgba(229,180,108,0.28)" stroke="#f1d39a" stroke-width="2" />
+      {/each}
+      <circle cx="160" cy="108" r="10" fill="#fff6e0" stroke={accent} stroke-width="2.4" />
+    </g>
+  {:else if tipeEfektif === 'joglo' || tipeEfektif === 'umpak'}
+    <g filter="url(#drop-{uid})">
+      {#if tipeEfektif === 'umpak'}
+        <rect x="44" y="164" width="232" height="22" rx="4" fill="#4b5563" />
+        {#each [96, 224] as px}
+          <polygon points={`${px - 22},164 ${px + 22},164 ${px + 14},134 ${px - 14},134`} fill="#64748b" stroke="#94a3b8" stroke-width="1.2" />
+          <rect x={px - 9} y="38" width="18" height="96" fill="url(#wood-{uid})" />
+        {/each}
+      {:else}
+        <polygon points="160,28 228,96 92,96" fill="#9a3412" stroke="#d8a84a" stroke-width="1.4" />
+        <polygon points="92,96 228,96 270,130 50,130" fill="#7c2d12" stroke="#d8a84a" stroke-width="1.2" />
+        <rect x="98" y="130" width="12" height="54" fill="url(#wood-{uid})" />
+        <rect x="210" y="130" width="12" height="54" fill="url(#wood-{uid})" />
+        <rect x="64" y="182" width="192" height="10" rx="3" fill="#475569" />
+      {/if}
+    </g>
+  {:else if tipeEfektif === 'kidang'}
+    <g filter="url(#drop-{uid})">
+      <ellipse cx="160" cy="46" rx="18" ry="12" fill="url(#brass-{uid})" />
+      <ellipse cx="160" cy="64" rx="7" ry="10" fill="#f59e0b" />
+      <path d="M108 158 C132 132, 168 134, 194 114 L214 88 M132 154 L120 186 M178 140 L198 182" stroke="url(#brass-{uid})" stroke-width="5" stroke-linecap="round" fill="none" />
+      <ellipse cx="156" cy="140" rx="38" ry="18" transform="rotate(-12 156 140)" fill="url(#brass-{uid})" />
+    </g>
   {:else}
-    <path
-      d="M160 52 C198 118, 232 204, 214 282 L106 282 C88 204, 122 118, 160 52 Z"
-      fill={variant === 'paper' ? 'rgba(179,48,37,0.16)' : 'rgba(200,62,49,0.22)'}
-      stroke="url(#metal-{uid})"
-      stroke-width="3"
-    />
-    <line x1="160" y1="78" x2="160" y2="338" stroke={variant === 'paper' ? '#7a5414' : '#fef08a'} stroke-width="3.2" />
-    <path
-      d="M160 190 Q125 160 132 135 M160 190 Q195 160 188 135 M160 230 Q116 205 120 175 M160 230 Q204 205 200 175"
-      fill="none"
-      stroke={variant === 'paper' ? accent : '#fde047'}
-      stroke-width="2.2"
-    />
+    <g filter="url(#drop-{uid})">
+      <path d="M160 28 C196 76, 224 134, 204 178 L116 178 C96 134, 124 76, 160 28 Z" fill={accent} stroke="url(#brass-{uid})" stroke-width="2" />
+      <rect x="157" y="48" width="6" height="148" fill="url(#brass-{uid})" />
+    </g>
   {/if}
 </svg>
 

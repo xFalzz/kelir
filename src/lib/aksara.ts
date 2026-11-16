@@ -4,7 +4,7 @@ export interface KartuCarakan {
   lafal: string;
   contohKata: string;
   contohAksara: string;
-  artiContoh: string;
+  artiContoh: { id: string; en: string; jw: string };
 }
 
 const KONSONAN_MAP: Record<string, string> = {
@@ -209,25 +209,191 @@ export function latinKeAksaraJawa(kalimat: string): string {
   return hasil.replace(/\s+/g, ' ').trim();
 }
 
+/**
+ * Mengonversi prosa Jawa menjadi Aksara Jawa sembari menjaga kode arsip/teknis standar
+ * (seperti S1–S7, U+A980, 3D, CAD, PBR, BM25, BPM, ms, angka) tetap terbaca presisi.
+ */
+export function konversiTeksKeAksaraAman(kalimat: string): string {
+  if (!kalimat.trim()) return '';
+  const polaToken = /(\b(?:KELIR|UNESCO|ICH|CAD|PBR|BM25|RAG|Gemini|Flash|Live|Unlimited|WebGL|WebAudio|MediaPipe|Unicode|BPM|HDR|X-Ray|3D|21-Titik)\b|gemini-3\.8-(?:live|flash)|U\+[A-F0-9]+|S\d(?:[–-]S?\d)?|KLR-[A-Z0-9-]+|\d+(?:[.,–-]\d+)?%?|\bms\b)/g;
+  const bagian = kalimat.split(polaToken);
+  return bagian
+    .map((frag) => {
+      if (!frag) return '';
+      if (polaToken.test(frag)) {
+        polaToken.lastIndex = 0;
+        return frag;
+      }
+      polaToken.lastIndex = 0;
+      const converted = latinKeAksaraJawa(frag);
+      const leadSpace = /^\s+/.test(frag) ? ' ' : '';
+      const trailSpace = /\s+$/.test(frag) ? ' ' : '';
+      return converted ? `${leadSpace}${converted}${trailSpace}` : frag;
+    })
+    .join('')
+    .replace(/\s{2,}/g, ' ')
+    .trim();
+}
+
 export const DAFTAR_CARAKAN: KartuCarakan[] = [
-  { latin: 'Ha', aksara: '\uA9B2', lafal: 'ha / a', contohKata: 'Hana', contohAksara: 'ꦲꦤ', artiContoh: 'Ada / Wujud awal kehidupan' },
-  { latin: 'Na', aksara: '\uA9A4', lafal: 'na', contohKata: 'Nata', contohAksara: 'ꦤꦠ', artiContoh: 'Menata tatanan / Raja' },
-  { latin: 'Ca', aksara: '\uA995', lafal: 'ca', contohKata: 'Caraka', contohAksara: 'ꦕꦫꦏ', artiContoh: 'Utusan / Pembawa ajaran' },
-  { latin: 'Ra', aksara: '\uA9AB', lafal: 'ra', contohKata: 'Rama', contohAksara: 'ꦫꦩ', artiContoh: 'Sri Rama / Leluhur' },
-  { latin: 'Ka', aksara: '\uA98F', lafal: 'ka', contohKata: 'Kelir', contohAksara: 'ꦏꦼꦭꦶꦂ', artiContoh: 'Layar bentang pakeliran' },
-  { latin: 'Da', aksara: '\uA9A2', lafal: 'da', contohKata: 'Datan', contohAksara: 'ꦢꦠꦤ꧀', artiContoh: 'Tiada / Keselarasan' },
-  { latin: 'Ta', aksara: '\uA9A0', lafal: 'ta', contohKata: 'Tatah', contohAksara: 'ꦠꦠꦃ', artiContoh: 'Pahat halus kulit wayang' },
-  { latin: 'Sa', aksara: '\uA9B1', lafal: 'sa', contohKata: 'Saron', contohAksara: 'ꦱꦫꦺꦴꦤ꧀', artiContoh: 'Instrumen bilah gamelan' },
-  { latin: 'Wa', aksara: '\uA9AE', lafal: 'wa', contohKata: 'Wayang', contohAksara: 'ꦮꦪꦁ', artiContoh: 'Bayangan / Pertunjukan kulit' },
-  { latin: 'La', aksara: '\uA9AD', lafal: 'la', contohKata: 'Lakon', contohAksara: 'ꦭꦏꦺꦴꦤ꧀', artiContoh: 'Alur kisah pementasan' },
-  { latin: 'Pa', aksara: '\uA9A5', lafal: 'pa', contohKata: 'Pamor', contohAksara: 'ꦥꦩꦺꦴꦂ', artiContoh: 'Pola lapisan besi-nikel keris' },
-  { latin: 'Dha', aksara: '\uA9A3', lafal: 'dha', contohKata: 'Dhapur', contohAksara: 'ꦣꦥꦸꦂ', artiContoh: 'Wujud anatomi bilah keris' },
-  { latin: 'Ja', aksara: '\uA997', lafal: 'ja', contohKata: 'Joglo', contohAksara: 'ꦗꦺꦴꦒ꧀ꦭꦺꦴ', artiContoh: 'Arsitektur atap berundak Jawa' },
-  { latin: 'Ya', aksara: '\uA9AA', lafal: 'ya', contohKata: 'Yaksa', contohAksara: 'ꦪꦏ꧀ꦱ', artiContoh: 'Raksasa penjaga mandala' },
-  { latin: 'Nya', aksara: '\uA99A', lafal: 'nya', contohKata: 'Nyata', contohAksara: 'ꦚꦠ', artiContoh: 'Nyata dan berwujud' },
-  { latin: 'Ma', aksara: '\uA9A9', lafal: 'ma', contohKata: 'Malam', contohAksara: 'ꦩꦭꦩ꧀', artiContoh: 'Lilin canting perintang warna batik' },
-  { latin: 'Ga', aksara: '\uA992', lafal: 'ga', contohKata: 'Gamelan', contohAksara: 'ꦒꦩꦼꦭꦤ꧀', artiContoh: 'Ansambel musik karawitan' },
-  { latin: 'Ba', aksara: '\uA9A7', lafal: 'ba', contohKata: 'Batik', contohAksara: 'ꦧꦠꦶꦏ꧀', artiContoh: 'Kain bermotif rintang malam' },
-  { latin: 'Tha', aksara: '\uA99B', lafal: 'tha', contohKata: 'Thika', contohAksara: 'ꦛꦶꦏ', artiContoh: 'Keteraturan pola ukir' },
-  { latin: 'Nga', aksara: '\uA994', lafal: 'nga', contohKata: 'Ngarsa', contohAksara: 'ꦔꦂꦱ', artiContoh: 'Di hadapan sang khalayak' },
+  {
+    latin: 'Ha',
+    aksara: '\uA9B2',
+    lafal: 'ha / a',
+    contohKata: 'Hana',
+    contohAksara: 'ꦲꦤ',
+    artiContoh: { id: 'Ada / Wujud awal kehidupan', en: 'Existence / Origin of life', jw: 'Wonten / Wujud wiwitaning gesang' },
+  },
+  {
+    latin: 'Na',
+    aksara: '\uA9A4',
+    lafal: 'na',
+    contohKata: 'Nata',
+    contohAksara: 'ꦤꦠ',
+    artiContoh: { id: 'Menata tatanan / Raja', en: 'Order / Sovereign ruler', jw: 'Nata tatanan / Ratu' },
+  },
+  {
+    latin: 'Ca',
+    aksara: '\uA995',
+    lafal: 'ca',
+    contohKata: 'Caraka',
+    contohAksara: 'ꦕꦫꦏ',
+    artiContoh: { id: 'Utusan / Pembawa ajaran', en: 'Envoy / Bearer of teaching', jw: 'Utusan / Ngemban dhawuh' },
+  },
+  {
+    latin: 'Ra',
+    aksara: '\uA9AB',
+    lafal: 'ra',
+    contohKata: 'Rama',
+    contohAksara: 'ꦫꦩ',
+    artiContoh: { id: 'Sri Rama / Leluhur', en: 'Prince Rama / Revered elder', jw: 'Sri Rama / Leluhur' },
+  },
+  {
+    latin: 'Ka',
+    aksara: '\uA98F',
+    lafal: 'ka',
+    contohKata: 'Kelir',
+    contohAksara: 'ꦏꦼꦭꦶꦂ',
+    artiContoh: { id: 'Layar bentang pakeliran', en: 'Wayang shadow screen', jw: 'Layar bentang pakeliran' },
+  },
+  {
+    latin: 'Da',
+    aksara: '\uA9A2',
+    lafal: 'da',
+    contohKata: 'Datan',
+    contohAksara: 'ꦢꦠꦤ꧀',
+    artiContoh: { id: 'Tiada / Keselarasan', en: 'Transcendent stillness / Harmony', jw: 'Mboten / Kaselarasan' },
+  },
+  {
+    latin: 'Ta',
+    aksara: '\uA9A0',
+    lafal: 'ta',
+    contohKata: 'Tatah',
+    contohAksara: 'ꦠꦠꦃ',
+    artiContoh: { id: 'Pahat halus kulit wayang', en: 'Fine leather chisel perforation', jw: 'Pahat alus wacucal ringgit' },
+  },
+  {
+    latin: 'Sa',
+    aksara: '\uA9B1',
+    lafal: 'sa',
+    contohKata: 'Saron',
+    contohAksara: 'ꦱꦫꦺꦴꦤ꧀',
+    artiContoh: { id: 'Instrumen bilah gamelan', en: 'Bronze metallophone gamelan bar', jw: 'Piranti wilah gangsa gamelan' },
+  },
+  {
+    latin: 'Wa',
+    aksara: '\uA9AE',
+    lafal: 'wa',
+    contohKata: 'Wayang',
+    contohAksara: 'ꦮꦪꦁ',
+    artiContoh: { id: 'Bayangan / Pertunjukan kulit', en: 'Shadow / Leather puppetry theatre', jw: 'Wewayangan / Ringgit wacucal' },
+  },
+  {
+    latin: 'La',
+    aksara: '\uA9AD',
+    lafal: 'la',
+    contohKata: 'Lakon',
+    contohAksara: 'ꦭꦏꦺꦴꦤ꧀',
+    artiContoh: { id: 'Alur kisah pementasan', en: 'Sacred dramatic narrative arc', jw: 'Lampahan pagelaran pakeliran' },
+  },
+  {
+    latin: 'Pa',
+    aksara: '\uA9A5',
+    lafal: 'pa',
+    contohKata: 'Pamor',
+    contohAksara: 'ꦥꦩꦺꦴꦂ',
+    artiContoh: { id: 'Pola lapisan besi-nikel keris', en: 'Nickel-iron meteoric damask blade', jw: 'Polaning wesi-nikel wilah dhuwung' },
+  },
+  {
+    latin: 'Dha',
+    aksara: '\uA9A3',
+    lafal: 'dha',
+    contohKata: 'Dhapur',
+    contohAksara: 'ꦣꦥꦸꦂ',
+    artiContoh: { id: 'Wujud anatomi bilah keris', en: 'Classical typology of a keris blade', jw: 'Wujud anatomi wilahan dhuwung' },
+  },
+  {
+    latin: 'Ja',
+    aksara: '\uA997',
+    lafal: 'ja',
+    contohKata: 'Joglo',
+    contohAksara: 'ꦗꦺꦴꦒ꧀ꦭꦺꦴ',
+    artiContoh: { id: 'Arsitektur atap berundak Jawa', en: 'Tiered Javanese pendopo roof architecture', jw: 'Wewangunan payon tajug berundak' },
+  },
+  {
+    latin: 'Ya',
+    aksara: '\uA9AA',
+    lafal: 'ya',
+    contohKata: 'Yaksa',
+    contohAksara: 'ꦪꦏ꧀ꦱ',
+    artiContoh: { id: 'Raksasa penjaga mandala', en: 'Giant guardian in classical epics', jw: 'Raksasa pangreksa mandala' },
+  },
+  {
+    latin: 'Nya',
+    aksara: '\uA99A',
+    lafal: 'nya',
+    contohKata: 'Nyata',
+    contohAksara: 'ꦚꦠ',
+    artiContoh: { id: 'Nyata dan berwujud', en: 'Manifest and truthful reality', jw: 'Wujud nyata saha sayekti' },
+  },
+  {
+    latin: 'Ma',
+    aksara: '\uA9A9',
+    lafal: 'ma',
+    contohKata: 'Malam',
+    contohAksara: 'ꦩꦭꦩ꧀',
+    artiContoh: { id: 'Lilin canting perintang warna batik', en: 'Natural beeswax batik dye resist', jw: 'Lilin canthing panutup werna sinjang' },
+  },
+  {
+    latin: 'Ga',
+    aksara: '\uA992',
+    lafal: 'ga',
+    contohKata: 'Gamelan',
+    contohAksara: 'ꦒꦩꦼꦭꦤ꧀',
+    artiContoh: { id: 'Ansambel musik karawitan', en: 'Traditional bronze orchestra', jw: 'Paguyuban karawitan gangsa Jawi' },
+  },
+  {
+    latin: 'Ba',
+    aksara: '\uA9A7',
+    lafal: 'ba',
+    contohKata: 'Batik',
+    contohAksara: 'ꦧꦠꦶꦏ꧀',
+    artiContoh: { id: 'Kain bermotif rintang malam', en: 'Wax-resist dyed ceremonial cloth', jw: 'Sinjang sinerat malam rintang werna' },
+  },
+  {
+    latin: 'Tha',
+    aksara: '\uA99B',
+    lafal: 'tha',
+    contohKata: 'Thika',
+    contohAksara: 'ꦛꦶꦏ',
+    artiContoh: { id: 'Keteraturan pola ukir', en: 'Rhythmic precision in carved relief', jw: 'Kateraturan ukiran tatahan' },
+  },
+  {
+    latin: 'Nga',
+    aksara: '\uA994',
+    lafal: 'nga',
+    contohKata: 'Ngarsa',
+    contohAksara: 'ꦔꦂꦱ',
+    artiContoh: { id: 'Di hadapan sang khalayak', en: 'In the presence of the assembly', jw: 'Ing ngarsaning pasamuan agung' },
+  },
 ];

@@ -8,6 +8,7 @@ test.describe('Kelir Multi-Page Spasial 3D — Verifikasi 5 Halaman & Realisme 3
   test('menguji navigasi 5 halaman terpisah, diorama hero, digital twin CAD, coverflow modal, pakeliran wayang 3D, aksara & pamomong orb', async ({
     page,
   }) => {
+    test.setTimeout(300000);
     const errors: string[] = [];
     page.on('pageerror', (err) => errors.push(err.message));
 
@@ -43,13 +44,38 @@ test.describe('Kelir Multi-Page Spasial 3D — Verifikasi 5 Halaman & Realisme 3
     await page.getByTestId('toggle-tema').click();
     await expect(page.locator('html')).toHaveAttribute('data-theme', 'terang');
 
-    // 3. Pengalihan bahasa ID -> JW -> AKS -> ID
+    // 3. Switch bahasa dropdown ke bawah: ID -> EN -> JW -> AKS -> ID
+    await page.getByTestId('lang-switcher-btn').click();
+    const dropMenu = page.getByTestId('lang-dropdown-menu');
+    await expect(dropMenu).toBeVisible();
+    const triggerBox = await page.getByTestId('lang-switcher-btn').boundingBox();
+    const menuBox = await dropMenu.boundingBox();
+    expect(triggerBox).not.toBeNull();
+    expect(menuBox).not.toBeNull();
+    if (triggerBox && menuBox) {
+      expect(menuBox.y).toBeGreaterThanOrEqual(triggerBox.y + triggerBox.height - 2);
+      expect(menuBox.x + menuBox.width).toBeLessThanOrEqual(1440);
+    }
+
+    await page.getByTestId('lang-en').click();
+    await expect(dropMenu).toBeHidden();
+    await expect(page.locator('h1')).toContainText('Entering the living soul of heritage.');
+    await expect(page.locator('html')).toHaveAttribute('lang', 'en');
+    await expect(page.getByTestId('cta-nav-twin')).toContainText('3D Studio');
+    await page.getByTestId('lang-switcher-btn').click();
+    await expect(dropMenu).toBeVisible();
+    await page.waitForTimeout(180);
+    await page.screenshot({ path: `${ARTIFACT_DIR}/mp-01c-beranda-en-dropdown.png` });
+
     await page.getByTestId('lang-jw').click();
     await expect(page.locator('h1')).toContainText('Nlusuri');
+    await page.getByTestId('lang-switcher-btn').click();
     await page.getByTestId('lang-aks').click();
     await expect(page.locator('h1')).toContainText('ꦤ');
+    await page.getByTestId('lang-switcher-btn').click();
     await page.getByTestId('lang-id').click();
     await expect(page.locator('h1')).toContainText('Menembus');
+    await expect(page.locator('html')).toHaveAttribute('lang', 'id');
 
     // Scrollytelling chapter, Matriks 12 Unsur, & Etalase pada Beranda
     await page.locator('#kronik-01').scrollIntoViewIfNeeded();
@@ -61,15 +87,79 @@ test.describe('Kelir Multi-Page Spasial 3D — Verifikasi 5 Halaman & Realisme 3
     await page.screenshot({ path: `${ARTIFACT_DIR}/mp-02b-beranda-matriks.png` });
 
     await page.locator('#etalase').scrollIntoViewIfNeeded();
+    await page.locator('.etalase-snapshot-img').first().waitFor({ state: 'visible', timeout: 8000 });
     await page.waitForTimeout(250);
+
+      const etalaseCheck = await page.evaluate(() => {
+      const htmlEl = document.documentElement;
+      const ribbon = document.querySelector('.etalase-ribbon') as HTMLElement | null;
+      const imgs = [...document.querySelectorAll<HTMLImageElement>('.etalase-snapshot-img')];
+      const railPct = parseFloat(
+        getComputedStyle(document.querySelector('.kelir-scroll-topline') as Element).getPropertyValue('--scroll-ratio') || '0',
+      );
+      return {
+        htmlScrollbarWidth: getComputedStyle(htmlEl).scrollbarWidth,
+        ribbonScrollbarWidth: ribbon ? getComputedStyle(ribbon).scrollbarWidth : '',
+        imgCount: imgs.length,
+        allLoaded: imgs.every((img) => img.complete && img.naturalWidth >= 400),
+        railPct,
+      };
+    });
+    expect(etalaseCheck.htmlScrollbarWidth).toBe('none');
+    expect(etalaseCheck.ribbonScrollbarWidth).toBe('none');
+    expect(etalaseCheck.imgCount).toBe(8);
+    expect(etalaseCheck.allLoaded).toBe(true);
+    expect(etalaseCheck.railPct).toBeGreaterThan(0.25);
+
+    // Pastikan scrollbar kapsul modern (.kelir-scroll-rail) tampil dan bebas bar abu-abu klasik
+    await expect(page.locator('.kelir-scroll-rail')).toBeVisible();
+    await expect(page.locator('.kelir-scroll-thumb')).toBeVisible();
+
+    // Geser Etalase via scroll roda tetikus maupun drag mouse tanpa scrollbar
+    const ribbonBox = await page.locator('.etalase-ribbon').boundingBox();
+    expect(ribbonBox).not.toBeNull();
+    if (ribbonBox) {
+      await page.mouse.move(ribbonBox.x + ribbonBox.width / 2, ribbonBox.y + ribbonBox.height / 2);
+      await page.waitForTimeout(120);
+      await expect(page.locator('html')).toHaveClass(/has-kelir-cursor/);
+      await expect(page.locator('.kelir-cursor-nib')).toBeVisible();
+      await expect(page.locator('.kelir-cursor-layer')).toHaveAttribute('data-mode', 'drag');
+      await expect(page.locator('.kelir-cursor-layer')).toHaveClass(/is-visible/);
+      await page.mouse.wheel(0, 260);
+      await page.waitForTimeout(380);
+      const afterWheelX = await page.evaluate(
+        () => document.querySelector('.etalase-ribbon')?.scrollLeft ?? 0,
+      );
+      expect(afterWheelX).toBeGreaterThan(80);
+
+      // Drag mouse ke kiri untuk menggeser lebih jauh dan pastikan tidak memicu klik nyasar
+      await page.mouse.move(ribbonBox.x + 500, ribbonBox.y + 110);
+      await page.mouse.down();
+      await page.mouse.move(ribbonBox.x + 260, ribbonBox.y + 110, { steps: 6 });
+      await page.mouse.up();
+      await page.waitForTimeout(180);
+      await expect(page.locator('main')).toHaveAttribute('data-active-page', 'beranda');
+      const afterDragX = await page.evaluate(
+        () => document.querySelector('.etalase-ribbon')?.scrollLeft ?? 0,
+      );
+      expect(afterDragX).toBeGreaterThan(afterWheelX + 80);
+
+      // Kembalikan ke awal pita untuk foto bersih
+      await page.evaluate(() => {
+        const r = document.querySelector('.etalase-ribbon');
+        if (r) r.scrollLeft = 0;
+      });
+      await page.waitForTimeout(150);
+    }
     await page.screenshot({ path: `${ARTIFACT_DIR}/mp-02c-beranda-etalase.png` });
 
     // Verifikasi Tema Gelap di Matriks & Etalase Beranda lalu kembali Terang
     await page.getByTestId('toggle-tema').click();
-    await page.waitForTimeout(200);
+    await page.waitForTimeout(420);
     await page.locator('#dinding-ruang').scrollIntoViewIfNeeded();
     await page.screenshot({ path: `${ARTIFACT_DIR}/mp-02b-matriks-malam.png` });
     await page.locator('#etalase').scrollIntoViewIfNeeded();
+    await page.waitForTimeout(300);
     await page.screenshot({ path: `${ARTIFACT_DIR}/mp-02c-etalase-malam.png` });
     await page.getByTestId('toggle-tema').click();
     await expect(page.locator('html')).toHaveAttribute('data-theme', 'terang');
@@ -100,6 +190,7 @@ test.describe('Kelir Multi-Page Spasial 3D — Verifikasi 5 Halaman & Realisme 3
     await page.getByTestId('tab-keris').click();
     await expect(page.locator('#digital-twin')).toBeVisible();
     await expect(page.locator('#pendopo')).toHaveCount(0);
+    await page.evaluate(() => window.scrollTo(0, 0));
     await page.waitForTimeout(450);
     await page.screenshot({ path: `${ARTIFACT_DIR}/mp-03-twin-keris-hibrida.png` });
 
@@ -133,32 +224,124 @@ test.describe('Kelir Multi-Page Spasial 3D — Verifikasi 5 Halaman & Realisme 3
     await page.waitForTimeout(350);
     await page.screenshot({ path: `${ARTIFACT_DIR}/mp-06-twin-joglo-exploded.png` });
 
+    // Uji 2 koleksi tambahan Digital Twin (Kidang Kencana & Prasasti Hanacaraka) + Tur Anatomi
+    await page.getByTestId('tab-kidang').click();
+    await expect(page.locator('#digital-twin')).toContainText('Kidang Kencana & Blencong');
+    await expect(page.getByTestId('twin-active-part-card')).toContainText('BEDAH UNSUR 01 / 04');
+    await page.locator('[aria-label="Unsur Anatomi Berikutnya"]').click();
+    await expect(page.getByTestId('twin-active-part-card')).toContainText('BEDAH UNSUR 02 / 04');
+    await page.evaluate(() => window.scrollTo(0, 0));
+    await page.waitForTimeout(350);
+    await page.screenshot({ path: `${ARTIFACT_DIR}/mp-06c-twin-kidang.png` });
+
+    await page.getByTestId('tab-hanacaraka').click();
+    await expect(page.locator('#digital-twin')).toContainText('Prasasti Hanacaraka U+A980');
+    await expect(page.getByTestId('twin-active-part-card')).toContainText('Perunggu Patina');
+
     await page.locator('.editorial-pillars-grid').scrollIntoViewIfNeeded();
     await page.waitForTimeout(200);
     await page.screenshot({ path: `${ARTIFACT_DIR}/mp-06b-twin-pillars.png` });
 
-    // 5. Navigasi ke Halaman 03: Coverflow & Suluk (?hal=koleksi)
+    // 5. Navigasi ke Halaman 03: Coverflow 3D & Suluk (?hal=koleksi)
     await page.getByTestId('page-tab-koleksi').click();
     await expect(page.locator('main')).toHaveAttribute('data-active-page', 'koleksi');
     await expect(page.locator('#coverflow')).toBeVisible();
     await expect(page.locator('#digital-twin')).toHaveCount(0);
-    await page.waitForTimeout(350);
+    await page.locator('.coverflow-webgl-host canvas').waitFor({ state: 'visible', timeout: 10000 });
+    await page.waitForTimeout(450);
     await page.screenshot({ path: `${ARTIFACT_DIR}/mp-07-koleksi-coverflow.png` });
 
     // Verifikasi Tema Gelap Coverflow 3D lalu kembali Terang
     await page.getByTestId('toggle-tema').click();
-    await page.waitForTimeout(200);
+    await page.waitForTimeout(260);
     await page.screenshot({ path: `${ARTIFACT_DIR}/mp-07b-coverflow-malam.png` });
     await page.getByTestId('toggle-tema').click();
     await expect(page.locator('html')).toHaveAttribute('data-theme', 'terang');
 
     await page.getByTestId('coverflow-next').click();
-    await expect(page.locator('.coverflow-nav-bar')).toContainText('02 / 05');
+    await expect(page.locator('.coverflow-nav-bar')).toContainText('02 / 07');
+
+    // Uji 2 koleksi tambahan (06 Kidang Kencana & Blencong, 07 Prasasti Hanacaraka U+A980) & panel anatomi
+    await page.getByTestId('coverflow-pill-4').click();
+    await expect(page.locator('#coverflow')).toContainText('5 Unsur');
+    await page.evaluate(() => window.scrollTo(0, 780));
+    await page.waitForTimeout(380);
+    await page.screenshot({ path: `${ARTIFACT_DIR}/mp-07c2-coverflow-dossier.png` });
+
+    await page.evaluate(() => window.scrollTo(0, 0));
+    await page.getByTestId('coverflow-pill-6').click();
+    await expect(page.locator('#coverflow')).toContainText('Kidang Kencana & Blencong');
+    await expect(page.locator('#coverflow')).toContainText('Cawan Minyak & Sayap Garuda Blencong');
+    await page.evaluate(() => window.scrollTo(0, 210));
+    await page.waitForTimeout(480);
+    await page.screenshot({ path: `${ARTIFACT_DIR}/mp-07c-coverflow-kidang.png` });
+
+    await page.getByTestId('coverflow-pill-7').click();
+    await expect(page.locator('#coverflow')).toContainText('Prasasti Hanacaraka U+A980');
+    await expect(page.locator('#coverflow')).toContainText('U+A980–U+A9DF');
 
     await page.getByTestId('buka-modal-suluk').click();
     await expect(page.getByTestId('modal-suluk')).toBeVisible();
+    await expect(page.getByTestId('modal-suluk')).toContainText('07 DARI 07');
+    await expect(page.getByTestId('modal-suluk')).toContainText('Sendhon Tlutur');
+    await page.locator('.suluk-webgl-host canvas').waitFor({ state: 'visible', timeout: 10000 });
+    await expect(page.locator('.suluk-webgl-host')).toHaveAttribute('data-stage-artefak', 'hanacaraka');
+
+    // Verifikasi pergantian objek 3D nyata di dalam Modal Suluk antar repertoar (01 Keris -> 02 Saron -> 03 Batik -> 04 Joglo -> 05 Wayang -> 06 Kidang -> 07 Hanacaraka)
+    await page.getByTestId('suluk-track-chip-1').click();
+    await expect(page.locator('.suluk-webgl-host')).toHaveAttribute('data-stage-artefak', 'keris');
+    await expect(page.locator('.suluk-modal-title')).toContainText('Keris Luk 5');
+
+    await page.getByTestId('suluk-track-chip-2').click();
+    await expect(page.locator('.suluk-webgl-host')).toHaveAttribute('data-stage-artefak', 'saron');
+    await expect(page.locator('.suluk-modal-title')).toContainText('Saron Laras Slendro');
+    await page.waitForTimeout(350);
+    await page.screenshot({ path: `${ARTIFACT_DIR}/mp-07f-modal-suluk-saron.png` });
+
+    await page.getByTestId('suluk-track-chip-3').click();
+    await expect(page.locator('.suluk-webgl-host')).toHaveAttribute('data-stage-artefak', 'batik');
+    await expect(page.locator('.suluk-modal-title')).toContainText('Batik Tulis Kawung');
+
+    await page.getByTestId('suluk-track-chip-4').click();
+    await expect(page.locator('.suluk-webgl-host')).toHaveAttribute('data-stage-artefak', 'joglo');
+    await expect(page.locator('.suluk-modal-title')).toContainText('Pendopo Joglo');
+
+    await page.getByTestId('suluk-track-chip-5').click();
+    await expect(page.locator('.suluk-webgl-host')).toHaveAttribute('data-stage-artefak', 'wayang');
+    await expect(page.locator('.suluk-modal-title')).toContainText('Wayang Kulit Purwa');
+
+    await page.getByTestId('suluk-track-chip-6').click();
+    await expect(page.locator('.suluk-webgl-host')).toHaveAttribute('data-stage-artefak', 'kidang');
+    await expect(page.locator('.suluk-modal-title')).toContainText('Kidang Kencana');
+
+    await page.getByTestId('suluk-track-chip-7').click();
+    await expect(page.locator('.suluk-webgl-host')).toHaveAttribute('data-stage-artefak', 'hanacaraka');
+    await page.getByTestId('suluk-line-2').click();
+    await expect(page.getByTestId('modal-suluk')).toContainText('LARIK 02/05');
+    await page.waitForTimeout(420);
+    await page.screenshot({ path: `${ARTIFACT_DIR}/mp-07d-modal-suluk.png` });
     await page.getByTestId('close-modal-suluk').click();
     await expect(page.getByTestId('modal-suluk')).toBeHidden();
+
+    // Verifikasi Tema Gelap Modal Suluk (Kidang Kencana & Blencong), Narator Suara Gemini & sinkronisasi bahasa lalu kembali Terang
+    await page.getByTestId('toggle-tema').click();
+    await page.getByTestId('coverflow-pill-6').click();
+    await page.getByTestId('buka-modal-suluk').click();
+    await expect(page.getByTestId('modal-suluk')).toBeVisible();
+    await page.locator('.suluk-webgl-host canvas').waitFor({ state: 'visible', timeout: 10000 });
+    await expect(page.getByTestId('suluk-voice-bar')).toBeVisible();
+    await expect(page.getByTestId('suluk-voice-bar')).toHaveAttribute('data-voice-lang', 'id-ID');
+    await page.getByTestId('toggle-auto-suluk').click();
+    await page.waitForTimeout(420);
+    await page.screenshot({ path: `${ARTIFACT_DIR}/mp-07e-modal-suluk-malam.png` });
+    await page.getByTestId('modal-lang-en').click();
+    await expect(page.getByTestId('suluk-voice-bar')).toHaveAttribute('data-voice-lang', 'en-US');
+    await expect(page.locator('.suluk-modal-title')).toContainText('Golden Deer');
+    await page.getByTestId('modal-lang-id').click();
+    await page.getByTestId('toggle-auto-suluk').click();
+    await page.getByTestId('close-modal-suluk').click();
+    await page.getByTestId('toggle-tema').click();
+    await expect(page.locator('html')).toHaveAttribute('data-theme', 'terang');
 
     // 6. Navigasi ke Halaman 04: Panggung Pakeliran Wayang 3D (?hal=pakeliran)
     await page.getByTestId('page-tab-pakeliran').click();
@@ -187,6 +370,10 @@ test.describe('Kelir Multi-Page Spasial 3D — Verifikasi 5 Halaman & Realisme 3
     const formTanya = page.getByTestId('form-tanya');
     await formTanya.locator('input').fill('Bagaimana sistem pasak kayu joglo bekerja?');
     await formTanya.locator('button[type="submit"]').click();
+    await expect(formTanya.locator('button[type="submit"]')).toContainText('Tanya Pamomong', {
+      timeout: 15000,
+    });
+    await expect(page.getByTestId('pamomong-model-badge')).toContainText('gemini-3.8-live');
     await expect(page.getByTestId('jawaban-pamomong')).toContainText('S');
     await page.waitForTimeout(350);
     await page.screenshot({ path: `${ARTIFACT_DIR}/mp-09-kawruh-pamomong-orb.png` });
@@ -201,6 +388,15 @@ test.describe('Kelir Multi-Page Spasial 3D — Verifikasi 5 Halaman & Realisme 3
     const inputAksara = page.getByTestId('input-aksara');
     await inputAksara.fill('kelir');
     await expect(page.getByTestId('output-aksara')).toContainText('ꦏꦼꦭꦶꦂ');
+
+    // Verifikasi Halaman 05 & Pamomong RAG lengkap dalam Bahasa Inggris (i18next)
+    await page.getByTestId('lang-switcher-btn').click();
+    await page.getByTestId('lang-en').click();
+    await expect(page.locator('#pamomong h1')).toContainText('Source-Grounded Cultural Query Engine');
+    await expect(page.getByTestId('jawaban-pamomong')).toContainText('S');
+    await page.screenshot({ path: `${ARTIFACT_DIR}/mp-09c-kawruh-en.png` });
+    await page.getByTestId('lang-switcher-btn').click();
+    await page.getByTestId('lang-id').click();
 
     // 8. Cek viewport Ponsel 390x844 tanpa overflow horizontal
     await page.setViewportSize({ width: 390, height: 844 });
@@ -217,6 +413,7 @@ test.describe('Kelir Multi-Page Spasial 3D — Verifikasi 5 Halaman & Realisme 3
   test('memverifikasi tata letak responsif 5 halaman di ponsel sempit (320px), ponsel (390px), dan tablet (768px & 1024px) tanpa error/overflow', async ({
     page,
   }) => {
+    test.setTimeout(300000);
     const errors: string[] = [];
     page.on('pageerror', (err) => errors.push(err.message));
 
@@ -258,11 +455,16 @@ test.describe('Kelir Multi-Page Spasial 3D — Verifikasi 5 Halaman & Realisme 3
 
           const clippedElements: string[] = [];
           for (const el of document.querySelectorAll(
-            'section, header, footer, button, input, .mode-switch-group, .crimson-player-bar, .subpage-breadcrumb, .hero-spec-strip',
+            'section, header, footer, button, input, .mode-switch-group, .crimson-player-bar, .subpage-breadcrumb, .hero-spec-strip, .artifact-tab-row, .coverflow-pill-strip, .etalase-tabs',
           )) {
             const cs = getComputedStyle(el);
             if (cs.display === 'none' || cs.visibility === 'hidden') continue;
             if (el.closest('.etalase-ribbon') || el.closest('.coverflow-viewport')) continue;
+            const swipeStrip = el.closest('.artifact-tab-row, .coverflow-pill-strip, .etalase-tabs');
+            if (swipeStrip && swipeStrip !== el) {
+              const stripCs = getComputedStyle(swipeStrip);
+              if (stripCs.overflowX === 'auto' || stripCs.overflowX === 'scroll') continue;
+            }
             const r = el.getBoundingClientRect();
             if (r.width === 0 || r.height === 0) continue;
             if (r.right > vw + 2 || r.left < -2) {
@@ -279,12 +481,26 @@ test.describe('Kelir Multi-Page Spasial 3D — Verifikasi 5 Halaman & Realisme 3
       }
     }
 
-    // Verifikasi Modal Suluk terbuka di ponsel sempit 320x568 bebas overflow
+    // Verifikasi dropdown bahasa & Modal Suluk di ponsel sempit 320x568 bebas overflow
     await page.setViewportSize({ width: 320, height: 568 });
     await page.goto('/?hal=koleksi');
     await expect(page.locator('.preloader-curtain')).toHaveAttribute('data-preloader-done', 'true', {
       timeout: 10000,
     });
+    await page.getByTestId('lang-switcher-btn').click();
+    const mobDrop = page.getByTestId('lang-dropdown-menu');
+    await expect(mobDrop).toBeVisible();
+    const mobDropBox = await mobDrop.boundingBox();
+    expect(mobDropBox).not.toBeNull();
+    if (mobDropBox) {
+      expect(mobDropBox.x).toBeGreaterThanOrEqual(0);
+      expect(mobDropBox.x + mobDropBox.width).toBeLessThanOrEqual(322);
+    }
+    await page.getByTestId('lang-en').click();
+    await expect(page.locator('#coverflow h1')).toContainText('3D Coverflow Gallery');
+    await page.getByTestId('lang-switcher-btn').click();
+    await page.getByTestId('lang-id').click();
+
     await page.getByTestId('buka-modal-suluk').click();
     await expect(page.getByTestId('modal-suluk')).toBeVisible();
     const modalClip = await page.evaluate(() => {
@@ -325,6 +541,21 @@ test.describe('Kelir Multi-Page Spasial 3D — Verifikasi 5 Halaman & Realisme 3
     await page.waitForTimeout(350);
     await page.screenshot({ path: `${ARTIFACT_DIR}/mp-12-tablet-twin.png` });
 
+    // Tangkapan layar visual mobile Coverflow & Modal Suluk (390x844)
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto('/?hal=koleksi');
+    await expect(page.locator('.preloader-curtain')).toHaveAttribute('data-preloader-done', 'true', {
+      timeout: 10000,
+    });
+    await page.waitForTimeout(400);
+    await page.screenshot({ path: `${ARTIFACT_DIR}/mp-13-mobile-coverflow.png` });
+
+    await page.getByTestId('buka-modal-suluk').click();
+    await expect(page.getByTestId('modal-suluk')).toBeVisible();
+    await page.waitForTimeout(450);
+    await page.screenshot({ path: `${ARTIFACT_DIR}/mp-14-mobile-modal-suluk.png` });
+    await page.getByTestId('close-modal-suluk').click();
+
     // Verifikasi smooth scroll wheel di semua halaman & isolasi zoom 3D Digital Twin
     await page.setViewportSize({ width: 1280, height: 800 });
     for (const hal of ['beranda', 'koleksi', 'pakeliran', 'kawruh'] as const) {
@@ -359,6 +590,203 @@ test.describe('Kelir Multi-Page Spasial 3D — Verifikasi 5 Halaman & Realisme 3
     await page.waitForTimeout(450);
     const twinPageScroll = await page.evaluate(() => window.scrollY);
     expect(twinPageScroll).toBeGreaterThan(220);
+
+    expect(errors).toEqual([]);
+  });
+
+  test('memverifikasi SEO, GEO (JSON-LD, llms.txt, robots, sitemap), hierarki H1, dan kesiapan cepat bebas peringatan', async ({
+    page,
+    request,
+  }) => {
+    const errors: string[] = [];
+    const warnings: string[] = [];
+    page.on('pageerror', (err) => errors.push(err.message));
+    page.on('console', (msg) => {
+      if (msg.type() === 'warning' || msg.type() === 'error') {
+        warnings.push(`${msg.type()}: ${msg.text()}`);
+      }
+    });
+
+    // 1. Cek HTML mentah SEO & berkas GEO/crawlability langsung dari server produksi
+    const rawHtmlRes = await request.get('/');
+    expect(rawHtmlRes.status()).toBe(200);
+    const rawHtml = await rawHtmlRes.text();
+    expect(rawHtml).toMatch(/<meta[^>]*name="robots"/);
+    expect(rawHtml).toContain('<link rel="canonical"');
+    expect(rawHtml).toMatch(/<meta[^>]*property="og:title"/);
+    expect(rawHtml).toMatch(/<meta[^>]*name="twitter:card"/);
+    expect(rawHtml).toContain('id="kelir-jsonld" type="application/ld+json"');
+    expect(rawHtml).toContain('rel="alternate" type="text/plain"');
+    expect(rawHtml).toContain('<noscript>');
+
+    for (const [assetPath, expectedText] of [
+      ['/robots.txt', 'OAI-SearchBot'],
+      ['/sitemap.xml', '<urlset'],
+      ['/llms.txt', '# KELIR'],
+      ['/llms-full.txt', 'KLR-12'],
+      ['/og-kelir.svg', '<svg'],
+      ['/favicon.svg', '<svg'],
+    ] as const) {
+      const res = await request.get(assetPath);
+      expect(res.status(), `Status HTTP 200 untuk ${assetPath}`).toBe(200);
+      expect(await res.text()).toContain(expectedText);
+    }
+
+    // 2. Uji tag SEO dinamis & JSON-LD @graph di seluruh 5 halaman
+    const seenTitles = new Set<string>();
+    const pages = ['beranda', 'twin', 'koleksi', 'pakeliran', 'kawruh'] as const;
+    for (const hal of pages) {
+      await page.goto(`/?hal=${hal}`);
+      await expect(page.locator('.preloader-curtain')).toHaveAttribute('data-preloader-done', 'true', {
+        timeout: 4000,
+      });
+
+      const seoAudit = await page.evaluate(() => {
+        const title = document.title;
+        const desc = document.querySelector('meta[name="description"]')?.getAttribute('content') ?? '';
+        const robots = document.querySelector('meta[name="robots"]')?.getAttribute('content') ?? '';
+        const canonical = document.querySelector('link[rel="canonical"]')?.getAttribute('href') ?? '';
+        const ogTitle = document.querySelector('meta[property="og:title"]')?.getAttribute('content') ?? '';
+        const twitterCard = document.querySelector('meta[name="twitter:card"]')?.getAttribute('content') ?? '';
+        const jsonLdRaw = document.getElementById('kelir-jsonld')?.textContent ?? '{}';
+        const h1Count = document.querySelectorAll('h1').length;
+        return { title, desc, robots, canonical, ogTitle, twitterCard, jsonLdRaw, h1Count };
+      });
+
+      seenTitles.add(seoAudit.title);
+      expect(seoAudit.h1Count, `H1 tunggal pada halaman ${hal}`).toBe(1);
+      expect(seoAudit.desc.length).toBeGreaterThanOrEqual(100);
+      expect(seoAudit.robots).toContain('index');
+      expect(seoAudit.canonical).toContain(`?hal=${hal}`);
+      expect(seoAudit.ogTitle).toBe(seoAudit.title);
+      expect(seoAudit.twitterCard).toBe('summary_large_image');
+
+      const jsonLd = JSON.parse(seoAudit.jsonLdRaw) as { '@graph'?: Array<{ '@type': string }> };
+      expect(jsonLd['@graph']?.map((g) => g['@type'])).toEqual([
+        'WebSite',
+        'WebApplication',
+        'ItemList',
+        'FAQPage',
+        'Dataset',
+      ]);
+    }
+
+    expect(seenTitles.size).toBe(5);
+    expect(warnings.filter((w) => w.includes('RGBELoader'))).toEqual([]);
+    expect(errors).toEqual([]);
+  });
+
+  test('memverifikasi SearchModal Ctrl+K, Deep-Link Twin & Dossier, Suara Dalang Pakeliran & AI Studio Multi-Mode', async ({
+    page,
+  }) => {
+    const errors: string[] = [];
+    page.on('pageerror', (err) => errors.push(err.message));
+
+    // 1. Buka beranda & panggil Global Search Modal lewat tombol Navbar
+    await page.goto('/?hal=beranda');
+    await expect(page.locator('.preloader-curtain')).toHaveAttribute('data-preloader-done', 'true', {
+      timeout: 10000,
+    });
+    await page.getByTestId('btn-search-modal').click();
+    await expect(page.getByTestId('search-modal')).toBeVisible();
+    await expect(page.getByTestId('jejak-kurasi-bar')).toBeVisible();
+
+    await page.getByTestId('search-modal-input').fill('umpak');
+    await page.waitForTimeout(150);
+    await page.screenshot({ path: `${ARTIFACT_DIR}/mp-15-search-modal.png` });
+
+    const umpakRow = page.getByTestId('search-result-anatomi-joglo-joglo-sakaguru');
+    await expect(umpakRow).toBeVisible();
+    await umpakRow.click();
+
+    // 2. Pastikan Deep-Link URL langsung membuka Digital Twin Joglo + titik sakaguru
+    await expect(page.locator('main')).toHaveAttribute('data-active-page', 'twin');
+    await expect(page).toHaveURL(/benda=joglo/);
+    await expect(page).toHaveURL(/titik=joglo-sakaguru/);
+    await expect(page.getByTestId('twin-auto-tour-btn')).toBeVisible();
+    await expect(page.getByTestId('twin-copy-link-btn')).toBeVisible();
+    await expect(page.getByTestId('twin-export-dossier-btn')).toBeVisible();
+
+    // Verifikasi reload langsung ke deep-link spesimen & titik anatomi Saron
+    await page.goto('/?hal=twin&benda=saron&titik=saron-wilah');
+    await expect(page.locator('.preloader-curtain')).toHaveAttribute('data-preloader-done', 'true', {
+      timeout: 10000,
+    });
+    await expect(page.locator('.saron-keys-bar')).toBeVisible();
+
+    // 3. Verifikasi Tombol Suara Dalang di Halaman 04 Pakeliran
+    await page.goto('/?hal=pakeliran');
+    await expect(page.locator('.preloader-curtain')).toHaveAttribute('data-preloader-done', 'true', {
+      timeout: 10000,
+    });
+    const dalangVoiceBtn = page.getByTestId('btn-dalang-voice');
+    await expect(dalangVoiceBtn).toBeVisible();
+    await dalangVoiceBtn.click();
+    await page.waitForTimeout(250);
+
+    // 4. Verifikasi 4 Tab AI Studio di Halaman 05 Kawruh
+    await page.goto('/?hal=kawruh');
+    await expect(page.locator('.preloader-curtain')).toHaveAttribute('data-preloader-done', 'true', {
+      timeout: 10000,
+    });
+
+    // Mode Komparator AI
+    await page.getByTestId('studio-tab-banding').click();
+    await expect(page.getByTestId('studio-panel-banding')).toBeVisible();
+    await page.getByTestId('studio-comp-b').selectOption('batik');
+    await page.getByTestId('studio-comp-submit').click();
+    await expect(page.getByTestId('studio-comp-result')).toContainText('gemini-3.8-live');
+    await expect(page.getByTestId('studio-comp-result')).toContainText('Batik');
+    await page.screenshot({ path: `${ARTIFACT_DIR}/mp-16-ai-comparator.png` });
+
+    // Mode Pujangga & Suara Jawa AI
+    await page.getByTestId('studio-tab-pujangga').click();
+    await expect(page.getByTestId('studio-panel-pujangga')).toBeVisible();
+    await page.getByTestId('studio-poet-input').fill('Filosofi Keris dan Kesabaran');
+    await page.getByTestId('studio-poet-submit').click();
+    const poetResult = page.getByTestId('studio-poet-result');
+    await expect(poetResult).toContainText('gemini-3.8-live');
+    await expect(poetResult).toContainText(/[\uA980-\uA9DF]/);
+    await expect(page.getByTestId('studio-poet-play-voice')).toBeVisible();
+    await page.screenshot({ path: `${ARTIFACT_DIR}/mp-17-ai-pujangga.png` });
+
+    // Mode Kuis Kurasi S1-S7
+    await page.getByTestId('studio-tab-kuis').click();
+    await expect(page.getByTestId('studio-panel-kuis')).toBeVisible();
+    await page.getByTestId('studio-quiz-opt-0').click();
+    await expect(page.getByTestId('studio-quiz-feedback')).toContainText('S1');
+    await page.getByTestId('studio-quiz-next').click();
+    await expect(page.getByTestId('studio-quiz-card')).toContainText('Saron');
+
+    // 5. Verifikasi Pemutar Musik Latar Karawitan Jawa Klasik & Panel Filosofi Makna
+    await page.goto('/?hal=beranda');
+    await expect(page.locator('.preloader-curtain')).toHaveAttribute('data-preloader-done', 'true', {
+      timeout: 10000,
+    });
+    await page.getByTestId('toggle-audio').click();
+    await expect(page.getByTestId('karawitan-bar')).toBeVisible();
+    await expect(page.getByTestId('karawitan-bar')).toContainText('Ketawang Puspawarna');
+
+    await page.getByTestId('btn-karawitan-filosofi').click();
+    await expect(page.getByTestId('karawitan-filosofi-panel')).toBeVisible();
+    await expect(page.getByTestId('karawitan-filosofi-panel')).toContainText('Mangkunegara IV');
+
+    await page.getByTestId('karawitan-gending-lirilira').click();
+    await expect(page.getByTestId('karawitan-filosofi-panel')).toContainText('Sunan Kalijaga');
+    await expect(page.getByTestId('karawitan-filosofi-panel')).toContainText('Slendro Pathet Sanga');
+    await page.waitForTimeout(220);
+    await page.screenshot({ path: `${ARTIFACT_DIR}/mp-18-karawitan-filosofi.png` });
+
+    // Pastikan KarawitanBar tetap rapi tanpa luapan pada layar 320px
+    await page.setViewportSize({ width: 320, height: 568 });
+    await page.waitForTimeout(180);
+    const barOverflow320 = await page.evaluate(() => {
+      const box = document.querySelector('.karawitan-mini-pill')?.getBoundingClientRect();
+      return !box || box.left < -1 || box.right > window.innerWidth + 1;
+    });
+    expect(barOverflow320).toBe(false);
+    await page.getByTestId('toggle-audio').click();
+    await expect(page.getByTestId('karawitan-bar')).toBeHidden();
 
     expect(errors).toEqual([]);
   });

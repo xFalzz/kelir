@@ -1,0 +1,29 @@
+# KELIR — Eksibisi Spasial 3D Pusaka Jawa & Panggung Pakeliran
+
+> KELIR (`ꦏꦼꦭꦶꦂ`) adalah platform web kuratorial 5 ruang tematik berbasis WebGL 3D, Web Audio API sintesis gamelan, pelacakan tangan MediaPipe 21 titik secara lokal, serta mesin temu-balik BM25 berbasis arsip resmi Indonesia & UNESCO (S1–S7) tanpa halusinasi.
+
+## Halaman Utama
+- [01 Beranda · Diorama Pendopo & Kronik Budaya](https://xfalzz.github.io/kelir/?hal=beranda): Diorama pulau Pendopo 3D, 5 bab scrollytelling historis, Indeks 12 Anatomi Pusaka (`KLR-01`–`KLR-12`), dan Etalase Lapisan Budaya.
+- [02 Digital Twin · Studio Bedah Anatomi 3D](https://xfalzz.github.io/kelir/?hal=twin): Inspeksi CAD interaktif mode PBR Nyata, Hibrida, dan Kawat X-Ray CAD beserta ledakan komponen 7 koleksi (Keris Luk 5, Saron, Batik, Joglo, Wayang, Kidang Kencana & Blencong, dan Prasasti Hanacaraka U+A980).
+- [03 Coverflow · Galeri 3D & Suluk Pakeliran](https://xfalzz.github.io/kelir/?hal=koleksi): Panggung pedestal WebGL 3D realistis atas 7 koleksi kurasi S1–S7, anatomi terperinci, dan pemutar larik suluk sinkron.
+- [04 Pakeliran · Lakon Kijang Kencana 3D](https://xfalzz.github.io/kelir/?hal=pakeliran): Panggung wayang bayangan layar blacu bersama Sri Rama, Kidang Kencana, Gunungan Kayon, dan pelita Blencong.
+- [05 Aksara & AI · Pamomong BM25 & Lab Hanacaraka](https://xfalzz.github.io/kelir/?hal=kawruh): Tanya jawab budaya terikat rujukan primer S1–S7, astrolabe horologis 3D, serta transliterasi Hanacaraka Unicode `U+A980–U+A9DF`.
+
+## Koleksi Pusaka & Spesifikasi Terverifikasi
+- Keris Luk 5 Pandhawa Lare (`KLR-01 · S1`): Baja inti & meteorit nikel (Pamor Beras Wutah), 5 kelokan simetris, ganja, hulu ukir, dan sarung warangka gayaman pendok.
+- Saron Laras Slendro (`KLR-02 · S4`): 6 bilah nada pentatonik (`1 2 3 5 6 i`) paduan perunggu gangsa 78% tembaga & 22% timah di atas palungan kayu jati.
+- Batik Tulis Kawung (`KLR-03 · S2`): Kain rintang malam bermotif geometri Papat Pancer menggunakan canting tembaga di atas katun primissima.
+- Pendopo Joglo Mangkurat (`KLR-04 · S6`): Arsitektur vernakular 4 Saka Guru di atas batu Umpak dengan konstruksi pasak purus kayu jati dan 12 undakan Tumpang Sari tanpa paku.
+- Wayang Kulit Purwa Sri Rama (`KLR-05 · S3, S5`): Tatahan kulit kerbau krawangan, sunggingan prada emas, tangkai tanduk cempurit/tuding, dan sorot pelita minyak kelapa Blencong.
+- Kidang Kencana & Blencong (`KLR-06 · S3, S5`): Figur kijang prada emas berartikulasi ganda babak Aranya Kanda bersama lampu minyak gantung kuningan bersayap Garuda.
+- Prasasti Hanacaraka U+A980 (`KLR-12 · S7`): Prasasti standar 20 aksara dasar abugida Jawa (`ꦲ` hingga `ꦔ`), sandhangan swara, serta pasangan aksara blok Unicode `U+A980–U+A9DF`.
+
+## Rujukan Primer & Dokumen Lengkap
+- [Korpus Lengkap Untuk Mesin Generatif / AI](/llms-full.txt): Ringkasan faktual lengkap seluruh artifak, unsur KLR-01–KLR-12, serta daftar kepustakaan S1–S7.
+- S1: UNESCO ICH (2008) — Indonesian Keris (`https://ich.unesco.org/en/RL/indonesian-keris-00112`)
+- S2: UNESCO ICH (2009) — Indonesian Batik (`https://ich.unesco.org/en/RL/indonesian-batik-00170`)
+- S3: UNESCO ICH (2008) — Wayang Puppet Theatre (`https://ich.unesco.org/en/RL/wayang-puppet-theatre-00063`)
+- S4: UNESCO ICH (2021) — Gamelan (`https://ich.unesco.org/en/RL/gamelan-01607`)
+- S5: Museum Sonobudoyo & ISI Surakarta (2019) — Kajian Lakon Ramayana (`https://sonobudoyo.jogjaprov.go.id`)
+- S6: Kemdikbud RI (2020) — Arsitektur Vernakular Pendopo Joglo & Tumpang Sari (`https://kebudayaan.kemdikbud.go.id`)
+- S7: Kongres Bahasa Jawa & Perpusnas RI (2021) — Aksara Jawa Unicode U+A980–U+A9DF (`https://www.perpusnas.go.id`)

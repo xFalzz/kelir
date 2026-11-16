@@ -3,15 +3,129 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>KELIR · Eksibisi Spasial 3D Pusaka Jawa, Digital Twin &amp; Pakeliran</title>
     <meta
       name="description"
-      content="Kelir: Eksibisi spasial 3D pusaka Jawa, Kembaran Digital CAD X-Ray, Panggung Wayang Kulit Ramayana, Aksara Hanacaraka, dan kendali gestur tangan lokal."
+      content="Kelir memetakan Keris Luk 5, Gamelan Saron Laras Slendro 6 bilah, Batik Kawung, Pendopo Joglo Tumpang Sari, dan Wayang Kulit Purwa ke dalam 5 ruang WebGL 3D kurasi S1–S7."
     />
-    <title>Kelir · Eksibisi Spasial 3D Pusaka Jawa &amp; Panggung Pakeliran</title>
+    <meta
+      name="keywords"
+      content="Kelir, Pusaka Jawa 3D, Digital Twin Keris, Saron Slendro, Batik Kawung, Arsitektur Joglo, Wayang Kulit Blencong, Aksara Jawa Hanacaraka"
+    />
+    <meta name="author" content="KELIR Spatial Heritage Archive" />
+    <meta
+      name="robots"
+      content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1"
+    />
+    <meta name="theme-color" content="#f6f4ef" />
+    <link rel="canonical" href="https://xfalzz.github.io/kelir/?hal=beranda" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="alternate" type="text/plain" title="KELIR LLMs Knowledge Summary" href="/llms.txt" />
+
+    <!-- Open Graph / Social SEO -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="KELIR" />
+    <meta property="og:locale" content="id_ID" />
+    <meta property="og:title" content="KELIR · Eksibisi Spasial 3D Pusaka Jawa, Digital Twin &amp; Pakeliran" />
+    <meta
+      property="og:description"
+      content="Eksibisi kurasi 5 halaman WebGL 3D untuk Keris Luk 5, Saron Slendro 6 Bilah, Batik Kawung, Joglo Tumpang Sari, Wayang Kulit &amp; Pelita Blencong, serta Lab Hanacaraka &amp; Asisten BM25."
+    />
+    <meta property="og:url" content="https://xfalzz.github.io/kelir/?hal=beranda" />
+    <meta property="og:image" content="/og-kelir.svg" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="KELIR — Eksibisi Spasial 3D Pusaka Jawa" />
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="KELIR · Eksibisi Spasial 3D Pusaka Jawa &amp; Pakeliran" />
+    <meta
+      name="twitter:description"
+      content="Bedah anatomi 3D pusaka Jawa, panggung Pakeliran Ramayana 3D, serta laboratorium Aksara Jawa Hanacaraka U+A980 terikat sumber UNESCO ICH &amp; Kemdikbud."
+    />
+    <meta name="twitter:image" content="/og-kelir.svg" />
+
+    <!-- GEO & Schema.org Structured Knowledge Graph -->
+    <script id="kelir-jsonld" type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@graph": [
+          {
+            "@type": "WebSite",
+            "@id": "https://xfalzz.github.io/kelir/#website",
+            "name": "KELIR · Eksibisi Spasial 3D Pusaka Jawa",
+            "alternateName": "KELIR Spatial Heritage Archive",
+            "url": "https://xfalzz.github.io/kelir",
+            "inLanguage": ["id-ID", "jv"],
+            "description": "Eksibisi kurasi 5 halaman WebGL 3D untuk Keris Luk 5, Gamelan Saron Laras Slendro 6 bilah, Batik Kawung, Pendopo Joglo, Wayang Kulit Purwa, dan Aksara Jawa Hanacaraka terikat sumber S1–S7."
+          },
+          {
+            "@type": "WebApplication",
+            "@id": "https://xfalzz.github.io/kelir/#webapp",
+            "name": "KELIR · Studio Spasial 3D Budaya Jawa",
+            "url": "https://xfalzz.github.io/kelir/?hal=beranda",
+            "applicationCategory": "EducationalApplication",
+            "operatingSystem": "All",
+            "isAccessibleForFree": true,
+            "inLanguage": ["id-ID", "jv"]
+          },
+          {
+            "@type": "ItemList",
+            "@id": "https://xfalzz.github.io/kelir/#koleksi-pusaka",
+            "name": "Daftar 5 Pusaka Jawa KELIR",
+            "numberOfItems": 5,
+            "itemListElement": [
+              { "@type": "ListItem", "position": 1, "name": "Keris Luk 5 Pandhawa Lare" },
+              { "@type": "ListItem", "position": 2, "name": "Saron Laras Slendro 6 Bilah Gangsa 78/22" },
+              { "@type": "ListItem", "position": 3, "name": "Batik Tulis Kawung Canting Tembaga" },
+              { "@type": "ListItem", "position": 4, "name": "Pendopo Joglo Tumpang Sari 12 Undakan" },
+              { "@type": "ListItem", "position": 5, "name": "Wayang Kulit Purwa Sri Rama &amp; Blencong" }
+            ]
+          },
+          {
+            "@type": "FAQPage",
+            "@id": "https://xfalzz.github.io/kelir/#faq-kurasi",
+            "mainEntity": [
+              {
+                "@type": "Question",
+                "name": "Mengapa Keris Luk 5 identik dengan filosofi Pandawa Lima?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "Wilah berjumlah lima kelokan asimetris melambangkan keteguhan hati lima kesatria Pandawa dan keseimbangan langkah spiritual (Sumber S1 UNESCO ICH)."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "Berapa bilah dan komposisi logam Saron Laras Slendro di KELIR?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "Saron Laras Slendro memodelkan 6 bilah nada pentatonik (1 2 3 5 6 i) dari paduan perunggu gangsa 78% tembaga dan 22% timah putih (Sumber S4 UNESCO ICH)."
+                }
+              }
+            ]
+          },
+          {
+            "@type": "Dataset",
+            "@id": "https://xfalzz.github.io/kelir/#indeks-anatomi",
+            "name": "Indeks 12 Anatomi Pusaka Nusantara KLR-01 hingga KLR-12",
+            "description": "Pemetaan 12 unsur anatomi pusaka Jawa terikat sumber UNESCO ICH, Museum Sonobudoyo, Kemdikbud RI, dan Perpustakaan Nasional RI (S1–S7)."
+          }
+        ]
+      }
+    </script>
   </head>
   <body>
     <div id="app"></div>
+    <noscript>
+      <main>
+        <h1>KELIR — Eksibisi Spasial 3D Pusaka Jawa &amp; Panggung Pakeliran</h1>
+        <p>
+          Platform dokumentasi interaktif 5 pusaka Nusantara: Keris Luk 5 (S1 UNESCO ICH), Gamelan Saron 6 Bilah Gangsa 78/22 (S4 UNESCO ICH), Batik Tulis Kawung (S2 UNESCO ICH), Pendopo Joglo Tumpang Sari (S6 Kemdikbud RI), Wayang Kulit Purwa &amp; Pelita Blencong (S3, S5 Museum Sonobudoyo), serta Laboratorium Aksara Hanacaraka Unicode U+A980–U+A9DF (S7 Perpusnas RI).
+        </p>
+        <p>Aktifkan JavaScript untuk menjalankan visualisasi WebGL 3D, audio Web Audio API, dan pelacakan gestur lokal.</p>
+      </main>
+    </noscript>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>

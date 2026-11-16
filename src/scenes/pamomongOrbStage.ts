@@ -5,6 +5,7 @@ import {
   createSafeWebGLRenderer,
   disposeSceneObject,
   hitungFovResponsif,
+  pasangObservasiPanggung,
 } from './threeHelpers.ts';
 
 function buatTeksturKulitAstrolabe(): {
@@ -184,6 +185,8 @@ export class PamomongOrbStage {
   private rimEmber: THREE.PointLight | null = null;
 
   private rafId: number | null = null;
+  private loopAktif = true;
+  private stopObservasi: (() => void) | null = null;
   private pointerX = 0;
   private pointerY = 0;
   private energyPulse = 0;
@@ -230,6 +233,15 @@ export class PamomongOrbStage {
     this.bangunAstrolabe();
     this.setTheme(tema);
     this.ubahUkuran();
+    this.stopObservasi = pasangObservasiPanggung(container, (aktif) => {
+      this.loopAktif = aktif;
+      if (aktif && this.rafId === null) {
+        this.loop();
+      } else if (!aktif && this.rafId !== null) {
+        window.cancelAnimationFrame(this.rafId);
+        this.rafId = null;
+      }
+    });
     this.loop();
   }
 
@@ -613,8 +625,11 @@ export class PamomongOrbStage {
   }
 
   private loop = (): void => {
+    if (!this.renderer || !this.loopAktif) {
+      this.rafId = null;
+      return;
+    }
     this.rafId = window.requestAnimationFrame(this.loop);
-    if (!this.renderer) return;
 
     const t = performance.now() * 0.001;
     const levitation = Math.sin(t * 1.65) * 0.075;
@@ -654,6 +669,9 @@ export class PamomongOrbStage {
   };
 
   public destroy(): void {
+    this.loopAktif = false;
+    this.stopObservasi?.();
+    this.stopObservasi = null;
     if (this.rafId !== null) window.cancelAnimationFrame(this.rafId);
     this.controls?.dispose();
     disposeSceneObject(this.scene);

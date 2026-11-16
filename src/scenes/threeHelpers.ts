@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { RGBELoader } from 'three/examples/jsm/loaders/RGBELoader.js';
+import { HDRLoader } from 'three/examples/jsm/loaders/HDRLoader.js';
 
 export interface PaketTeksturBudaya {
   kayuDiffuse: THREE.Texture | null;
@@ -38,7 +38,7 @@ export function createSafeWebGLRenderer(
       powerPreference: 'high-performance',
     });
 
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
     renderer.setSize(width, height, false);
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 1.12;
@@ -107,7 +107,7 @@ export async function applyStudioHDR(
   if (!janjiHdrEnv) {
     janjiHdrEnv = new Promise((resolve) => {
       try {
-        const loader = new RGBELoader();
+        const loader = new HDRLoader();
         loader.load(
           '/textures/studio_small_08_1k.hdr',
           (hdrTexture) => {
@@ -182,6 +182,59 @@ export function hitungFovResponsif(
   const baseRad = THREE.MathUtils.degToRad(baseFovDeg);
   const adaptedRad = 2 * Math.atan(Math.tan(baseRad / 2) * (refAspect / Math.max(aspect, 0.45)));
   return Math.min(maxFovDeg, THREE.MathUtils.radToDeg(adaptedRad));
+}
+
+/**
+ * Menjeda loop WebGL otomatis ketika kanvas berada di luar viewport atau tab tidak aktif.
+ */
+export function pasangObservasiPanggung(
+  container: HTMLElement,
+  onAktifUbah: (aktif: boolean) => void,
+): () => void {
+  if (typeof window === 'undefined') return () => undefined;
+
+  let dalamViewport = true;
+  let io: IntersectionObserver | null = null;
+
+  const laporStatus = (): void => {
+    onAktifUbah(dalamViewport && !document.hidden);
+  };
+
+  if (typeof IntersectionObserver !== 'undefined') {
+    io = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          dalamViewport = entry.isIntersecting;
+          laporStatus();
+        }
+      },
+      { rootMargin: '120px 0px' },
+    );
+    io.observe(container);
+  }
+
+  document.addEventListener('visibilitychange', laporStatus);
+  return () => {
+    io?.disconnect();
+    document.removeEventListener('visibilitychange', laporStatus);
+  };
+}
+
+/**
+ * Mengembalikan true hanya bila koordinat atau keterlihatan pin proyeksi berubah bermakna (>= 0.5px).
+ */
+export function pinProyeksiBerubah<T extends { x: number; y: number; terlihat: boolean }>(
+  sebelum: T[],
+  sesudah: T[],
+): boolean {
+  if (sebelum.length !== sesudah.length) return true;
+  for (let i = 0; i < sesudah.length; i++) {
+    const a = sebelum[i];
+    const b = sesudah[i];
+    if (a.terlihat !== b.terlihat) return true;
+    if (Math.abs(a.x - b.x) >= 0.5 || Math.abs(a.y - b.y) >= 0.5) return true;
+  }
+  return false;
 }
 
 export function disposeSceneObject(obj: THREE.Object3D): void {

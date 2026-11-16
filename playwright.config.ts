@@ -20,5 +20,8 @@ export default defineConfig({
     url: 'http://127.0.0.1:4173',
     reuseExistingServer: !isCI,
     timeout: 90000,
+    env: {
+      KELIR_DISABLE_LIVE_GEMINI: '1',
+    },
   },
 });
