@@ -1,12 +1,15 @@
 <script lang="ts">
   import { onDestroy, onMount } from 'svelte';
-  import { type BahasaAktif } from '../../content/pusaka.ts';
+  import { type BahasaAktif, ambilTeks } from '../../content/pusaka.ts';
   import { audioBudaya, type StatusGendingRealtime } from '../../lib/audioBudaya.ts';
   import {
+    DAFTAR_SUASANA_BGM,
     REPERTOAR_GENDING_JAWA,
     ambilDeskripsiFilosofiGending,
     cariGendingById,
+    saringGendingBySuasana,
     type GendingId,
+    type SuasanaGending,
   } from '../../lib/gendingJawa.ts';
   import { tI18n } from '../../lib/i18n.ts';
 
@@ -21,10 +24,19 @@
   let { bahasa, audioAktif, suasanaAktif, onToggleSuasana, onPilihGending }: Props = $props();
 
   let panelFilosofiBuka = $state(false);
+  let filterSuasana: SuasanaGending | 'semua' = $state('semua');
   let statusRt: StatusGendingRealtime = $state(audioBudaya.ambilStatusRealtime());
 
   let gendingAktif = $derived(cariGendingById(statusRt.gendingId));
   let infoAktif = $derived(ambilDeskripsiFilosofiGending(gendingAktif, bahasa));
+  let daftarTersaring = $derived(saringGendingBySuasana(filterSuasana));
+
+  function geserTrack(delta: number): void {
+    const daftar = daftarTersaring.length > 0 ? daftarTersaring : REPERTOAR_GENDING_JAWA;
+    const idx = daftar.findIndex((g) => g.id === gendingAktif.id);
+    const nextIdx = (((idx >= 0 ? idx : 0) + delta) % daftar.length + daftar.length) % daftar.length;
+    onPilihGending(daftar[nextIdx].id);
+  }
 
   let unsub: (() => void) | null = null;
   onMount(() => {
@@ -51,6 +63,7 @@
             <span class="eyebrow-mono">{tI18n(bahasa, 'karawitan.eyebrow')}</span>
             <h3 class="karawitan-card-title">{infoAktif.judul}</h3>
             <div class="karawitan-card-sub">
+              <span class="source-badge">{infoAktif.suasana}</span>
               <span>{infoAktif.laras}</span>
               <span aria-hidden="true">·</span>
               <span class="karawitan-aksara" lang="jv">{gendingAktif.aksara}</span>
@@ -72,23 +85,56 @@
           <span class="source-badge">{gendingAktif.sumber.join(', ')}</span>
         </div>
 
+        <div class="karawitan-mood-guide">
+          <span>{tI18n(bahasa, 'karawitan.moodLabel')}:</span>
+          <strong>{infoAktif.cocokUntuk}</strong>
+        </div>
+
         <div class="karawitan-philosophy-box">
           <div class="eyebrow-mono">{infoAktif.filosofiJudul}</div>
           <p>{infoAktif.filosofiMakna}</p>
         </div>
 
+        <div class="karawitan-mood-tabs" role="tablist" aria-label={tI18n(bahasa, 'karawitan.moodLabel')}>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={filterSuasana === 'semua'}
+            class="util-pill"
+            class:is-active={filterSuasana === 'semua'}
+            onclick={() => (filterSuasana = 'semua')}
+            data-testid="karawitan-mood-semua"
+          >
+            {tI18n(bahasa, 'karawitan.moodAll')}
+          </button>
+          {#each DAFTAR_SUASANA_BGM as s}
+            <button
+              type="button"
+              role="tab"
+              aria-selected={filterSuasana === s.id}
+              class="util-pill"
+              class:is-active={filterSuasana === s.id}
+              onclick={() => (filterSuasana = s.id)}
+              data-testid="karawitan-mood-{s.id}"
+            >
+              {ambilTeks(s.label, bahasa)}
+            </button>
+          {/each}
+        </div>
+
         <div class="karawitan-track-list" role="tablist" aria-label={tI18n(bahasa, 'karawitan.chooseAria')}>
-          {#each REPERTOAR_GENDING_JAWA as g}
+          {#each daftarTersaring as g}
             <button
               type="button"
               role="tab"
               aria-selected={statusRt.gendingId === g.id}
-              class="util-pill"
+              class="util-pill karawitan-track-btn"
               class:is-active={statusRt.gendingId === g.id}
               onclick={() => onPilihGending(g.id)}
               data-testid="karawitan-gending-{g.id}"
             >
-              {g.judul}
+              <span>{g.judul}</span>
+              <span class="karawitan-track-mood">{ambilTeks(g.suasanaLabel, bahasa)}</span>
             </button>
           {/each}
         </div>
@@ -123,6 +169,24 @@
       </button>
 
       <div class="karawitan-pill-actions">
+        <button
+          type="button"
+          class="util-pill karawitan-step-btn"
+          onclick={() => geserTrack(-1)}
+          aria-label="Gending Sebelumnya"
+          data-testid="btn-karawitan-prev"
+        >
+          &#8249;
+        </button>
+        <button
+          type="button"
+          class="util-pill karawitan-step-btn"
+          onclick={() => geserTrack(1)}
+          aria-label="Gending Berikutnya"
+          data-testid="btn-karawitan-next"
+        >
+          &#8250;
+        </button>
         <button
           type="button"
           class="util-pill"

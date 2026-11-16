@@ -849,6 +849,14 @@ test.describe('Kelir Multi-Page Spasial 3D — Verifikasi 5 Halaman & Realisme 3
     await page.getByTestId('karawitan-gending-lirilira').click();
     await expect(page.getByTestId('karawitan-filosofi-panel')).toContainText('Sunan Kalijaga');
     await expect(page.getByTestId('karawitan-filosofi-panel')).toContainText('Slendro Pathet Sanga');
+
+    // Filter suasana BGM & pilih repertoar baru (Semarak -> Gugur Gunung; Khidmat -> Ayak-Ayakan Manyura)
+    await page.getByTestId('karawitan-mood-semarak').click();
+    await page.getByTestId('karawitan-gending-gugurgunung').click();
+    await expect(page.getByTestId('karawitan-filosofi-panel')).toContainText('Nartosabdho');
+    await expect(page.getByTestId('karawitan-filosofi-panel')).toContainText('Pelog Pathet Barang');
+    await page.getByTestId('karawitan-mood-semua').click();
+
     await page.waitForTimeout(220);
     await page.screenshot({ path: `${ARTIFACT_DIR}/mp-18-karawitan-filosofi.png` });
 

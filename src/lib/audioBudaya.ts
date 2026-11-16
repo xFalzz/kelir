@@ -602,28 +602,41 @@ class MesinAudioBudaya {
       const ketuk = gAktif.balungan[idx];
       const freq = ambilFrekuensiNada(gAktif.laras, ketuk.nada);
 
+      // Profil dinamika instrumen menyesuaikan suasana gending
+      const mood = gAktif.suasana;
+      const ampDemung = mood === 'hening' ? 0.19 : mood === 'semarak' ? 0.27 : 0.24;
+      const ampSaron = mood === 'hening' ? 0.21 : mood === 'semarak' ? 0.31 : 0.27;
+      const ampGender = mood === 'hening' ? 0.17 : mood === 'hangat' ? 0.16 : 0.13;
+      const ampPeking = mood === 'hening' ? 0.08 : mood === 'semarak' ? 0.13 : 0.11;
+
       if (freq !== null) {
         nadaTerakhirHz = freq;
         // Demung + Saron Barung membawakan balungan sejati
-        this.bunyikanDemung(freq, 0.24);
-        this.bunyikanWilahSaron(freq, 0.28, true);
+        this.bunyikanDemung(freq, ampDemung);
+        this.bunyikanWilahSaron(freq, ampSaron, true);
 
         // Gender mengalunkan nada kempyung di ketukan aksen gatra
-        if (idx % 2 === 1) {
-          this.bunyikanGender(freq, 0.14);
+        if (idx % 2 === 1 || mood === 'hening') {
+          this.bunyikanGender(freq, ampGender);
         }
 
         // Peking menyahut setengah keteg berikutnya untuk ornamen cacah halus
-        this.bunyikanPeking(freq, (gAktif.tempoMs / 1000) * 0.5, 0.11);
+        this.bunyikanPeking(freq, (gAktif.tempoMs / 1000) * 0.5, ampPeking);
       } else if (idx % 4 === 0) {
-        // Pada jeda pin (.), Gender & Saron lembut mengisi ruang hening secara musikal
-        this.bunyikanGender(nadaTerakhirHz, 0.12);
+        // Pada jeda pin (.), Gender lembut mengisi ruang hening secara musikal
+        this.bunyikanGender(nadaTerakhirHz, ampGender * 0.9);
       }
 
       // Struktur Kolotomi Karawitan Baku
       if (ketuk.kethuk) this.bunyikanKethuk();
-      if (idx % 4 === 0) this.bunyikanKendhang('dhung');
-      else if (idx % 4 === 2) this.bunyikanKendhang('tak');
+      if (mood === 'hening') {
+        if (idx % 8 === 0) this.bunyikanKendhang('dhung');
+      } else if (mood === 'semarak') {
+        if (idx % 2 === 0) this.bunyikanKendhang(idx % 4 === 0 ? 'dhung' : 'tak');
+      } else {
+        if (idx % 4 === 0) this.bunyikanKendhang('dhung');
+        else if (idx % 4 === 2) this.bunyikanKendhang('tak');
+      }
       if (ketuk.kempul) this.bunyikanKenongAtauKempul('kempul', nadaTerakhirHz);
       if (ketuk.kenong) this.bunyikanKenongAtauKempul('kenong', nadaTerakhirHz);
       if (ketuk.gong) this.bunyikanGongAgeng(true);

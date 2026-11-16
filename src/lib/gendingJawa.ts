@@ -1,7 +1,16 @@
 import { ambilTeks, type BahasaAktif, type KodeSumber, type MultiTeks } from '../content/pusaka.ts';
 
-export type GendingId = 'puspawarna' | 'wilujeng' | 'lirilira' | 'kebogiro';
+export type GendingId =
+  | 'puspawarna'
+  | 'sinom'
+  | 'wilujeng'
+  | 'asmarandana'
+  | 'lirilira'
+  | 'ayakayakan'
+  | 'kebogiro'
+  | 'gugurgunung';
 export type JenisLaras = 'slendro' | 'pelog';
+export type SuasanaGending = 'hening' | 'hangat' | 'khidmat' | 'semarak';
 
 export type SimbolNadaGending =
   | '.'
@@ -29,6 +38,9 @@ export interface GendingBudaya {
   id: GendingId;
   judul: string;
   aksara: string;
+  suasana: SuasanaGending;
+  suasanaLabel: MultiTeks;
+  cocokUntuk: MultiTeks;
   laras: JenisLaras;
   larasLabel: MultiTeks;
   pencipta: MultiTeks;
@@ -38,6 +50,25 @@ export interface GendingBudaya {
   sumber: KodeSumber[];
   balungan: KetukanBalungan[];
 }
+
+export const DAFTAR_SUASANA_BGM: Array<{ id: SuasanaGending; label: MultiTeks }> = [
+  {
+    id: 'hening',
+    label: { id: 'Hening & Meditatif', en: 'Calm & Meditative', jw: 'Wening & Anteng' },
+  },
+  {
+    id: 'hangat',
+    label: { id: 'Hangat & Syahdu', en: 'Warm & Welcoming', jw: 'Grapyak & Syahdu' },
+  },
+  {
+    id: 'khidmat',
+    label: { id: 'Khidmat & Pakeliran', en: 'Sacred & Shadow Play', jw: 'Khidmat & Pakeliran' },
+  },
+  {
+    id: 'semarak',
+    label: { id: 'Agung & Semarak', en: 'Ceremonial & Lively', jw: 'Agung & Gumregah' },
+  },
+];
 
 /**
  * Frekuensi baku Laras Slendro (Surakarta) dalam Hertz.
@@ -134,6 +165,17 @@ export const REPERTOAR_GENDING_JAWA: GendingBudaya[] = [
     id: 'puspawarna',
     judul: 'Ketawang Puspawarna',
     aksara: 'ꦏꦼꦠꦮꦁꦥꦸꦱ꧀ꦥꦮꦂꦤ',
+    suasana: 'hening',
+    suasanaLabel: {
+      id: 'Hening & Meditatif',
+      en: 'Calm & Meditative',
+      jw: 'Wening & Anteng',
+    },
+    cocokUntuk: {
+      id: 'Membaca arsip S1–S7, fokus belajar aksara, & suasana tenang malam',
+      en: 'Reading S1–S7 archives, quiet focus, and contemplative evening study',
+      jw: 'Maos arsip S1–S7, sinau aksara, saha swasana wengi kang anteng',
+    },
     laras: 'slendro',
     larasLabel: {
       id: 'Slendro Pathet Manyura',
@@ -175,9 +217,69 @@ export const REPERTOAR_GENDING_JAWA: GendingBudaya[] = [
     ],
   },
   {
+    id: 'sinom',
+    judul: 'Ketawang Sinom Parijatha',
+    aksara: 'ꦏꦼꦠꦮꦁꦱꦶꦤꦺꦴꦩ꧀ꦥꦫꦶꦗꦛ',
+    suasana: 'hening',
+    suasanaLabel: {
+      id: 'Hening & Meditatif',
+      en: 'Calm & Meditative',
+      jw: 'Wening & Anteng',
+    },
+    cocokUntuk: {
+      id: 'Eksplorasi Digital Twin santai, meditasi, & kontemplasi filosofi Jawa',
+      en: 'Relaxed 3D Digital Twin inspection, calm reflection, and mindful reading',
+      jw: 'Ndeleng Digital Twin kanthi anteng saha ngresepi piwulang Jawi',
+    },
+    laras: 'slendro',
+    larasLabel: {
+      id: 'Slendro Pathet Sanga',
+      en: 'Slendro Pathet Sanga Scale',
+      jw: 'Laras Slendro Pathet Sanga',
+    },
+    pencipta: {
+      id: 'Tradisi Klenengan & Uyon-uyon Malam Karawitan Surakarta',
+      en: 'Classical Surakarta Evening Chamber Karawitan Tradition',
+      jw: 'Tradhisi Klenengan & Uyon-uyon Wengi Karawitan Surakarta',
+    },
+    tempoMs: 630,
+    filosofiJudul: {
+      id: 'Kesucian Niat Muda yang Mekar dalam Kesabaran',
+      en: 'Youthful Sincerity Blooming Through Patience',
+      jw: 'Kasucening Niat Anom kang Mekar ing Kasabaran',
+    },
+    filosofiMakna: {
+      id: 'Sinom melambangkan semangat muda penuh harapan, sementara buah Parijatha menjadi simbol ketulusan dan ketenangan batin. Tempo 630ms yang lapang bersama dominasi gender lembut menghadirkan suasana malam pendopo yang damai.',
+      en: 'Sinom symbolizes youthful clarity while the Parijatha berry stands for serenity and earnest devotion. Its spacious 630ms pulse and gentle gender metallophones evoke peaceful late-evening pendopo contemplation.',
+      jw: 'Sinom pralambang semangat anom kang suci, dene Parijatha nyimbolake katentreman batin. Irama alon lan swara gender alus ndadosake swasana pendhapa ayem.',
+    },
+    sumber: ['S4', 'S5'],
+    balungan: [
+      ...susunGongan(
+        ['.', '5', '.', '6', '.', '5', '.', '2', '.', '3', '.', '5', '.', '3', '.', '2'],
+        'ketawang',
+      ).map((k, i) => (i === 15 ? { ...k, gong: false } : k)),
+      ...susunGongan(
+        ['.', '1', '.', '2', '.', '3', '.', '1', '.', '6,', '.', '1', '.', '2', '.', '5,'],
+        'ketawang',
+      ),
+    ],
+  },
+  {
     id: 'wilujeng',
     judul: 'Ladrang Wilujeng',
     aksara: 'ꦭꦢꦿꦁꦮꦶꦭꦸꦗꦼꦁ',
+    suasana: 'hangat',
+    suasanaLabel: {
+      id: 'Hangat & Syahdu',
+      en: 'Warm & Welcoming',
+      jw: 'Grapyak & Syahdu',
+    },
+    cocokUntuk: {
+      id: 'Beranda Pendopo 3D & suasana penyambutan tamu pameran',
+      en: 'Home Pendopo 3D diorama & gracious exhibition welcome atmosphere',
+      jw: 'Pendhapa 3D utama & swasana pambagyaharja tamu musiyum',
+    },
     laras: 'slendro',
     larasLabel: {
       id: 'Slendro Pathet Manyura',
@@ -212,9 +314,68 @@ export const REPERTOAR_GENDING_JAWA: GendingBudaya[] = [
     ),
   },
   {
+    id: 'asmarandana',
+    judul: 'Ladrang Asmarandana',
+    aksara: 'ꦭꦢꦿꦁꦲꦱ꧀ꦩꦫꦤ꧀ꦢꦤ',
+    suasana: 'hangat',
+    suasanaLabel: {
+      id: 'Hangat & Syahdu',
+      en: 'Warm & Welcoming',
+      jw: 'Grapyak & Syahdu',
+    },
+    cocokUntuk: {
+      id: 'Galeri Coverflow, mode Pujangga & Aksara Jawa, serta suasana puitis hangat',
+      en: 'Coverflow gallery browsing, poetic Javanese verse studio, and warm dialogue',
+      jw: 'Galeri Coverflow, Studio Pujangga & Krama, saha swasana puitis grapyak',
+    },
+    laras: 'pelog',
+    larasLabel: {
+      id: 'Pelog Pathet Nem',
+      en: 'Pelog Pathet Nem Scale',
+      jw: 'Laras Pelog Pathet Nem',
+    },
+    pencipta: {
+      id: 'Gubahan Tembang Macapat Klasik · Tradisi Sunan Giri & Karaton Jawa',
+      en: 'Classical Macapat Adaptation · Sunan Giri & Javanese Court Heritage',
+      jw: 'Cakepan Macapat Klasik · Tradhisi Sunan Giri & Kraton Jawi',
+    },
+    tempoMs: 515,
+    filosofiJudul: {
+      id: 'Nyala Kasih Sayang & Kehangatan Kekeluargaan',
+      en: 'Gentle Flame of Compassion & Kinship',
+      jw: 'Urubing Tresna Asih saha Karukunan Sesami',
+    },
+    filosofiMakna: {
+      id: 'Berasal dari kata Asmara (kasih sayang) dan Dahana (api suci). Memakai tangga nada Pelog Pathet Nem yang syahdu untuk mengajak pendengar menyalakan kepedulian tulus, kesantunan berbahasa, dan harmoni antar-insan.',
+      en: 'Derived from Asmara (affection) and Dahana (sacred hearth), set in tender Pelog Pathet Nem to nurture courteous speech, empathy, and warm human kinship inside the Pendopo.',
+      jw: 'Saking tembung Asmara (asih) lan Dahana (latu suci). Laras Pelog Pathet Nem kang syahdu ngajak manungsa ngurmati sesami mawi unggah-ungguh alus.',
+    },
+    sumber: ['S4', 'S5'],
+    balungan: susunGongan(
+      [
+        '5', '6', '5', '3', '2', '1', '2', '3',
+        '5', '6', 'i', '6', '5', '3', '2', '1',
+        '2', '3', '5', '3', '2', '1', '6,', '5,',
+        '6,', '1', '2', '3', '2', '1', '6,', '5,',
+      ],
+      'ladrang',
+    ),
+  },
+  {
     id: 'lirilira',
     judul: 'Tembang Lir-Ilir',
     aksara: 'ꦠꦼꦩ꧀ꦧꦁꦭꦶꦂꦲꦶꦭꦶꦂ',
+    suasana: 'khidmat',
+    suasanaLabel: {
+      id: 'Khidmat & Pakeliran',
+      en: 'Sacred & Shadow Play',
+      jw: 'Khidmat & Pakeliran',
+    },
+    cocokUntuk: {
+      id: 'Mendalami makna Suluk, Tanya AI Pamomong, & refleksi spiritual',
+      en: 'Deep Suluk contemplation, Pamomong AI study, & spiritual storytelling',
+      jw: 'Ngresepi Suluk, Tanglet AI Pamomong, saha renungan batin',
+    },
     laras: 'slendro',
     larasLabel: {
       id: 'Slendro Pathet Sanga',
@@ -257,9 +418,68 @@ export const REPERTOAR_GENDING_JAWA: GendingBudaya[] = [
     ),
   },
   {
+    id: 'ayakayakan',
+    judul: 'Ayak-Ayakan Manyura',
+    aksara: 'ꦲꦪꦏ꧀ꦲꦪꦏꦤ꧀ꦩꦚꦸꦫ',
+    suasana: 'khidmat',
+    suasanaLabel: {
+      id: 'Khidmat & Pakeliran',
+      en: 'Sacred & Shadow Play',
+      jw: 'Khidmat & Pakeliran',
+    },
+    cocokUntuk: {
+      id: 'Panggung Pakeliran Wayang Kulit 3D, adegan Kijang Kencana, & Suluk layar penuh',
+      en: '3D Wayang Shadow Stage, Ramayana acts, and fullscreen Suluk ambience',
+      jw: 'Panggung Pakeliran Wayang Kulit 3D, adegan Kidang Kencana, & Suluk',
+    },
+    laras: 'slendro',
+    larasLabel: {
+      id: 'Slendro Pathet Manyura',
+      en: 'Slendro Pathet Manyura Scale',
+      jw: 'Laras Slendro Pathet Manyura',
+    },
+    pencipta: {
+      id: 'Pakem Iringan Wayang Kulit Purwa · Gaya Surakarta & Yogyakarta',
+      en: 'Classical Wayang Kulit Shadow Stage Score · Surakarta & Yogyakarta Canon',
+      jw: 'Pakem Gending Pakeliran Ringgit Wacucal · Surakarta & Ngayogyakarta',
+    },
+    tempoMs: 485,
+    filosofiJudul: {
+      id: 'Alur Perjalanan Sukma di Bawah Nyala Pelita Blencong',
+      en: 'Unbroken Journey of the Soul Beneath the Blencong Flame',
+      jw: 'Lelampahaning Sukma ing Sangandhaping Sorot Blencong',
+    },
+    filosofiMakna: {
+      id: 'Ayak-ayakan menjadi pengiring baku peralihan adegan dalang menjelang fajar Manyura. Susunan nadanya mengalir bersambungan tanpa terputus, mengingatkan bahwa setiap babak ujian hidup hanyalah pengantar menuju kedewasaan jiwa.',
+      en: 'Ayak-ayakan guides the puppeteer through dawn Manyura scene shifts. Its continuous melodic weave reminds spectators beneath the flickering oil lamp that every trial leads toward wisdom.',
+      jw: 'Ayak-ayakan ngiringi gantosipun adegan dhalang ing wayah enjang Manyura, dados pepeling bilih sedaya lelampahan gesang tumuju pencerahan jiwa.',
+    },
+    sumber: ['S3', 'S4'],
+    balungan: susunGongan(
+      [
+        '2', '3', '2', '1', '2', '3', '2', '1',
+        '3', '5', '6', '5', '3', '2', '1', '2',
+        '6', '5', '3', '2', '3', '5', '6', 'i',
+        '6', '5', '3', '2', '1', '2', '1', '6,',
+      ],
+      'ladrang',
+    ),
+  },
+  {
     id: 'kebogiro',
     judul: 'Lancaran Kebo Giro',
     aksara: 'ꦭꦚ꧀ꦕꦫꦤ꧀ꦏꦼꦧꦺꦴꦒꦶꦫꦺꦴ',
+    suasana: 'semarak',
+    suasanaLabel: {
+      id: 'Agung & Semarak',
+      en: 'Ceremonial & Lively',
+      jw: 'Agung & Gumregah',
+    },
+    cocokUntuk: {
+      id: 'Eksplorasi aktif bedah senjata/arsitektur, kuis kurasi, & suasana upacara megah',
+      en: 'Active CAD dissection, archive quizzes, and grand ceremonial mood',
+      jw: 'Bedhah 3D aktif, Kuis Kurasi S1–S7, saha swasana pahargyan agung',
+    },
     laras: 'pelog',
     larasLabel: {
       id: 'Pelog Pathet Barang',
@@ -293,19 +513,82 @@ export const REPERTOAR_GENDING_JAWA: GendingBudaya[] = [
       'lancaran',
     ),
   },
+  {
+    id: 'gugurgunung',
+    judul: 'Lancaran Gugur Gunung',
+    aksara: 'ꦭꦚ꧀ꦕꦫꦤ꧀ꦒꦸꦒꦸꦂꦒꦸꦤꦸꦁ',
+    suasana: 'semarak',
+    suasanaLabel: {
+      id: 'Agung & Semarak',
+      en: 'Ceremonial & Lively',
+      jw: 'Agung & Gumregah',
+    },
+    cocokUntuk: {
+      id: 'Kuis Kuratorial S1–S7, mode jelajah cepat, & energi kerja bakti penuh semangat',
+      en: 'Curatorial quiz challenges, energetic tours, and uplifting communal spirit',
+      jw: 'Kuis Kurasi S1–S7, tur rikat, saha semangat gotong-royong gumregah',
+    },
+    laras: 'pelog',
+    larasLabel: {
+      id: 'Pelog Pathet Barang',
+      en: 'Pelog Pathet Barang Scale',
+      jw: 'Laras Pelog Pathet Barang',
+    },
+    pencipta: {
+      id: 'Ki Nartosabdho (1925–1985) · Maestro Karawitan & Dhalang Legendaris',
+      en: 'Ki Nartosabdho (1925–1985) · Master Karawitan Composer & Puppeteer',
+      jw: 'Ki Nartosabdho (1925–1985) · Empu Karawitan saha Dhalang Agung',
+    },
+    tempoMs: 365,
+    filosofiJudul: {
+      id: 'Semangat Gotong Royong Meruntuhkan Beban Berat Bersama',
+      en: 'Collective Solidarity Moving Mountains Together',
+      jw: 'Semangat Gotong Royong Holobis Kuntul Baris',
+    },
+    filosofiMakna: {
+      id: 'Karya legendaris Ki Nartosabdho ini berdenyut energik dengan seruan "Holobis kuntul baris"—menggambarkan barisan bangau yang terbang serempak membelah angin. Beban sebesar gunung pun terasa ringan saat dipikul bergotong royong.',
+      en: 'Ki Nartosabdho’s vibrant Pelog Barang composition echoes the rallying call "Holobis kuntul baris"—cranes flying in unison—teaching that mountain-sized tasks yield to joyful shared effort.',
+      jw: 'Cakepan Ki Nartosabdho punika mawa surasa "Holobis kuntul baris": pakaryan abot kaya ngrubuhake gunung dados entheng menawi katindakaken sesarengan.',
+    },
+    sumber: ['S4', 'S5'],
+    balungan: susunGongan(
+      [
+        '5', '5', '6', '7', '6', '5', '3', '2',
+        '3', '5', '6', '5', '3', '2', '7,', '6,',
+        '2', '3', '5', '6', '5', '3', '2', '3',
+        '5', '6', '7', '6', '5', '3', '2', '6,',
+      ],
+      'lancaran',
+    ),
+  },
 ];
 
 export function cariGendingById(id: GendingId): GendingBudaya {
   return REPERTOAR_GENDING_JAWA.find((g) => g.id === id) ?? REPERTOAR_GENDING_JAWA[0];
 }
 
+export function saringGendingBySuasana(suasana: SuasanaGending | 'semua'): GendingBudaya[] {
+  if (suasana === 'semua') return REPERTOAR_GENDING_JAWA;
+  return REPERTOAR_GENDING_JAWA.filter((g) => g.suasana === suasana);
+}
+
 export function ambilDeskripsiFilosofiGending(
   g: GendingBudaya,
   bahasa: BahasaAktif,
-): { judul: string; laras: string; pencipta: string; filosofiJudul: string; filosofiMakna: string } {
+): {
+  judul: string;
+  laras: string;
+  suasana: string;
+  cocokUntuk: string;
+  pencipta: string;
+  filosofiJudul: string;
+  filosofiMakna: string;
+} {
   return {
     judul: g.judul,
     laras: ambilTeks(g.larasLabel, bahasa),
+    suasana: ambilTeks(g.suasanaLabel, bahasa),
+    cocokUntuk: ambilTeks(g.cocokUntuk, bahasa),
     pencipta: ambilTeks(g.pencipta, bahasa),
     filosofiJudul: ambilTeks(g.filosofiJudul, bahasa),
     filosofiMakna: ambilTeks(g.filosofiMakna, bahasa),

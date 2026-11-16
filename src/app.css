@@ -5678,13 +5678,13 @@ html[data-theme='malam'] .kelir-scroll-rail.is-dragging .kelir-scroll-track {
 }
 
 .karawitan-filosofi-card {
-  width: min(460px, calc(100vw - 24px));
-  max-height: min(560px, calc(100dvh - 180px));
+  width: min(540px, calc(100vw - 24px));
+  max-height: min(630px, calc(100dvh - 148px));
   overflow-y: auto;
   overscroll-behavior: contain;
   display: grid;
-  gap: 12px;
-  padding: 16px;
+  gap: 9px;
+  padding: 14px;
   border-radius: 18px;
   background: var(--bg-card);
   border: 1px solid var(--border-strong);
@@ -5739,6 +5739,65 @@ html[data-theme='malam'] .kelir-scroll-rail.is-dragging .kelir-scroll-track {
   font-weight: 600;
 }
 
+.karawitan-mood-guide {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  font-size: 0.77rem;
+  color: var(--text-secondary);
+}
+
+.karawitan-mood-guide strong {
+  color: var(--accent-ember);
+  font-weight: 600;
+}
+
+.karawitan-mood-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.karawitan-mood-tabs .util-pill {
+  font-size: 0.68rem;
+  padding: 4px 9px;
+}
+
+.karawitan-track-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  width: 100%;
+  min-width: 0;
+  gap: 2px;
+  padding: 7px 11px;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  white-space: normal;
+  text-align: left;
+  line-height: 1.25;
+}
+
+.karawitan-track-mood {
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  font-weight: 500;
+  opacity: 0.8;
+}
+
+.karawitan-step-btn {
+  padding: 5px 8px;
+  font-size: 0.86rem;
+}
+
+@media (max-width: 640px) {
+  .karawitan-step-btn {
+    display: none;
+  }
+}
+
 .karawitan-philosophy-box {
   padding: 10px 12px;
   border-radius: 12px;
@@ -5754,9 +5813,15 @@ html[data-theme='malam'] .kelir-scroll-rail.is-dragging .kelir-scroll-track {
 }
 
 .karawitan-track-list {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 6px;
+}
+
+@media (max-width: 480px) {
+  .karawitan-track-list {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (max-width: 1080px) {
