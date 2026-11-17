@@ -495,7 +495,7 @@
         >
           <input
             type="text"
-            maxlength="280"
+            maxlength="320"
             class="pamomong-query-input"
             bind:value={pertanyaanInput}
             placeholder={tI18n(bahasa, 'kawruh.placeholder', { nama: ambilTeks(bendaAktif.nama, bahasa) })}

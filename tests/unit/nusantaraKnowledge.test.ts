@@ -1,6 +1,10 @@
 import { describe, expect, it, vi } from 'vitest';
 import { ENSIKLOPEDIA_NUSANTARA, cariKonteksNusantara } from '../../src/content/nusantaraKB.ts';
-import { auditDanBersihkanOutputAI, hilangkanEmDashAI } from '../../src/lib/aiGuardrail.ts';
+import {
+  auditDanBersihkanOutputAI,
+  hilangkanEmDashAI,
+  rapikanParagrafResponsAI,
+} from '../../src/lib/aiGuardrail.ts';
 import {
   bandingkanPusakaLokal,
   susunKramaLokal,
@@ -186,5 +190,79 @@ describe('Ensiklopedia Budaya Nusantara & Identitas Pamomong Nusantara', () => {
 
     const tur = susunRuteTurLokal('semua', 'kilat', '', 'id');
     expect(tur.ringkasanRute).not.toContain('—');
+  });
+
+  it('menjawab pertanyaan lokasi dan isi situs budaya Indonesia seperti Taman Sari Yogyakarta secara akurat dan meluas baik luring maupun live', async () => {
+    const tamanSariLokal = jawabDariKurasiLokal(
+      'keris',
+      'Tamansari itu dimana? Dan ada apa saja disana?',
+      'id',
+    );
+    expect(tamanSariLokal.statusGrounding).toBe('eksplorasi-nusantara');
+    expect(tamanSariLokal.jawaban).toContain('Patehan');
+    expect(tamanSariLokal.jawaban).toContain('Yogyakarta');
+    expect(tamanSariLokal.jawaban).toContain('Sumur Gumuling');
+    expect(tamanSariLokal.jawaban).toContain('Umbul Binangun');
+    expect(tamanSariLokal.jawaban).toContain('\n\n');
+    expect(tamanSariLokal.jawaban).not.toContain('—');
+
+    const lainnyaLokal = [
+      'Dimana letak Lawang Sewu dan Kota Lama Semarang?',
+      'Dimana Istana Pagaruyung dan apa isinya?',
+      'Dimana letak Benteng Belgica Banda Neira?',
+      'Apa keunikan Pura Tanah Lot dan Desa Penglipuran Bali?',
+      'Ada tradisi budaya apa saja di Aceh atau Maluku?',
+    ];
+    for (const q of lainnyaLokal) {
+      const res = jawabDariKurasiLokal('joglo', q, 'id');
+      expect(res.statusGrounding, `Harus terjawab: ${q}`).toBe('eksplorasi-nusantara');
+      expect(res.jawaban.length).toBeGreaterThan(100);
+    }
+
+    // Uji routing live untuk situs budaya daerah yang belum masuk KB luring agar tetap diteruskan ke model live
+    let dipanggilLive = false;
+    const satuParagrafPanjang =
+      'Benteng Speelwijk terletak di Kampung Pamarican, Kecamatan Kasemen, Kota Serang, Provinsi Banten. ' +
+      'Bangunan cagar budaya ini didirikan pada akhir abad ke-17 sebagai pos pertahanan pesisir Kesultanan Banten dan VOC. ' +
+      'Di dalam kawasannya masih berdiri sisa tembok benteng batu karang, menara pantau sudut, ruang bawah tanah penyimpanan mesiu, dan parit pertahanan. ' +
+      'Kawasan ini terhubung langsung dengan situs Masjid Agung Banten Lama serta Keraton Surosowan di sekitarnya. ' +
+      'Pelestarian kawasan Banten Lama menandai pentingnya sejarah maritim dan arsitektur pertahanan di Selat Sunda.';
+
+    const clientLive = {
+      live: {
+        connect: vi.fn(async (params: { callbacks: { onopen?: () => void; onmessage?: (m: unknown) => void } }) => {
+          dipanggilLive = true;
+          setTimeout(() => {
+            params.callbacks.onmessage?.({
+              serverContent: {
+                outputTranscription: { text: satuParagrafPanjang },
+                turnComplete: true,
+              },
+            });
+          }, 0);
+          queueMicrotask(() => params.callbacks.onopen?.());
+          return {
+            sendRealtimeInput: vi.fn(),
+            close: vi.fn(),
+          };
+        }),
+      },
+    } as unknown as LiveClientLike;
+
+    const liveRes = await jawabDenganGemini38Flash({
+      bendaId: 'joglo',
+      pertanyaan: 'Dimana letak Situs Speelwijk di Kasemen dan ada apa saja di sana?',
+      bahasa: 'id',
+      apiKey: 'dummy-test-key',
+      bypassCache: true,
+      liveClientFactory: () => clientLive,
+    });
+
+    expect(dipanggilLive).toBe(true);
+    expect(liveRes.mode).toBe('pamomong-live');
+    expect(liveRes.statusGrounding).toBe('eksplorasi-nusantara');
+    expect(liveRes.jawaban).toContain('\n\n');
+    expect(liveRes.jawaban).toContain('Kasemen');
+    expect(rapikanParagrafResponsAI('Kalimat pendek saja.')).toBe('Kalimat pendek saja.');
   });
 });

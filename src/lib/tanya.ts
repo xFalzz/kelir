@@ -12,7 +12,10 @@ import {
   type MultiTeks,
   type TeksLokal,
 } from '../content/pusaka.ts';
-import { cariKonteksNusantara } from '../content/nusantaraKB.ts';
+import {
+  cariKonteksNusantara,
+  cariKonteksWilayahNusantara,
+} from '../content/nusantaraKB.ts';
 import {
   BATAS_KARAKTER_TANYA,
   apakahAdaSinyalArsipS1S7,
@@ -22,6 +25,7 @@ import {
   deteksiSeranganAtauLuarTopik,
   hilangkanEmDashAI,
   pesanPenolakanKeamanan,
+  rapikanParagrafResponsAI,
 } from './aiGuardrail.ts';
 
 export const MODEL_AI_PAMOMONG = 'Pamomong Nusantara' as const;
@@ -462,7 +466,10 @@ export function jawabDariKurasiLokal(
 
   if (!lolosValidasiKorpus) {
     if (infoNusantara.relevanBudaya) {
-      const entriNusantara = cariKonteksNusantara(pertanyaan, 2);
+      let entriNusantara = cariKonteksNusantara(pertanyaan, 2);
+      if (entriNusantara.length === 0) {
+        entriNusantara = cariKonteksWilayahNusantara(pertanyaan, 2);
+      }
       if (entriNusantara.length > 0) {
         const utama = entriNusantara[0];
         const judul = ambilTeks(utama.judul, bahasa);
@@ -495,14 +502,14 @@ export function jawabDariKurasiLokal(
 
       const pesanEksplorasi = ambilTeks(
         {
-          id: 'Topik warisan budaya Nusantara ini tercakup dalam mode Eksplorasi Pamomong Nusantara. Untuk elaborasi sejarah, teknik kriya, dan filosofinya yang lebih lengkap di luar 6 spesimen S1–S7, jalankan kueri dengan layanan aktif Pamomong Nusantara.',
-          en: 'This Indonesian heritage topic falls within Pamomong Nusantara exploration beyond the six offline S1–S7 specimens. Connect to the live Pamomong Nusantara engine for full historical, technical, and philosophical analysis.',
-          jw: 'Topik warisan budaya Nuswantara punika kalebet cakupan Eksplorasi Pamomong Nusantara ing njaba nem koleksi S1–S7. Aktifaken layanan Pamomong Nusantara kangge andharan sejarah lan filosofi ingkang langkung jangkep.',
+          id: 'Topik warisan budaya atau situs Nusantara ini teridentifikasi dalam cakupan sejarah Indonesia, namun detail spesifiknya belum tersimpan lengkap di indeks arsip luring perangkat. Saat terhubung ke server Pamomong Nusantara aktif, tanyakan ulang topik ini untuk memperoleh uraian lokasi, isi kompleks, serta filosofinya secara menyeluruh; atau jelajahi koleksi arsip luring seperti Taman Sari Yogyakarta, Prambanan, Trowulan, Tari Saman, Rumah Gadang, Subak Bali, Pinisi, dan Noken Papua.',
+          en: 'This Indonesian heritage topic or landmark falls within Nusantara cultural scope, though its specific record is not yet stored in the local offline index. Reconnect to the live Pamomong Nusantara server for a complete geographical, structural, and historical dossier, or explore offline entries including Taman Sari Yogyakarta, Prambanan, Trowulan, Saman Dance, Rumah Gadang, Balinese Subak, Pinisi, and Papua Noken.',
+          jw: 'Topik warisan budaya utawi papan sejarah punika mlebet cakupan kabudayan Indonesia, nanging rincianipun dereng kasimpen jangkep wonten indeks arsip luring piranti. Sambungaken kalih server Pamomong Nusantara aktif kangge andharan lokasi lan sejarah ingkang langkung jembar.',
         },
         bahasa,
       );
       return {
-        jawaban: pesanEksplorasi,
+        jawaban: hilangkanEmDashAI(pesanEksplorasi),
         sumber: [],
         mode: 'bm25-kurasi-lokal',
         modelNama: MODEL_AI_PAMOMONG,
@@ -617,9 +624,9 @@ export async function tanyakanKeAsisten(
     if (resp.ok) {
       const data = (await resp.json()) as Partial<HasilTanya>;
       if (data && typeof data.jawaban === 'string' && Array.isArray(data.butirBukti)) {
-        const audited = auditDanBersihkanOutputAI(data.jawaban, {
+        const audited = auditDanBersihkanOutputAI(rapikanParagrafResponsAI(data.jawaban), {
           minKarakter: 18,
-          maxKarakter: 2500,
+          maxKarakter: 3800,
           wajibJangkarBudaya: data.statusGrounding !== 'luar-korpus',
         });
         if (audited) {
