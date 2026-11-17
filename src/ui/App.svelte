@@ -65,9 +65,7 @@
   import KelirCursor from './components/KelirCursor.svelte';
   import PixelNumber from './PixelNumber.svelte';
 
-  // =========================================================================
-  // 1. Arsitektur Multi-Halaman (5 Halaman Terpadu & Selaras)
-  // =========================================================================
+  // Arsitektur 5 halaman terpadu
   type HalamanId = 'beranda' | 'twin' | 'koleksi' | 'pakeliran' | 'kawruh';
 
   interface DefinisiHalaman {
@@ -120,7 +118,7 @@
   let aksiHidupTwin = $state(true);
   let twinPins: ProyeksiPinTwin[] = $state([]);
 
-  // Lola Wilde 3D Coverflow & Modal Suluk State (Halaman 03 & Global Modal)
+  // Coverflow 3D & Modal Suluk state
   let coverflowIdx = $state(0);
   let modalSulukBuka = $state(false);
   let modalSulukTrackIdx = $state(0);
@@ -345,7 +343,6 @@
   let smoothScrollCtrl: SmoothScrollController | null = null;
   let pendingTwinTitikId: string | null = null;
 
-  // Derived Values
   let infoHalamanAktif = $derived(
     daftarHalaman.find((h) => h.id === halamanAktif) ?? daftarHalaman[0],
   );
@@ -386,9 +383,7 @@
       : KOLEKSI_ETALASE.filter((item) => item.kategoriKey === filterEtalase),
   );
 
-  // =========================================================================
-  // 2. Svelte Actions untuk Siklus Hidup 3D WebGL per Halaman
-  // =========================================================================
+  // Svelte actions untuk siklus hidup WebGL 3D per halaman
   function mountDioramaStage(node: HTMLDivElement) {
     dioramaStage = new LivingPendopoStage(node, tema);
     dioramaStage.onProyeksiPin((pins) => {
@@ -559,9 +554,7 @@
     };
   }
 
-  // =========================================================================
-  // 3. Fungsi Navigasi Antar-Halaman & Interaksi
-  // =========================================================================
+  // Navigasi antar-halaman & sinkronisasi URL
   function sinkronkanUrlDeepLink(): void {
     if (typeof window === 'undefined') return;
     const url = new URL(window.location.href);
@@ -1062,9 +1055,6 @@
     return `${s} · ${ambilTeks(DAFTAR_SUMBER[s].lembaga, bahasa)}`;
   }
 
-  // =========================================================================
-  // 4. Mount Global & Sinkronisasi URL History
-  // =========================================================================
   onMount(() => {
     document.documentElement.setAttribute('data-theme', tema);
     document.documentElement.setAttribute('data-lang', bahasa);
@@ -1260,9 +1250,7 @@
   }}
 />
 
-<!-- =========================================================================
-     PRELOADER NUMERIK ARSIP (00 -> 100)
-     ========================================================================= -->
+<!-- Preloader numerik arsip -->
 <div
   class="preloader-curtain"
   class:is-done={preloaderSelesai}
@@ -1304,9 +1292,7 @@
   </div>
 </div>
 
-<!-- =========================================================================
-     FLOATING GLASS PILL NAVBAR (5 HALAMAN SELARAS + KONTROL GLOBAL)
-     ========================================================================= -->
+<!-- Bilah navigasi atas -->
 <header class="top-nav">
   <button
     type="button"
@@ -1605,9 +1591,7 @@
     </div>
   {/if}
 
-  <!-- =======================================================================
-       HALAMAN 01: BERANDA, DIORAMA PENDOPO 3D, KRONIK 01-05 & ETALASE SPASIAL
-       ======================================================================= -->
+  <!-- Halaman 01: Beranda & Diorama Pendopo 3D -->
   {#if halamanAktif === 'beranda'}
     <section id="pendopo" class="diorama-master-band" aria-label="Diorama Pendopo Budaya Jawa 3D">
       <div class="diorama-sticky-stage">
@@ -1793,9 +1777,7 @@
     />
   {/if}
 
-  <!-- =======================================================================
-       HALAMAN 02: STUDIO KEMBARAN DIGITAL 3D (CAD & PBR STUDIO · 7 KOLEKSI)
-       ======================================================================= -->
+  <!-- Halaman 02: Studio Digital Twin 3D -->
   {#if halamanAktif === 'twin'}
     {#if DigitalTwinStudioComp}
       <DigitalTwinStudioComp
@@ -1845,9 +1827,7 @@
     {/if}
   {/if}
 
-  <!-- =======================================================================
-       HALAMAN 03: GALERI COVERFLOW 3D REALISTIS & REPERTOAR SULUK (7 KOLEKSI)
-       ======================================================================= -->
+  <!-- Halaman 03: Galeri Coverflow 3D -->
   {#if halamanAktif === 'koleksi'}
     {#if CoverflowShowcaseComp}
       <CoverflowShowcaseComp
@@ -1873,9 +1853,7 @@
     {/if}
   {/if}
 
-  <!-- =======================================================================
-       HALAMAN 04: PANGGUNG PAKELIRAN WAYANG KULIT 3D (LAKON KIJANG KENCANA)
-       ======================================================================= -->
+  <!-- Halaman 04: Panggung Pakeliran Wayang Kulit 3D -->
   {#if halamanAktif === 'pakeliran'}
     <section id="pakeliran" class="band-section" aria-label={tI18n(bahasa, 'pakeliran.h1')}>
       <div class="band-header">
@@ -2055,9 +2033,7 @@
     </section>
   {/if}
 
-  <!-- =======================================================================
-       HALAMAN 05: LAB AKSARA HANACARAKA, PAMOMONG AI ORB & PUSTAKA S1-S7
-       ======================================================================= -->
+  <!-- Halaman 05: Lab Aksara Jawa & AI Studio Pamomong Nusantara -->
   {#if halamanAktif === 'kawruh'}
     {#if KawruhOrbSectionComp}
       <KawruhOrbSectionComp
@@ -2089,9 +2065,7 @@
     {/if}
   {/if}
 
-  <!-- =======================================================================
-       PORTAL TRANSISI ANTAR-HALAMAN MINIMALIS
-       ======================================================================= -->
+  <!-- Navigasi jembatan antar-halaman -->
   <section class="next-page-bridge" aria-label={tI18n(bahasa, 'nav.quickNavAria')}>
     <div class="next-page-bridge-inner">
       <button
@@ -2201,9 +2175,7 @@
   </aside>
 {/if}
 
-<!-- =========================================================================
-     MODAL SULUK LAYAR PENUH 3D PBR & MUSIKOLOGIA KARAWITAN
-     ========================================================================= -->
+<!-- Modal Suluk 3D & pemutar karawitan -->
 {#if modalSulukBuka && SulukModalComp}
   <SulukModalComp
     tracks={KOLEKSI_COVERFLOW}

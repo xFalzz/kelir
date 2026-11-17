@@ -1,6 +1,4 @@
-/* ==========================================================================
-   KELIR — Sistem Desain Spasial 3D & Arsitektur Kurasi 5 Halaman
-   ========================================================================== */
+/* KELIR: Sistem Desain Spasial 3D & Arsitektur Kurasi 5 Halaman */
 
 :root {
   --font-display: 'Space Grotesk Variable', 'Inter', system-ui, -apple-system, sans-serif;
@@ -12,7 +10,7 @@
   --ease-expo: cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-/* Mode Terang Utama Kontras Tinggi (Washi Alabaster & Batu Candi — Default) */
+/* Mode Terang Utama Kontras Tinggi (Washi Alabaster & Batu Candi) */
 :root,
 html[data-theme='terang'] {
   --bg-void: #f6f4ef;
@@ -56,7 +54,7 @@ html[data-theme='terang'] {
   );
 }
 
-/* Mode Gelap Studio Spasial (Smoked Obsidian & Kayu Jati — Opsional) */
+/* Mode Gelap Studio Spasial (Smoked Obsidian & Kayu Jati) */
 html[data-theme='malam'] {
   --bg-void: #12100e;
   --bg-black: #181512;
@@ -184,9 +182,7 @@ textarea {
   border: 0;
 }
 
-/* ==========================================================================
-   1. Preloader Numerik Arsip (00 -> 100)
-   ========================================================================== */
+/* 1. Preloader numerik arsip (00 -> 100) */
 .preloader-curtain {
   position: fixed;
   inset: 0;
@@ -280,9 +276,7 @@ textarea {
   transition: width 0.08s linear;
 }
 
-/* ==========================================================================
-   2. Floating Glass Pill Navbar
-   ========================================================================== */
+/* 2. Bilah navigasi kapsul atas */
 .top-nav {
   position: fixed;
   top: 14px;
@@ -826,9 +820,7 @@ footer {
   scroll-margin-top: 86px;
 }
 
-/* ==========================================================================
-   3. Section Shared Structure & Typography
-   ========================================================================== */
+/* 3. Struktur bagian & tipografi */
 .eyebrow-mono {
   font-family: var(--font-mono);
   font-size: 0.74rem;
@@ -918,9 +910,7 @@ footer {
   background: var(--accent-crimson);
 }
 
-/* ==========================================================================
-   4. Hero & Pinned Scrollytelling Diorama
-   ========================================================================== */
+/* 4. Hero & scrollytelling diorama */
 .diorama-master-band {
   position: relative;
   background: var(--bg-void);
@@ -1228,7 +1218,7 @@ html[data-theme='malam'] .scrolly-narrative {
   border-radius: 999px;
 }
 
-/* Floating Right Chapter Dot Rail (Townhouse style) */
+/* Rel indikator bab mengambang di sisi kanan */
 .chapter-rail {
   position: fixed;
   right: 18px;
@@ -1292,9 +1282,7 @@ html[data-theme='malam'] .scrolly-narrative {
   box-shadow: 0 0 10px var(--accent-ember);
 }
 
-/* ==========================================================================
-   5. Studio Kembaran Digital 3D + Ledger Rekayasa + Pilar Kuratorial
-   ========================================================================== */
+/* 5. Studio Digital Twin 3D, ledger rekayasa & pilar kuratorial */
 .band-section {
   position: relative;
   padding: clamp(38px, 4.5vw, 68px) clamp(20px, 5vw, 64px);
@@ -1841,9 +1829,7 @@ html[data-theme='malam'] .titik-btn-mat {
   justify-content: space-between;
 }
 
-/* ==========================================================================
-   6. Coverflow 3D Perspectif Terbuka + Dossier Seimbang + Repertoar Penuh
-   ========================================================================== */
+/* 6. Coverflow 3D perspektif terbuka & repertoar */
 .archive-showcase-section {
   position: relative;
   padding: clamp(14px, 1.8vw, 20px) clamp(14px, 3.2vw, 40px) 72px;
@@ -3350,9 +3336,7 @@ html[data-theme='malam'] .suluk-aks-line {
   overflow: hidden;
 }
 
-/* ==========================================================================
-   7. Video 1 Signature: Horizontal Etalase + Monolithic Wordmark + Dock
-   ========================================================================== */
+/* 7. Etalase pita horizontal, wordmark latar & filter dock */
 .etalase-black-section {
   position: relative;
   background: var(--bg-void);
@@ -3589,9 +3573,7 @@ html[data-theme='malam'] .wordmark-colossal {
   letter-spacing: 0.08em;
 }
 
-/* ==========================================================================
-   8. Matrix Unsur Perspektif 3D Minimalis (Bebas Overlap Kartu)
-   ========================================================================== */
+/* 8. Matriks unsur perspektif 3D */
 .spatial-wall-section {
   position: relative;
   background: var(--bg-black);
@@ -3730,9 +3712,7 @@ html[data-theme='malam'] .wordmark-colossal {
   transform: translateY(0);
 }
 
-/* ==========================================================================
-   9. Panggung Pakeliran, Lab Aksara, Ledger Sumber & Footer Minimalis
-   ========================================================================== */
+/* 9. Panggung Pakeliran, Lab Aksara, Ledger Sumber & Footer */
 .pakeliran-theatre-box {
   border-radius: 20px;
   border: 1px solid var(--border-hairline);
@@ -4202,7 +4182,7 @@ html[data-theme='malam'] .pakeliran-theatre-box {
   margin-top: 4px;
 }
 
-/* Pamomong AI Orb Section — Unboxed Spatial Stage */
+/* Pamomong AI Orb Section (Unboxed Spatial Stage) */
 .pamomong-grid {
   display: grid;
   grid-template-columns: 1.02fr 0.98fr;
@@ -4972,9 +4952,7 @@ html[data-theme='malam'] .pwa-install-toast {
   margin-bottom: -12px;
 }
 
-/* ==========================================================================
-   10. Responsivitas Semua Perangkat & Gerak Tereduksi
-   ========================================================================== */
+/* 10. Responsivitas perangkat & gerak tereduksi */
 @keyframes kelirCardReveal {
   from {
     opacity: 0.78;
@@ -5926,9 +5904,7 @@ html[data-theme='malam'] .pwa-install-toast {
   }
 }
 
-/* ==========================================================================
-   KELIR Floating Capsule Scrollbar & Kursor Tematik Pahat Kaligrafi-Orbital
-   ========================================================================== */
+/* Rel scrollbar kapsul mengambang & kursor tematik adaptif */
 html.has-kelir-cursor,
 html.has-kelir-cursor body,
 html.has-kelir-cursor button,
@@ -6431,9 +6407,7 @@ html[data-theme='malam'] .kelir-scroll-rail.is-dragging .kelir-scroll-track {
 }
 
 
-/* ============================================================================
-   PENCARIAN GLOBAL ARSIP (CTRL+K), AI STUDIO MULTI-MODE & DALANG VOICE
-   ============================================================================ */
+/* Pencarian global arsip (Ctrl+K), AI Studio multi-mode & narasi Dalang */
 .nav-search-btn {
   display: inline-flex;
   align-items: center;
@@ -6860,9 +6834,7 @@ html[data-theme='malam'] .kelir-scroll-rail.is-dragging .kelir-scroll-track {
 }
 
 
-/* ============================================================================
-   KARAWITAN FLOATING BAR & FILOSOFI GENDING KLASIK JAWA
-   ============================================================================ */
+/* Bilah mengambang Karawitan & filosofi gending klasik Jawa */
 .karawitan-floating-wrap {
   position: fixed;
   left: 20px;
@@ -7131,9 +7103,7 @@ html[data-theme='malam'] .kelir-scroll-rail.is-dragging .kelir-scroll-track {
 }
 
 
-/* ============================================================================
-   OPTIMASI PERFORMA GPU SELULER & RESPONSIVITAS KETAT 320px–1080px
-   ============================================================================ */
+/* Optimasi performa GPU seluler & responsivitas 320px-1080px */
 @media (max-width: 768px), (hover: none) {
   .top-nav,
   .mobile-page-dock,
@@ -7278,9 +7248,7 @@ html[data-theme='malam'] .kelir-scroll-rail.is-dragging .kelir-scroll-track {
   }
 }
 
-/* ==========================================================================
-   KURATOR AI INLINE 3D TWIN, PIAGAM KURATOR, FAVORIT & RUTE TUR AI
-   ========================================================================== */
+/* Kurator AI inline 3D Twin, Piagam Kurator, favorit & rute tur */
 .twin-part-ai-box {
   margin-top: 12px;
   padding-top: 12px;
@@ -7408,9 +7376,7 @@ html[data-theme='malam'] .kelir-scroll-rail.is-dragging .kelir-scroll-track {
   }
 }
 
-/* ==========================================================================
-   HIERARKI VISUAL JAWABAN AI PAMOMONG & STUDIO (JELAS & LANGSUNG TERLIHAT)
-   ========================================================================== */
+/* Hierarki visual jawaban AI Pamomong & Studio */
 .pamomong-answer-box.is-hero-answer {
   background: var(--bg-elevated);
   border: 1.5px solid var(--ember-border);
@@ -7601,9 +7567,7 @@ html[data-theme='malam'] .kelir-scroll-rail.is-dragging .kelir-scroll-track {
   }
 }
 
-/* ==========================================================================
-   Pop-up Tata Kelola: Syarat & Ketentuan, Kebijakan Privasi & Hubungi Kami
-   ========================================================================== */
+/* Pop-up informasi tata kelola: Syarat & Ketentuan, Kebijakan Privasi & Kontak */
 .footer-legal-links {
   display: flex;
   flex-wrap: wrap;

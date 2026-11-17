@@ -55,7 +55,7 @@ function getTeksturPradaTatahan(): {
   ctx.scale(0.5, 0.5);
   bctx.scale(0.5, 0.5);
 
-  // Latar perkamen kulit kerbau berlapis prada emas murni (sesuai foto referensi)
+  // Latar perkamen kulit kerbau berlapis prada emas
   const grad = ctx.createLinearGradient(0, 0, 1024, 1024);
   grad.addColorStop(0, '#f7d983');
   grad.addColorStop(0.35, '#e2b659');
@@ -128,10 +128,7 @@ function getTeksturPradaTatahan(): {
   return { diffuse: cacheSriRamaDiffuse, bump: cacheSriRamaBump };
 }
 
-/**
- * Membuat tekstur kain dodot / bokongan wayang polikrom (merah gincu, biru nila, putih, prada emas)
- * sesuai foto referensi ke-2 (detail bokongan & kain kampuh).
- */
+/** Membuat tekstur kain dodot dan bokongan wayang polikrom (merah gincu, biru nila, putih, prada emas). */
 function getTeksturKainDodot(): THREE.CanvasTexture | null {
   if (typeof document === 'undefined') return null;
   if (cacheDodotDiffuse) return cacheDodotDiffuse;
@@ -394,18 +391,7 @@ function getTeksturKidangKencana(): THREE.CanvasTexture | null {
   return cacheKidangDiffuse;
 }
 
-/**
- * Membangun Wayang Kulit Sri Rama (Gaya Alusan Surakarta/Yogyakarta)
- * dengan detail anatomi sesuai 3 foto referensi pengguna:
- * - Wajah hitam alusan, hidung mbangir lancip, mata gabahan emas-putih, jamang & sumping
- * - Gelung Supit Urang melengkung tinggi dengan lubang tatahan krawangan & garuda mungkur
- * - Badan ramping prada emas dengan kalung ulur-ulur & lubang tatahan tembus cahaya
- * - Kain Kampuh / Dodot polikrom dengan bokongan melengkung di belakang, uncal & konca
- * - Sepasang kaki berukir dengan binggel gelang kaki & lemahan merah di dasar telapak
- * - Cempurit tanduk kerbau melengkung organik mengikuti tulang punggung hingga mahkota
- * - Dua lengan berartikulasi ganda (bahu & siku) + kelat bahu + gelang + tuding tanduk
- * - Busur Gendewa berukir & Anak Panah Guwawijaya
- */
+/** Membangun rig Wayang Kulit Sri Rama gaya alusan Surakarta/Yogyakarta lengkap beserta sendi lengan, Gendewa, dan cempurit tanduk. */
 export function buildSriRamaWayang3D(): WayangSriRamaRig {
   const tex = loadBudayaTextures();
   const prada = getTeksturPradaTatahan();
@@ -470,9 +456,7 @@ export function buildSriRamaWayang3D(): WayangSriRamaRig {
   const badan = new THREE.Group();
   root.add(badan);
 
-  // =========================================================================
-  // 1. TORSO RAMPING ALUSAN + LUBANG TATAHAN KRAWANGAN (Badan & Bahu)
-  // =========================================================================
+  // Torso ramping alusan dengan lubang tatahan krawangan
   const bentukTorso = new THREE.Shape();
   bentukTorso.moveTo(-0.42, 0.56); // Bahu depan (kiri)
   bentukTorso.quadraticCurveTo(-0.1, 0.62, 0.44, 0.53); // Bahu belakang (kanan)
@@ -518,9 +502,7 @@ export function buildSriRamaWayang3D(): WayangSriRamaRig {
   kalungMesh.userData.explodeVec = new THREE.Vector3(0, 0.25, 0.62);
   badan.add(kalungMesh);
 
-  // =========================================================================
-  // 2. KEPALA ALUSAN HITAM + MATA GABAHAN + GELUNG SUPIT URANG (Foto 1 & 2)
-  // =========================================================================
+  // Kepala alusan hitam, mata gabahan, & Gelung Supit Urang
   const kepalaGrup = new THREE.Group();
   kepalaGrup.userData.explodeVec = new THREE.Vector3(-0.15, 0.68, 0.45);
 
@@ -612,7 +594,7 @@ export function buildSriRamaWayang3D(): WayangSriRamaRig {
   sumpingMesh.position.z = -0.024;
   kepalaGrup.add(sumpingMesh);
 
-  // Untaian Rambut Panjang Ngore di Punggung Atas (sesuai Foto 1)
+  // Untaian rambut panjang ngore di punggung atas
   const rambutShape = new THREE.Shape();
   rambutShape.moveTo(0.08, 0.68);
   rambutShape.quadraticCurveTo(0.24, 0.62, 0.42, 0.56);
@@ -628,9 +610,7 @@ export function buildSriRamaWayang3D(): WayangSriRamaRig {
 
   badan.add(kepalaGrup);
 
-  // =========================================================================
-  // 3. KAIN KAMPUH / DODOT, BOKONGAN MELENGKUNG, KAKI & LEMAHAN (Foto 1 & 2)
-  // =========================================================================
+  // Kain Kampuh / Dodot, bokongan melengkung, kaki & lemahan
   const kainGrup = new THREE.Group();
   kainGrup.userData.explodeVec = new THREE.Vector3(0, -0.38, 0.35);
 
@@ -641,7 +621,7 @@ export function buildSriRamaWayang3D(): WayangSriRamaRig {
   // Jambul manggaran / panjen di belakang pinggang
   bentukDodot.lineTo(0.36, 0.14);
   bentukDodot.quadraticCurveTo(0.32, 0.02, 0.24, -0.08);
-  // Bokongan bulat melengkung anggun (khas foto 2)
+  // Bokongan bulat melengkung
   bentukDodot.bezierCurveTo(0.56, -0.18, 0.58, -0.58, 0.26, -0.66);
   // Ekor kain konca menjuntai di belakang kaki
   bentukDodot.lineTo(0.42, -0.82);
@@ -731,7 +711,7 @@ export function buildSriRamaWayang3D(): WayangSriRamaRig {
 
   kainGrup.add(buatKakiWayang(-0.2), buatKakiWayang(0.16));
 
-  // Pita Lemahan Merah penghubung kedua telapak kaki (khas foto 2)
+  // Pita lemahan merah penghubung kedua telapak kaki
   const lemahan = new THREE.Mesh(
     new THREE.BoxGeometry(0.42, 0.045, 0.032),
     merahSunggingMat,
@@ -741,9 +721,7 @@ export function buildSriRamaWayang3D(): WayangSriRamaRig {
 
   badan.add(kainGrup);
 
-  // =========================================================================
-  // 4. CEMPURIT / GAPIT TANDUK KERBAU MELENGKUNG ORGANIK (Foto 2)
-  // =========================================================================
+  // Cempurit tanduk kerbau melengkung mengikuti rangka punggung
   const kurvaCempurit = new THREE.CatmullRomCurve3([
     new THREE.Vector3(0.05, -1.85, 0.025), // Gagang pegangan dalang di gedebog
     new THREE.Vector3(0.04, -1.02, 0.025), // Antara kedua kaki
@@ -767,9 +745,7 @@ export function buildSriRamaWayang3D(): WayangSriRamaRig {
   huluCempurit.userData.explodeVec = new THREE.Vector3(0, -0.35, -0.68);
   badan.add(cempuritMesh, huluCempurit);
 
-  // =========================================================================
-  // 5. LENGAN KANAN (DEPAN) BERARTIKULASI 2 SENDI + BUSUR GENDEWA + TUDING
-  // =========================================================================
+  // Lengan kanan berartikulasi 2 sendi dengan busur Gendewa & tuding
   const lenganKanan = new THREE.Group();
   lenganKanan.position.set(-0.39, 0.52, 0.028);
   lenganKanan.userData.explodeVec = new THREE.Vector3(-0.68, 0.15, 0.35);
@@ -888,9 +864,7 @@ export function buildSriRamaWayang3D(): WayangSriRamaRig {
   sikuKanan.rotation.z = 0.58;
   badan.add(lenganKanan);
 
-  // =========================================================================
-  // 6. LENGAN KIRI (BELAKANG) BERARTIKULASI 2 SENDI + TUDING KIRI
-  // =========================================================================
+  // Lengan kiri berartikulasi 2 sendi dengan tuding
   const lenganKiri = new THREE.Group();
   lenganKiri.position.set(0.41, 0.5, -0.024);
   lenganKiri.userData.explodeVec = new THREE.Vector3(0.68, 0.15, -0.35);
@@ -1209,10 +1183,7 @@ export function buildGunungan3D(): THREE.Group {
   return grup;
 }
 
-/**
- * Membangun jajaran Wayang Simpingan (tokoh kesatria/raja/raksasa yang ditancapkan
- * berjajar di kanan-kiri gedebog kelir sesuai foto referensi ke-3).
- */
+/** Membangun figur Wayang Simpingan untuk deretan kanan dan kiri gedebog kelir. */
 export function buildSimpinganWayang3D(tinggiSkala = 1, menghadapKanan = false): THREE.Group {
   const prada = getTeksturPradaTatahan();
   const dodotTex = getTeksturKainDodot();

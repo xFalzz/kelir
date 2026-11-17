@@ -1,136 +1,152 @@
-LISENSI PRIBADI & KETENTUAN HAK CIPTA PLATFORM KELIR
-(KELIR PERSONAL & PROPRIETARY EDUCATIONAL LICENSE)
+KELIR PERSONAL & PROPRIETARY EDUCATIONAL LICENSE
+Copyright (c) 2026 Nawfal Irfan. All Rights Reserved.
 
-Versi 1.0 - Berlaku Efektif: Tahun 2026
-Hak Cipta (c) 2026 Nawfal Irfan. Seluruh Hak Cipta Dilindungi Undang-Undang.
+Owner & Lead Developer : Nawfal Irfan
+Licensing Contact      : nawfalirfan005@gmail.com
+Website & Portfolio    : https://nawfal.vercel.app
+Instagram              : @nawfaljr__ (https://www.instagram.com/nawfaljr__/)
+Official Repository    : https://github.com/xFalzz/kelir
+Effective Version      : 1.0 (2026)
 
-Pemegang Hak Cipta & Pengembang Utama : Nawfal Irfan
-Email Resmi / Permohonan Izin        : nawfalirfan005@gmail.com
-Situs Web & Portofolio               : https://nawfal.vercel.app
-Instagram Pengelola                  : @nawfaljr__ (https://www.instagram.com/nawfaljr__/)
-Repositori Resmi                     : https://github.com/xFalzz/kelir
+By accessing, viewing, cloning, testing, or executing any source code, 3D visual
+assets, documentation, or web interfaces belonging to the KELIR platform ("the
+Software"), you agree to be bound by the terms of this Personal License.
 
-================================================================================
-BAGIAN I - KETENTUAN RESMI LISENSI PRIBADI KELIR (BAHASA INDONESIA)
-================================================================================
+PART I - ENGLISH OFFICIAL LICENSE (INTERNATIONAL EDITION)
 
-Dengan mengakses, mengunduh, menyalin sebagian, meninjau, maupun menjalankan
-kode sumber, aset visual 3D, dokumentasi, atau antarmuka web dari repositori
-dan platform KELIR ("Perangkat Lunak"), Anda menyatakan setuju untuk terikat
-oleh seluruh ketentuan Lisensi Pribadi ini.
+ARTICLE 01 - SCOPE OF OWNERSHIP & INTELLECTUAL PROPERTY
+All original engineering, visual design, and curated digital assets integrated
+within KELIR are the proprietary intellectual property of Nawfal Irfan,
+including without limitation:
+1. Application source code written in Svelte 5, TypeScript, HTML, and CSS,
+   including the Washi Alabaster (Light) and Smoked Obsidian (Dark) UI systems.
+2. Three.js WebGL spatial stages and procedural 3D geometry builders (Living
+   Pendopo Diorama, Besalen Empu, Bale Karawitan, Digital Twin CAD, 3D
+   Coverflow, Pakeliran Shadow Stage, Suluk Altar, and Pamomong Astrolabe),
+   together with procedural canvas textures and offscreen studio renderers.
+3. Client-side Web Audio API acoustic engines synthesizing Gamelan instruments
+   and 8 classical Javanese Karawitan repertoires.
+4. Architecture and orchestration of the Pamomong Nusantara AI agent, local BM25
+   retrieval engine, layered anti-injection guardrails, and 6 AI Studio modes.
+5. The 86-character Hanacaraka Javanese script engine (Unicode U+A980-U+A9DF),
+   4-language localization matrix (ID/EN/JW/AKS), PNG Curator Certificate
+   generator, adaptive cursor module, and technical documentation.
 
-PASAL 01 - CAKUPAN KARYA & KEKAYAAN INTELEKTUAL PRIBADI
-Seluruh komponen teknis dan desain yang tergabung di dalam KELIR merupakan
-karya intelektual pribadi yang disusun dan dimiliki oleh Nawfal Irfan, meliputi:
-1. Kode sumber aplikasi web berbasis Svelte 5, TypeScript, HTML, dan CSS,
-   termasuk sistem desain visual Washi Alabaster dan Smoked Obsidian.
-2. Arsitektur panggung WebGL Three.js beserta konstruksi geometri 3D prosedural
-   (Diorama Pendopo Agung, Besalen Empu, Bale Karawitan, Digital Twin CAD,
-   Galeri Coverflow 3D, Panggung Pakeliran Wayang Kulit, Panggung Altar Suluk,
-   serta instrumen Astrolabe 3D Pamomong), tekstur kanvas prosedural, dan
-   rendering potret studio.
-3. Mesin sintesis audio prosedural WebAudio untuk instrumen Gamelan dan 8
-   repertoar Karawitan Klasik Jawa beserta tata letak konsol audio.
-4. Implementasi arsitektur agen AI Pamomong Nusantara, mesin temu-balik BM25,
-   lapisan pertahanan anti-injeksi prompt, orkestrasi 6 mode AI Studio, dan
-   kurasi basis pengetahuan budaya Nusantara.
-5. Mesin konversi dan katalog 86 ragam Aksara Jawa Hanacaraka Unicode (U+A980),
-   mesin lokalisasi 4 bahasa (ID/EN/JW/AKS), pencetak Piagam Kurator (.png),
-   kursor tematik adaptif, serta naskah dokumentasi proyek.
-
-PASAL 02 - PENGHORMATAN WARISAN BUDAYA KOMUNAL & ATRIBUSI SUMBER (S1-S7)
-Lisensi Pribadi ini TIDAK mengklaim kepemilikan eksklusif atas pengetahuan
-sejarah, pakem tradisi, maupun warisan budaya komunal bangsa Indonesia dan dunia.
-Nilai filosofis, terminologi adat, pakem pewayangan, notasi karawitan, serta
-aksara tradisional tetap menjadi milik publik dan komunitas pelestari budaya,
-yang diatribusikan secara jujur dan terbuka dalam katalog rujukan S1-S7:
+ARTICLE 02 - COMMUNAL CULTURAL HERITAGE & PRIMARY ATTRIBUTION (S1-S7)
+This Personal License DOES NOT assert private or exclusive ownership over the
+historical knowledge, traditional philosophies, puppetry conventions, musical
+tunings, architecture traditions, or regional scripts of Indonesia. All
+communal heritage knowledge belongs to the public and cultural communities, and
+is transparently attributed to official archival sources S1 through S7:
 - S1: UNESCO Intangible Cultural Heritage (Indonesian Keris)
 - S2: UNESCO Intangible Cultural Heritage (Indonesian Batik)
 - S3: UNESCO Intangible Cultural Heritage (Wayang Puppet Theatre)
 - S4: UNESCO Intangible Cultural Heritage (Gamelan)
-- S5: Museum Sonobudoyo & ISI Surakarta (Kajian Lakon Ramayana)
-- S6: Kementerian Pendidikan, Kebudayaan, Riset, dan Teknologi RI
-      (Arsitektur Vernakular Pendopo Joglo & Tumpang Sari)
-- S7: Kongres Bahasa Jawa, Perpustakaan Nasional RI & Konsorsium Unicode
-      (Standar Aksara Jawa Blok U+A980 - U+A9DF)
+- S5: Museum Sonobudoyo & ISI Surakarta (Ramayana Shadow Theatre Studies)
+- S6: Ministry of Culture of the Republic of Indonesia / Kemdikbudristek RI
+      (Pendopo Joglo & Tumpang Sari Vernacular Architecture)
+- S7: Javanese Language Congress, National Library of Indonesia (Perpusnas RI),
+      & the Unicode Consortium (Javanese Script Block U+A980-U+A9DF)
 
-PASAL 03 - HAK AKSES & PENGGUNAAN YANG DIIZINKAN (IZIN TERBATAS)
-Pemegang Hak Cipta memberikan izin terbatas, tidak eksklusif, dan tidak dapat
-dipindahtangankan untuk:
-1. Mengakses dan mengeksplorasi platform web KELIR untuk kepentingan edukasi,
-   pembelajaran budaya, riset akademik non-komersial, serta apresiasi seni.
-2. Meninjau, menguji secara lokal, dan mengevaluasi kode sumber ini semata-mata
-   untuk keperluan penjurian lomba/kompetisi akademik (termasuk Kompetisi UBSI),
-   tinjauan teknis perekrutan/portofolio resmi, atau audit pendidikan.
-3. Mengunduh keluaran edukatif sisi pengguna (Potret Studio 3D .png, Dossier
-   Kurasi .json, dan Piagam Kurator .png) untuk tugas sekolah, kuliah, atau
-   dokumentasi pribadi non-komersial dengan mencantumkan kredit "KELIR - Nawfal Irfan".
+ARTICLE 03 - PERMITTED USE & LIMITED LICENSE GRANT
+Subject to strict compliance with this License, the Copyright Holder grants a
+limited, non-exclusive, revocable, non-transferable, royalty-free permission to:
+1. Browse and interact with the public KELIR web platform for cultural learning,
+   personal appreciation, and non-commercial educational study.
+2. Inspect, build, and run this repository locally solely for academic peer
+   review, competition judging and evaluation (including Kompetisi UBSI), or
+   authorized technical portfolio assessment.
+3. Export end-user study artifacts generated by the app (3D Studio PNG portraits,
+   JSON curation dossiers, and PNG Curator Certificates) for non-commercial
+   schoolwork or personal reference, provided credit is given to "KELIR -
+   Nawfal Irfan".
+
+ARTICLE 04 - STRICT RESTRICTIONS & PROHIBITED CONDUCT
+Unless explicit prior written permission is signed and granted by Nawfal Irfan,
+any third party is STRICTLY PROHIBITED from:
+1. Copying, cloning, re-branding, or submitting any portion of KELIR source code,
+   3D procedural builders, shaders, UI design system, or curated texts as their
+   own work or competing entry (zero tolerance for plagiarism).
+2. Re-hosting, mirroring, republishing, or redistributing the KELIR repository,
+   compiled distribution bundles, or live mirrors under another domain or app.
+3. Exploiting the Software, 3D geometries, synthesized audio, or curated datasets
+   for any commercial product, paid service, client contract, advertising
+   monetization, or unauthorized training of external commercial AI models.
+4. Removing, altering, or obscuring copyright headers, developer credits, this
+   LICENSE file, or archival source citations S1-S7.
+5. Performing automated mass scraping, denial-of-service floods, prompt
+   injection (jailbreak) attacks, or environment secret extraction against any
+   Pamomong Nusantara endpoint.
+
+ARTICLE 05 - ON-DEVICE PRIVACY & LOCAL PROCESSING
+MediaPipe 21-point hand tracking webcam analysis, Web Audio API acoustic
+synthesis, HTML5 Canvas certificate rendering, and Curation Trail storage
+(localStorage key: kelir_jejak_v1) operate 100% locally inside the user's
+browser without uploading video frames, biometric records, or advertising cookies.
+
+ARTICLE 06 - DISCLAIMER OF WARRANTIES & LIMITATION OF LIABILITY
+THE SOFTWARE AND ALL ASSOCIATED ASSETS ARE PROVIDED ON AN "AS IS" AND "AS
+AVAILABLE" BASIS WITHOUT WARRANTIES OF ANY KIND, EITHER EXPRESS OR IMPLIED,
+INCLUDING WITHOUT LIMITATION FITNESS FOR A PARTICULAR PURPOSE, CONTINUOUS
+UPTIME, OR COMPATIBILITY WITH LEGACY GPU/WEBGL HARDWARE. IN NO EVENT SHALL THE
+COPYRIGHT HOLDER BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, OR
+CONSEQUENTIAL DAMAGES ARISING OUT OF THE USE OF OR INABILITY TO USE THE SOFTWARE.
+
+ARTICLE 07 - GOVERNING LAW & WRITTEN LICENSING REQUESTS
+This License shall be governed by and construed under the laws of the Republic
+of Indonesia, including Law No. 28 of 2014 on Copyright and Law No. 5 of 2017
+on Cultural Advancement. Requests for institutional partnerships, museum
+exhibitions, or written commercial/derivative permissions must be directed in
+writing to: nawfalirfan005@gmail.com.
+
+---
+
+BAGIAN II - LISENSI PRIBADI & KETENTUAN HAK CIPTA RESMI (BAHASA INDONESIA)
+
+Hak Cipta (c) 2026 Nawfal Irfan. Seluruh Hak Cipta Dilindungi Undang-Undang.
+
+PASAL 01 - CAKUPAN KARYA & KEKAYAAN INTELEKTUAL PRIBADI
+Seluruh rekayasa perangkat lunak dan aset digital dalam platform KELIR adalah
+hak kekayaan intelektual pribadi milik Nawfal Irfan, mencakup kode aplikasi
+Svelte 5 dan TypeScript, sistem desain Washi Alabaster dan Smoked Obsidian,
+seluruh panggung 3D WebGL Three.js beserta konstruksi geometri prosedural dan
+tekstur kanvasnya, mesin sintesis WebAudio Karawitan, arsitektur agen AI
+Pamomong Nusantara beserta guardrail keamanan, konverter 86 ragam Aksara Jawa
+Hanacaraka (U+A980-U+A9DF), sistem 4 bahasa (ID/EN/JW/AKS), pencetak Piagam
+Kurator (.png), kursor adaptif, serta naskah dokumentasi resmi.
+
+PASAL 02 - PENGHORMATAN WARISAN BUDAYA KOMUNAL & ATRIBUSI SUMBER (S1-S7)
+Lisensi ini tidak mengklaim hak eksklusif atas pengetahuan sejarah maupun
+warisan budaya komunal Nusantara. Pakem tradisi, seni pertunjukan, laras gamelan,
+arsitektur tradisional, dan aksara daerah tetap menjadi milik publik dan dirujuk
+ke UNESCO ICH (S1-S4), Museum Sonobudoyo & ISI Surakarta (S5), Kemdikbudristek RI
+(S6), serta Kongres Bahasa Jawa, Perpusnas RI, dan Konsorsium Unicode (S7).
+
+PASAL 03 - HAK AKSES & PENGGUNAAN YANG DIIZINKAN
+Pemegang Hak Cipta memberi izin terbatas dan non-eksklusif untuk mengakses
+platform KELIR bagi pembelajaran budaya dan riset non-komersial, meninjau serta
+menjalankan kode secara lokal untuk keperluan penjurian kompetisi akademik
+(termasuk Kompetisi UBSI) atau evaluasi portofolio teknis resmi, serta mengunduh
+Potret Studio 3D (.png), Dossier Kurasi (.json), dan Piagam Kurator (.png)
+untuk tugas non-komersial dengan mencantumkan kredit "KELIR - Nawfal Irfan".
 
 PASAL 04 - PEMBATASAN & LARANGAN KERAS
-Kecuali dengan persetujuan tertulis langsung sebelumnya dari Nawfal Irfan,
-pihak mana pun DILARANG KERAS untuk:
-1. Menyalin, menyadur, mengganti nama merek, atau mengakui seluruh maupun
-   sebagian kode sumber, model geometri 3D prosedural, sistem desain, maupun
-   kurasi naskah KELIR sebagai karya cipta pribadi atau pihak lain (plagiarisme).
-2. Mempublikasikan ulang (re-hosting), mendistribusikan salinan bercermin
-   (mirroring), atau menyebarkan ulang repositori dan build aplikasi KELIR
-   di domain, platform, atau toko aplikasi lain tanpa izin tertulis.
-3. Menggunakan kode sumber, aset 3D, materi audio, atau keluaran platform KELIR
-   untuk keperluan komersial, produk berbayar, monetisasi iklan, kontrak klien,
-   maupun pelatihan ulang model komersial pihak ketiga.
-4. Menghapus, memodifikasi, atau menyembunyikan keterangan hak cipta, nama
-   pengembang, catatan atribusi S1-S7, maupun berkas LISENSI ini.
-5. Melakukan penarikan data otomatis massal (scraping), serangan penolakan
-   layanan (DoS), injeksi prompt (jailbreak), maupun upaya ekstraksi rahasia
-   lingkungan pada endpoint layanan AI Pamomong Nusantara.
+Tanpa persetujuan tertulis dari Nawfal Irfan, pihak mana pun dilarang menyalin
+atau mengganti merek kode/model 3D untuk klaim karya pihak lain (plagiarisme),
+mempublikasikan ulang (re-hosting/mirroring), memonetisasi secara komersial,
+menghapus atribusi hak cipta dan rujukan S1-S7, maupun melakukan scraping massal
+dan injeksi prompt terhadap layanan AI Pamomong Nusantara.
 
-PASAL 05 - PRIVASI PEMROSESAN LOKAL & KEPATUHAN PENGGUNA
-Fitur pelacakan gestur tangan 21 titik (MediaPipe Hands), pemrosesan kamera,
-sintesis audio WebAudio, pencetakan Piagam .png, serta penyimpanan progres
-Paspor Jejak Kurasi (localStorage: kelir_jejak_v1) beroperasi 100% secara lokal
-pada perangkat pengguna tanpa pengumpulan data biometrik atau pelacakan iklan.
-Kueri teks pada Asisten AI hanya dipakai untuk menghasilkan jawaban budaya
-sesuai etika penggunaan yang berlaku.
+PASAL 05 - PRIVASI PEMROSESAN LOKAL
+Kamera gestur tangan 21 titik MediaPipe Hands, audio WebAudio, render Piagam,
+serta riwayat lokal kelir_jejak_v1 berjalan 100% di peramban perangkat pengguna.
 
-PASAL 06 - SANGGAHAN JAMINAN & BATAS TANGGUNG JAWAB (AS-IS DISCLAIMER)
-PERANGKAT LUNAK DAN PLATFORM KELIR DISEDIAKAN DALAM KEADAAN "SEBAGAIMANA ADANYA"
-("AS-IS"), TANPA JAMINAN APA PUN, BAIK TERSURAT MAUPUN TERSIRAT, TERMASUK NAMUN
-TIDAK TERBATAS PADA JAMINAN KESESUAIAN UNTUK TUJUAN TERTENTU ATAU KETERSEDIAAN
-TANPA HENTI. PEMEGANG HAK CIPTA TIDAK BERTANGGUNG JAWAB ATAS KERUGIAN LANGSUNG
-MAUPUN TIDAK LANGSUNG AKIBAT PENGGUNAAN PERANGKAT LUNAK, KETERBATASAN PERANGKAT
-KERAS GPU/WEBGL PENGGUNA, ATAU GANGGUAN JARINGAN EKSTERNAL.
+PASAL 06 - SANGGAHAN JAMINAN (AS-IS)
+Perangkat lunak disediakan sebagaimana adanya tanpa jaminan tersirat apa pun
+termasuk keterbatasan WebGL pada perangkat lawas atau layanan jaringan pihak
+ketiga.
 
-PASAL 07 - HUKUM YANG BERLAKU & PERMOHONAN IZIN TERTULIS
-Ketentuan dalam Lisensi Pribadi ini diatur dan ditafsirkan berdasarkan hukum
-Negara Republik Indonesia, termasuk Undang-Undang Nomor 28 Tahun 2014 tentang
-Hak Cipta serta Undang-Undang Nomor 5 Tahun 2017 tentang Pemajuan Kebudayaan.
-Segala permohonan kerja sama institusional, pameran museum, izin penggunaan
-khusus, atau lisensi tertulis wajib diajukan langsung kepada Pemegang Hak Cipta
-melalui email resmi: nawfalirfan005@gmail.com.
-
-================================================================================
-PART II - EXECUTIVE SUMMARY (ENGLISH TRANSLATION FOR REFERENCE)
-================================================================================
-
-Copyright (c) 2026 Nawfal Irfan. All Rights Reserved.
-
-KELIR (Spatial Heritage Archive & WebGL 3D Cultural Platform) is proprietary
-educational software created and maintained exclusively by Nawfal Irfan
-(nawfalirfan005@gmail.com | https://nawfal.vercel.app | @nawfaljr__).
-
-1. Permitted Use: Visitors, researchers, students, and competition judges may
-   view, inspect, and evaluate the platform and repository for non-commercial
-   educational learning, cultural appreciation, and authorized competition/
-   portfolio review, provided attribution to "KELIR - Nawfal Irfan" is kept.
-2. Restrictions: Commercial exploitation, redistribution, re-hosting, derivative
-   re-branding, plagiarism, removal of copyright or S1-S7 archival notices, and
-   automated scraping or AI prompt-injection attacks are strictly prohibited
-   without prior written authorization from the copyright holder.
-3. Cultural Commons Attribution: Traditional Indonesian heritage knowledge,
-   terminology, and script traditions remain communal cultural heritage openly
-   referenced to UNESCO ICH, Kemdikbudristek RI, Museum Sonobudoyo, National
-   Library RI, and the Unicode Consortium (S1-S7).
-4. Warranty Disclaimer: Provided "AS-IS" without warranties of any kind.
-5. Governing Law: Laws of the Republic of Indonesia.
-
-Inquiries & Licensing Requests: nawfalirfan005@gmail.com
+PASAL 07 - HUKUM YANG BERLAKU & KONTAK RESMI
+Tunduk pada hukum Negara Republik Indonesia (UU No. 28 Tahun 2014 tentang Hak
+Cipta dan UU No. 5 Tahun 2017 tentang Pemajuan Kebudayaan). Permohonan izin
+tertulis dan kerja sama institusi dikirimkan ke: nawfalirfan005@gmail.com.

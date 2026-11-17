@@ -109,9 +109,6 @@ kelir/
 │   ├── ai-studio.ts                    # Endpoint serverless 6 mode AI Studio & suara Dalang/Pujangga
 │   ├── suluk-suara.ts                  # Endpoint sintesis audio narator Modal Suluk
 │   └── tanya.ts                        # Endpoint Q&A agen Pamomong Nusantara
-├── docs/
-│   ├── ARSITEKTUR.md                   # Catatan arsitektur halaman, panggung WebGL & alur data
-│   └── PANDUAN-PENGEMBANGAN.md         # Pedoman pengembangan & perluasan kurasi
 ├── public/
 │   ├── icons/                          # Ikon aplikasi PWA (192, 512, maskable, Apple touch)
 │   ├── mediapipe/                      # Model hand_landmarker.task & biner WASM offline
@@ -207,14 +204,14 @@ Isi `.env.local` dengan kunci API Anda di variabel `GEMINI_API_KEY` apabila ingi
 
 ---
 
-## Lisensi Pribadi & Hak Cipta
+## Lisensi Pribadi & Hak Cipta (English & Indonesia)
 
-Seluruh perangkat lunak, kode sumber, model geometri WebGL 3D prosedural, sistem desain visual, sintesis WebAudio, dan dokumentasi dalam repositori ini dilindungi oleh **Lisensi Pribadi & Ketentuan Hak Cipta KELIR** atas nama **Nawfal Irfan** (`Hak Cipta (c) 2026 Nawfal Irfan`).
+Seluruh perangkat lunak, kode sumber, model geometri WebGL 3D prosedural, sistem desain visual, sintesis WebAudio, dan dokumentasi dalam repositori ini dilindungi oleh **Lisensi Pribadi & Ketentuan Hak Cipta KELIR** atas nama **Nawfal Irfan** (`Copyright (c) 2026 Nawfal Irfan. All Rights Reserved.`).
 
-- **Diizinkan**: Eksplorasi edukatif, pembelajaran budaya, penelitian akademik non-komersial, serta peninjauan teknis untuk keperluan penjurian/evaluasi kompetisi atau portofolio resmi dengan menjaga atribusi **KELIR · Nawfal Irfan**.
-- **Dilarang**: Mengklaim ulang kode atau aset sebagai karya pihak lain, mendistribusikan ulang (*re-hosting/mirroring*), komersialisasi tanpa izin tertulis, menghapus atribusi hak cipta atau pustaka `S1-S7`, serta tindakan *scraping* maupun injeksi terhadap layanan AI.
+- **Diizinkan / Permitted**: Eksplorasi edukatif, pembelajaran budaya, penelitian akademik non-komersial, serta peninjauan teknis untuk penjurian kompetisi atau portofolio resmi dengan menjaga atribusi **KELIR - Nawfal Irfan**.
+- **Dilarang / Prohibited**: Klaim karya/plagiarisme, publikasi ulang (*re-hosting/mirroring*), komersialisasi tanpa izin tertulis, penghapusan atribusi hak cipta atau rujukan `S1-S7`, serta tindakan *scraping* maupun injeksi terhadap layanan AI.
 
-Baca ketentuan lengkap pasal demi pasal di berkas **[LICENSE](./LICENSE)**.
+Baca ketentuan lengkap **Edisi Internasional (Bahasa Inggris, Article 01-07)** maupun **Bahasa Indonesia (Pasal 01-07)** di berkas **[LICENSE](./LICENSE)**.
 
 ---
 

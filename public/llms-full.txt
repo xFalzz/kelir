@@ -1,4 +1,4 @@
-# KELIR (`ꦏꦼꦭꦶꦂ`) — Korpus Kuratorial Lengkap (GEO Reference)
+# KELIR (`ꦏꦼꦭꦶꦂ`) · Korpus Kuratorial Lengkap (GEO Reference)
 
 Dokumen ini menyediakan referensi faktual terstruktur bagi mesin pencari generatif (GEO) dan sistem RAG mengenai seluruh isi pameran 5 halaman **KELIR**, spesifikasi teknis model 3D, indeks anatomi, serta kutipan pustaka primer terverifikasi (S1–S7).
 
@@ -7,27 +7,27 @@ Dokumen ini menyediakan referensi faktual terstruktur bagi mesin pencari generat
 2. **02 Digital Twin (`/?hal=twin`)**: Studio inspeksi geometris Three.js dengan tiga mode visual (*PBR Nyata*, *Hibrida*, *Kawat X-Ray CAD*), slider ledakan komponen (*Exploded View*) 7 koleksi lengkap (**Keris Luk 5**, **Saron Slendro**, **Batik Kawung**, **Pendopo Joglo**, **Wayang Purwa**, **Kidang Kencana & Blencong**, serta **Prasasti Hanacaraka U+A980**), proyeksi pin bernomor adaptif ledakan, spesifikasi material-rekayasa per komponen, efek gulir studio, dan sintesis nada bilah Saron Slendro langsung melalui Web Audio API.
 3. **03 Coverflow (`/?hal=koleksi`)**: Galeri Coverflow WebGL 3D realistis bermaterial PBR dengan kurva 7 pedestal kurasi (**Keris Luk 5**, **Saron Laras Slendro**, **Batik Kawung**, **Pendopo Joglo**, **Wayang Purwa**, **Kidang Kencana & Blencong**, serta **Prasasti Hanacaraka U+A980**), dossier anatomi rujukan S1–S7, dan modal layar penuh pemutar larik suluk sinkron.
 4. **04 Pakeliran (`/?hal=pakeliran`)**: Simulasi teater layar blacu dengan figur 3D artikulasi ganda Sri Rama (tuding ganda, mahkota Gelung Supit Urang), Kidang Kencana emas, Gunungan Kayon, lampu gantung Blencong 3 suasana (*Blencong*, *Siluet Kelir*, *Sorot Tatahan*), efek Panah Guwawijaya, dan dukungan opsional kamera pelacak tangan MediaPipe 21 titik yang berjalan 100% lokal di perangkat pengguna.
-5. **05 Aksara & AI (`/?hal=kawruh`)**: Asisten temu-balik BM25 **Pamomong** bersama astrolabe horologis 3D, laboratorium transliterasi Latin ke **Aksara Jawa Hanacaraka (Unicode U+A980–U+A9DF)** real-time, 20 kartu carakan interaktif, serta ledger tautan sumber primer resmi S1–S7. Pamomong menggunakan prinsip *grounded retrieval* dan menolak tegas pertanyaan di luar cakupan arsip (misal tokoh/teknologi modern di luar korpus).
+5. **05 Aksara & AI (`/?hal=kawruh`)**: Asisten temu-balik BM25 **Pamomong** bersama astrolabe horologis 3D, laboratorium transliterasi Latin ke **Aksara Jawa Hanacaraka (Unicode U+A980–U+A9DF)** real-time, 86 aksara lintas 6 ragam carakan interaktif, serta ledger tautan sumber primer resmi S1–S7.
 
-## 2. Indeks 12 Anatomi Pusaka (KLR-01 — KLR-12)
-- **KLR-01 · S1 · Luk 5** (`Tosan Aji`): Bilah Tempa Pandawa — 5 kelokan asimetris bilah keris (`keris-wilah`).
-- **KLR-02 · S4 · Slendro** (`Karawitan`): Larasan Pentatonik 6 Bilah — nada `1 2 3 5 6 i` (`saron-wilah`).
-- **KLR-03 · S2 · Kawung** (`Wastra Soga`): Geometri Papat Pancer — empat lingkaran simetris lambang keselarasan diri (`batik-motif`).
-- **KLR-04 · S6 · Joglo** (`Tumpang Sari`): Pasak Kayu Tanpa Paku — susunan balok piramida terbalik di atas 4 Saka Guru (`joglo-tumpangsari`).
-- **KLR-05 · S3 · Sri Rama** (`Pakeliran`): Wacucal Tatah Krawangan — tokoh wayang kulit alusan Keraton (`wayang-tatahan`).
-- **KLR-06 · S1 · Pamor** (`Beras Wutah`): Meteorit Nikel-Besi — kontras lipatan tempa logam besi, baja inti, dan warangan (`keris-pamor`).
-- **KLR-07 · S4 · Gangsa** (`Gamelan`): Tembaga & Timah 78/22 — paduan akustik perunggu gangsa pada saron demung (`saron-resonator`).
-- **KLR-08 · S2 · Canting** (`Rintang Malam`): Cucuk Tembaga Presisi — pena penoreh lilin malam panas (`batik-canting`).
-- **KLR-09 · S6 · Brunjung** (`Atap Tajug`): Puncak Trapesium Pendopo — atap tinggi berjenjang untuk sirkulasi udara tropis (`joglo-brunjung`).
-- **KLR-10 · S3 · Blencong** (`Pelita Kelir`): Sorot Sumbu Minyak Kelapa — lampu gantung kuningan sayap Garuda di depan layar kelir (`wayang-blencong`).
-- **KLR-11 · S1 · Ganja** (`Pangkal Bilah`): Penyatuan Lingga & Yoni — penopang horizontal pangkal bilah keris (`keris-ganja`).
-- **KLR-12 · S7 · Hanacaraka** (`Aksara Jawa`): Blok Unicode U+A980 — sistem aksara abugida 20 carakan nglegena (`/?hal=kawruh#aksara`).
+## 2. Indeks 12 Anatomi Pusaka (KLR-01 - KLR-12)
+- **KLR-01 · S1 · Luk 5** (`Tosan Aji`): Bilah Tempa Pandawa - 5 kelokan asimetris bilah keris (`keris-wilah`).
+- **KLR-02 · S4 · Slendro** (`Karawitan`): Larasan Pentatonik 6 Bilah - nada `1 2 3 5 6 i` (`saron-wilah`).
+- **KLR-03 · S2 · Kawung** (`Wastra Soga`): Geometri Papat Pancer - empat lingkaran simetris lambang keselarasan diri (`batik-motif`).
+- **KLR-04 · S6 · Joglo** (`Tumpang Sari`): Pasak Kayu Tanpa Paku - susunan balok piramida terbalik di atas 4 Saka Guru (`joglo-tumpangsari`).
+- **KLR-05 · S3 · Sri Rama** (`Pakeliran`): Wacucal Tatah Krawangan - tokoh wayang kulit alusan Keraton (`wayang-tatahan`).
+- **KLR-06 · S1 · Pamor** (`Beras Wutah`): Meteorit Nikel-Besi - kontras lipatan tempa logam besi, baja inti, dan warangan (`keris-pamor`).
+- **KLR-07 · S4 · Gangsa** (`Gamelan`): Tembaga & Timah 78/22 - paduan akustik perunggu gangsa pada saron demung (`saron-resonator`).
+- **KLR-08 · S2 · Canting** (`Rintang Malam`): Cucuk Tembaga Presisi - pena penoreh lilin malam panas (`batik-canting`).
+- **KLR-09 · S6 · Brunjung** (`Atap Tajug`): Puncak Trapesium Pendopo - atap tinggi berjenjang untuk sirkulasi udara tropis (`joglo-brunjung`).
+- **KLR-10 · S3 · Blencong** (`Pelita Kelir`): Sorot Sumbu Minyak Kelapa - lampu gantung kuningan sayap Garuda di depan layar kelir (`wayang-blencong`).
+- **KLR-11 · S1 · Ganja** (`Pangkal Bilah`): Penyatuan Lingga & Yoni - penopang horizontal pangkal bilah keris (`keris-ganja`).
+- **KLR-12 · S7 · Hanacaraka** (`Aksara Jawa`): Blok Unicode U+A980 - sistem aksara abugida 20 carakan nglegena (`/?hal=kawruh#aksara`).
 
 ## 3. Kepustakaan Resmi (S1–S7)
-- **S1**: UNESCO Intangible Cultural Heritage (2008) — *Indonesian Keris*, `https://ich.unesco.org/en/RL/indonesian-keris-00112`
-- **S2**: UNESCO Intangible Cultural Heritage (2009) — *Indonesian Batik*, `https://ich.unesco.org/en/RL/indonesian-batik-00170`
-- **S3**: UNESCO Intangible Cultural Heritage (2008) — *Wayang Puppet Theatre*, `https://ich.unesco.org/en/RL/wayang-puppet-theatre-00063`
-- **S4**: UNESCO Intangible Cultural Heritage (2021) — *Gamelan*, `https://ich.unesco.org/en/RL/gamelan-01607`
-- **S5**: Museum Sonobudoyo & ISI Surakarta (2019) — *Kajian Lakon Ramayana Tradisi Yogyakarta & Surakarta*, `https://sonobudoyo.jogjaprov.go.id`
-- **S6**: Kemdikbud RI — Direktorat Pelindungan Kebudayaan (2020) — *Arsitektur Vernakular Jawa: Konstruksi Pendopo Joglo & Tumpang Sari*, `https://kebudayaan.kemdikbud.go.id`
-- **S7**: Kongres Bahasa Jawa & Perpustakaan Nasional RI (2021) — *Pedoman Ejaan & Transliterasi Aksara Jawa (Hanacaraka)*, `https://www.perpusnas.go.id`
+- **S1**: UNESCO Intangible Cultural Heritage (2008) - *Indonesian Keris*, `https://ich.unesco.org/en/RL/indonesian-keris-00112`
+- **S2**: UNESCO Intangible Cultural Heritage (2009) - *Indonesian Batik*, `https://ich.unesco.org/en/RL/indonesian-batik-00170`
+- **S3**: UNESCO Intangible Cultural Heritage (2008) - *Wayang Puppet Theatre*, `https://ich.unesco.org/en/RL/wayang-puppet-theatre-00063`
+- **S4**: UNESCO Intangible Cultural Heritage (2021) - *Gamelan*, `https://ich.unesco.org/en/RL/gamelan-01607`
+- **S5**: Museum Sonobudoyo & ISI Surakarta (2019) - *Kajian Lakon Ramayana Tradisi Yogyakarta & Surakarta*, `https://sonobudoyo.jogjaprov.go.id`
+- **S6**: Kemdikbud RI, Direktorat Pelindungan Kebudayaan (2020) - *Arsitektur Vernakular Jawa: Konstruksi Pendopo Joglo & Tumpang Sari*, `https://kebudayaan.kemdikbud.go.id`
+- **S7**: Kongres Bahasa Jawa & Perpustakaan Nasional RI (2021) - *Pedoman Ejaan & Transliterasi Aksara Jawa (Hanacaraka)*, `https://www.perpusnas.go.id`

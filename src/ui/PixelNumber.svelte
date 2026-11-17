@@ -5,7 +5,7 @@
 
   let { value = '01' }: Props = $props();
 
-  // Matriks piksel 5x7 otentik bergaya angka bab townhouse.dev
+  // Matriks piksel 5x7 untuk nomor bab scrollytelling
   const GRID: Record<string, string[]> = {
     '0': ['01110', '10001', '10011', '10101', '11001', '10001', '01110'],
     '1': ['00100', '01100', '00100', '00100', '00100', '00100', '01110'],

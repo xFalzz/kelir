@@ -546,8 +546,8 @@ export const REPERTOAR_GENDING_JAWA: GendingBudaya[] = [
       jw: 'Semangat Gotong Royong Holobis Kuntul Baris',
     },
     filosofiMakna: {
-      id: 'Karya legendaris Ki Nartosabdho ini berdenyut energik dengan seruan "Holobis kuntul baris"—menggambarkan barisan bangau yang terbang serempak membelah angin. Beban sebesar gunung pun terasa ringan saat dipikul bergotong royong.',
-      en: 'Ki Nartosabdho’s vibrant Pelog Barang composition echoes the rallying call "Holobis kuntul baris"—cranes flying in unison—teaching that mountain-sized tasks yield to joyful shared effort.',
+      id: 'Karya legendaris Ki Nartosabdho ini berdenyut energik dengan seruan "Holobis kuntul baris", menggambarkan barisan bangau yang terbang serempak membelah angin. Beban sebesar gunung pun terasa ringan saat dipikul bergotong royong.',
+      en: 'Ki Nartosabdho’s vibrant Pelog Barang composition echoes the rallying call "Holobis kuntul baris" (cranes flying in unison), teaching that mountain-sized tasks yield to joyful shared effort.',
       jw: 'Cakepan Ki Nartosabdho punika mawa surasa "Holobis kuntul baris": pakaryan abot kaya ngrubuhake gunung dados entheng menawi katindakaken sesarengan.',
     },
     sumber: ['S4', 'S5'],

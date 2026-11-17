@@ -1,18 +1,9 @@
-# Panduan Agen Pengembang (`AGENTS.md`)
+# Panduan Pengembang KELIR (`AGENTS.md`)
 
-Dokumen ini merupakan aturan kerja terkini bagi pengembang dan agen AI pada basis kode **Kelir (`ꦏꦼꦭꦶꦂ`)** pasca-perombakan total arsitektur spasial 3D.
+Aturan teknis inti bagi pengembang pada repositori **KELIR (`ꦏꦼꦭꦶꦂ`)**:
 
-## Aturan Baku Proyek
-
-1. **Kesetiaan Sistem Desain Spasial 3D**
-   - Antarmuka menggunakan sistem terang kuratorial kontras tinggi (*Warm Museum Alabaster* `#f6f4ef`) sebagai default (`data-theme="terang"`), serta wajib mendukung penuh mode malam studio (`data-theme="malam"` `#0a0b0e`).
-   - Jangan mengubah gaya visual kembali ke panel tabel kaku; pertahankan elemen khas panggung seperti *preloader `00–100`*, *floating HUD callouts*, Coverflow 3D perspektif, Modal Suluk layar penuh, Etalase Pita horizontal, Dinding Ruang 3D, serta mode *X-Ray Wireframe `#ff5a1f`* + *Exploded CAD*.
-2. **Keamanan & Ketahanan WebGL + MediaPipe**
-   - Setiap konstruktor kelas panggung Three.js (`LivingPendopoStage`, `DigitalTwinStage`, `PamomongOrbStage`, `WayangStage`) **harus aman** bila WebGL gagal dibuat (tanpa melempar pengecualian tak tertangani) dan harus membebaskan GPU memory melalui `.destroy()`.
-   - Aset MediaPipe dan tekstur PBR (`public/mediapipe/`, `public/textures/`) **hanya** dimuat secara lokal dari `/mediapipe/` dan `/textures/` demi privasi nol-unggahan kamera dan keandalan luring.
-3. **Keterikatan Sumber Pengetahuan (`S1–S7`)**
-   - Semua fakta budaya, bagian anatomi pusaka, metrik sejarah, dan jawaban `Pamomong AI` berasal dari kurasi `src/content/pusaka.ts` dan menyertakan kode rujukan eksplisit (`S1`–`S7`).
-4. **Penulisan Bahasa**
-   - Mendukung penuh pengalihan langsung antara Bahasa Indonesia (`id`), Basa Jawa (`jw`), dan Aksara Jawa (`aks`) melalui `ambilTeks()` & `latinKeAksaraJawa()`.
-5. **Pengujian Wajib Sebelum Selesai**
-   - Jalankan `npm run check`, `npm run test:unit`, `npm run build`, dan `npm run test:e2e:ci` tanpa galat.
+1. **Sistem Desain Spasial 5 Halaman**: Pertahankan dukungan penuh tema terang *Washi Alabaster* (`#f6f4ef`, default) dan tema gelap *Smoked Obsidian* (`#12100e`) di ke-5 halaman (`beranda`, `twin`, `koleksi`, `pakeliran`, `kawruh`) serta responsivitas `320px-1440px+`.
+2. **Keamanan Lifecycle WebGL & MediaPipe**: Setiap panggung Three.js wajib membebaskan sumber daya GPU via `.destroy()`, tidak melempar pengecualian fatal bila WebGL gagal, dan memuat aset `MediaPipe` serta tekstur hanya secara lokal dari `/mediapipe/` dan `/textures/`.
+3. **Keterikatan Pustaka (`S1-S7`) & Keamanan AI**: Penjelasan spesimen utama wajib menyertakan sitasi `S1-S7` sesuai `src/content/pusaka.ts`, respons AI disanitasi lewat `src/lib/aiGuardrail.ts` (tanpa bocor merek eksternal maupun tanda *em-dash* `\u2014`), dan eksplorasi budaya Nusantara memanfaatkan `src/content/nusantaraKB.ts`.
+4. **Lokalisasi 4 Bahasa**: Seluruh teks antarmuka wajib mendukung `id`, `en`, `jw`, dan `aks` via `tI18n()`, `ambilTeks()`, serta `latinKeAksaraJawa()`.
+5. **Kode Bersih**: Hindari komentar dekoratif/trivial dan jangan sertakan karakter *em-dash* (`\u2014`) di UI maupun dokumentasi. Selalu verifikasi dengan `npm run check`, `npm run test:unit`, `npm run build`, dan `npm run test:e2e:ci`.

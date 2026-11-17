@@ -508,7 +508,7 @@ function buatTeksturPrasastiHanacaraka(): {
 
   dCtx.fillStyle = '#d1491b';
   dCtx.font = '700 22px monospace';
-  dCtx.fillText('UNICODE U+A980 — U+A9DF · S7', w / 2, 108);
+  dCtx.fillText('UNICODE U+A980 - U+A9DF · S7', w / 2, 108);
 
   dCtx.fillStyle = '#f2d388';
   dCtx.font = '700 84px "Noto Sans Javanese", serif';

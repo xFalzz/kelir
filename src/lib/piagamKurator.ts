@@ -51,7 +51,7 @@ export function buatDataUrlPiagamKurator(opts: {
   ctx.textAlign = 'center';
   ctx.fillStyle = borderAccent;
   ctx.font = '600 18px "JetBrains Mono", monospace';
-  ctx.fillText('KELIR  ·  ARSIP SPASIAL WARISAN NUSANTARA  ·  KLR-01 — KLR-12', 700, 136);
+  ctx.fillText('KELIR  ·  ARSIP SPASIAL WARISAN NUSANTARA  ·  KLR-01 - KLR-12', 700, 136);
 
   ctx.fillStyle = fgPrimary;
   ctx.font = '700 44px "Space Grotesk", "Inter", sans-serif';

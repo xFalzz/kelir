@@ -260,7 +260,7 @@
   }
 </script>
 
-<!-- MATRIKS ARSIP 12 UNSUR SPASIAL -->
+<!-- Indeks 12 anatomi pusaka spasial -->
 <section
   id="dinding-ruang"
   class="spatial-wall-section"
@@ -318,7 +318,7 @@
   </div>
 </section>
 
-<!-- ETALASE PITA HORIZONTAL -->
+<!-- Etalase spesimen pita horizontal -->
 <section
   id="etalase"
   class="etalase-black-section"
@@ -431,7 +431,7 @@
   </div>
 </section>
 
-<!-- DIREKTORI 5 HALAMAN EKOSISTEM KELIR -->
+<!-- Direktori 5 halaman ekosistem KELIR -->
 <section class="band-section" aria-label={tI18n(bahasa, 'beranda.dirTitle')}>
   <div class="band-header">
     <div>

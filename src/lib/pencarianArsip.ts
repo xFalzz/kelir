@@ -136,7 +136,7 @@ export function bangunIndeksPencarian(bahasa: BahasaAktif): ItemPencarianArsip[]
     hasil.push({
       id: `suluk-${cf.artefakId}`,
       kategori: 'pusaka',
-      judul: `${namaCf} — ${judulSuluk}`,
+      judul: `${namaCf} · ${judulSuluk}`,
       subjudul: `${laras} · ${ambilTeks(cf.instrumenPengiring, bahasa)}`,
       meta: `${cf.kodeArsip} · SULUK`,
       aksara: cf.aksara,
@@ -175,7 +175,7 @@ export function bangunIndeksPencarian(bahasa: BahasaAktif): ItemPencarianArsip[]
       id: `pakeliran-babak-${bab.id}`,
       kategori: 'pakeliran',
       judul: `${String(bab.nomor).padStart(2, '0')} · ${jBab}`,
-      subjudul: `${loc} — ${ambilTeks(bab.narasiDalang, bahasa)}`,
+      subjudul: `${loc} · ${ambilTeks(bab.narasiDalang, bahasa)}`,
       meta: `${bab.sumber.join(', ')} · RAMAYANA`,
       sumber: bab.sumber,
       kataKunci:
@@ -189,7 +189,7 @@ export function bangunIndeksPencarian(bahasa: BahasaAktif): ItemPencarianArsip[]
     hasil.push({
       id: `carakan-${c.latin}`,
       kategori: 'aksara',
-      judul: `${c.latin.toUpperCase()} (${c.aksara}) — ${c.contohKata}`,
+      judul: `${c.latin.toUpperCase()} (${c.aksara}) · ${c.contohKata}`,
       subjudul: `${c.contohAksara} · ${arti}`,
       meta: 'HANACARAKA U+A980 · S7',
       aksara: c.aksara,
@@ -205,7 +205,7 @@ export function bangunIndeksPencarian(bahasa: BahasaAktif): ItemPencarianArsip[]
       id: `pustaka-${kode}`,
       kategori: 'pustaka',
       judul: `${s.kode} · ${s.judul}`,
-      subjudul: `${s.lembaga} (${s.tahun}) — ${ambilTeks(s.ringkasan, bahasa)}`,
+      subjudul: `${s.lembaga} (${s.tahun}) · ${ambilTeks(s.ringkasan, bahasa)}`,
       meta: s.lembaga,
       sumber: [s.kode],
       kataKunci: `${s.kode} ${s.judul} ${s.lembaga} ${s.tahun} ${s.ringkasan.id} ${s.ringkasan.en}`.toLowerCase(),

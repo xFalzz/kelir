@@ -290,7 +290,7 @@ export class WayangStage {
     this.nyalaApi.position.set(0, 1.9, 2.8);
     this.scene.add(this.nyalaApi);
 
-    // 6. Jajaran Wayang Simpingan Kanan & Kiri (Sesuai Foto Referensi 3)
+    // Jajaran Wayang Simpingan kanan dan kiri
     const posisiSimpinganKiri = [-4.6, -4.15, -3.7, -3.28];
     posisiSimpinganKiri.forEach((sx, idx) => {
       const fig = buildSimpinganWayang3D(0.92 + idx * 0.06, true);

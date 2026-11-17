@@ -399,9 +399,7 @@ export class LivingPendopoStage {
       roughness: 0.2,
     });
 
-    // =========================================================================
-    // 0. LAPISAN GEOLOGI PULAU POTONGAN MELINTANG & TALUD BATU CANDI
-    // =========================================================================
+    // Lapisan geologi pulau & talud batu candi
     const lapisBasalt = new THREE.Mesh(
       new THREE.BoxGeometry(10.0, 0.56, 10.0),
       new THREE.MeshStandardMaterial({ color: 0x1a1c24, roughness: 0.9 }),
@@ -615,9 +613,7 @@ export class LivingPendopoStage {
       this.islandRoot.add(pohon);
     });
 
-    // =========================================================================
-    // 1. PENDOPO JOGLO AGUNG (Pusat Kosmologi — Atap Brunjung & Penanggap Asli)
-    // =========================================================================
+    // 1. Pendopo Joglo Agung (atap brunjung & penanggap)
     const grupJoglo = new THREE.Group();
     const glowJoglo = new THREE.MeshStandardMaterial({
       map: tex.kayuDiffuse,
@@ -729,9 +725,7 @@ export class LivingPendopoStage {
       emissiveMeshes: [glowJoglo, atapTerakotaMat],
     });
 
-    // =========================================================================
-    // 2. BESALEN EMPU KERIS (Barat Laut — Prapen, Ububan Kembar, Paron & Keris)
-    // =========================================================================
+    // 2. Besalen Empu Keris (prapen, ububan kembar, paron & keris)
     const grupKeris = new THREE.Group();
     const glowKeris = new THREE.MeshStandardMaterial({
       color: 0xff5a1f,
@@ -826,9 +820,7 @@ export class LivingPendopoStage {
       emissiveMeshes: [glowKeris],
     });
 
-    // =========================================================================
-    // 3. BALE KARAWITAN GAMELAN (Timur Laut — Gayor Gong, Saron, Bonang, Kendang)
-    // =========================================================================
+    // 3. Bale Karawitan Gamelan (gayor gong, saron, bonang, kendang)
     const grupSaron = new THREE.Group();
     const glowSaron = new THREE.MeshStandardMaterial({
       color: 0xeab308,
@@ -902,9 +894,7 @@ export class LivingPendopoStage {
       emissiveMeshes: [glowSaron],
     });
 
-    // =========================================================================
-    // 4. GAZEBO WASTRA BATIK KAWUNG (Barat Daya — 3 Gawangan Kain + Anglo Malam)
-    // =========================================================================
+    // 4. Gazebo Wastra Batik Kawung (3 gawangan kain & anglo malam)
     const grupBatik = new THREE.Group();
     const panggungBatik = new THREE.Mesh(new THREE.BoxGeometry(2.35, 0.22, 2.2), batuAndesitMat);
     panggungBatik.position.y = 0.2;
@@ -1007,9 +997,7 @@ export class LivingPendopoStage {
       emissiveMeshes: [glowBatik],
     });
 
-    // =========================================================================
-    // 5. PANGGUNG KELIR WAYANG (Tenggara — Layar Blacu, Simpingan & Gunungan)
-    // =========================================================================
+    // 5. Panggung Kelir Wayang (layar blacu, simpingan & gunungan)
     const grupWayang = new THREE.Group();
     const dekWayang = new THREE.Mesh(new THREE.BoxGeometry(2.35, 0.24, 1.85), kayuMat);
     dekWayang.position.y = 0.22;

@@ -318,9 +318,7 @@ export class PamomongOrbStage {
     });
     this.irisEmissiveMats.push(copperEmissiveMat);
 
-    // =========================================================================
-    // 1. Cangkang Bola Terbelah + Turbin Inti BM25 di Sabuk Ekuator
-    // =========================================================================
+    // Cangkang bola terbelah & turbin inti di sabuk ekuator
     const topCapShell = new THREE.Mesh(
       new THREE.SphereGeometry(1.02, 56, 36, 0, Math.PI * 2, 0.18, Math.PI * 0.43),
       brushedTitaniumMat,
@@ -383,9 +381,7 @@ export class PamomongOrbStage {
     topJewel.position.y = 1.21;
     this.chassisGroup.add(topFinial, botFinial, topJewel);
 
-    // =========================================================================
-    // 2. Ruang Optik Safir & Dual Diafragma Lensa Presisi (Depan)
-    // =========================================================================
+    // Ruang optik safir & dual diafragma lensa depan
     const opticBay = new THREE.Group();
     opticBay.position.set(0, 0.19, 0.85);
     opticBay.rotation.x = -0.14;
@@ -494,9 +490,7 @@ export class PamomongOrbStage {
 
     this.chassisGroup.add(opticBay);
 
-    // =========================================================================
-    // 3. Bantalan Poros Samping Kiri & Kanan (Trunnion Bearings)
-    // =========================================================================
+    // Bantalan poros samping (trunnion bearings)
     for (const side of [-1, 1]) {
       const trunnion = new THREE.Group();
       trunnion.position.set(side * 1.03, 0, 0);
@@ -534,10 +528,7 @@ export class PamomongOrbStage {
 
     this.astrolabeRoot.add(this.chassisGroup);
 
-    // =========================================================================
-    // 4. Tiga Cincin Giroskop Astrolabe Presisi (Dalam, Tengah, Luar)
-    // =========================================================================
-    // Cincin 1: Kuningan Sikat dengan 12 Pin Kalibrasi
+    // Tiga cincin giroskop astrolabe (dalam, tengah, luar)
     this.cincinDalam = new THREE.Group();
     const innerHoopPts = [
       new THREE.Vector2(1.22, -0.025),
@@ -604,9 +595,7 @@ export class PamomongOrbStage {
     this.astrolabeRoot.add(this.cincinDalam, this.cincinTengah, this.cincinLuar);
     this.scene.add(this.astrolabeRoot);
 
-    // =========================================================================
-    // 5. Bayangan Kontak Melayang (Menjangkar Objek 3D Tanpa Kotak Pembatas)
-    // =========================================================================
+    // Bayangan kontak lantai tanpa kotak pembatas
     const shadowGeo = new THREE.PlaneGeometry(3.5, 3.5);
     const shadowMat = new THREE.MeshBasicMaterial({
       map: buatTeksturBayanganLantai(false),

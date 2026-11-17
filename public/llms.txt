@@ -1,6 +1,6 @@
-# KELIR — Eksibisi Spasial 3D Pusaka Jawa & Panggung Pakeliran
+# KELIR · Eksibisi Spasial 3D Pusaka Jawa & Panggung Pakeliran
 
-> KELIR (`ꦏꦼꦭꦶꦂ`) adalah platform web kuratorial 5 ruang tematik berbasis WebGL 3D, Web Audio API sintesis gamelan, pelacakan tangan MediaPipe 21 titik secara lokal, serta mesin temu-balik BM25 berbasis arsip resmi Indonesia & UNESCO (S1–S7) tanpa halusinasi.
+> KELIR (`ꦏꦼꦭꦶꦂ`) adalah platform web kuratorial 5 ruang tematik berbasis WebGL 3D, Web Audio API sintesis gamelan, pelacakan tangan MediaPipe 21 titik secara lokal, serta mesin temu-balik BM25 berbasis arsip resmi Indonesia & UNESCO (S1–S7).
 
 ## Halaman Utama
 - [01 Beranda · Diorama Pendopo & Kronik Budaya](https://xfalzz.github.io/kelir/?hal=beranda): Diorama pulau Pendopo 3D, 5 bab scrollytelling historis, Indeks 12 Anatomi Pusaka (`KLR-01`–`KLR-12`), dan Etalase Lapisan Budaya.
@@ -20,10 +20,10 @@
 
 ## Rujukan Primer & Dokumen Lengkap
 - [Korpus Lengkap Untuk Mesin Generatif / AI](/llms-full.txt): Ringkasan faktual lengkap seluruh artifak, unsur KLR-01–KLR-12, serta daftar kepustakaan S1–S7.
-- S1: UNESCO ICH (2008) — Indonesian Keris (`https://ich.unesco.org/en/RL/indonesian-keris-00112`)
-- S2: UNESCO ICH (2009) — Indonesian Batik (`https://ich.unesco.org/en/RL/indonesian-batik-00170`)
-- S3: UNESCO ICH (2008) — Wayang Puppet Theatre (`https://ich.unesco.org/en/RL/wayang-puppet-theatre-00063`)
-- S4: UNESCO ICH (2021) — Gamelan (`https://ich.unesco.org/en/RL/gamelan-01607`)
-- S5: Museum Sonobudoyo & ISI Surakarta (2019) — Kajian Lakon Ramayana (`https://sonobudoyo.jogjaprov.go.id`)
-- S6: Kemdikbud RI (2020) — Arsitektur Vernakular Pendopo Joglo & Tumpang Sari (`https://kebudayaan.kemdikbud.go.id`)
-- S7: Kongres Bahasa Jawa & Perpusnas RI (2021) — Aksara Jawa Unicode U+A980–U+A9DF (`https://www.perpusnas.go.id`)
+- S1: UNESCO ICH (2008) - Indonesian Keris (`https://ich.unesco.org/en/RL/indonesian-keris-00112`)
+- S2: UNESCO ICH (2009) - Indonesian Batik (`https://ich.unesco.org/en/RL/indonesian-batik-00170`)
+- S3: UNESCO ICH (2008) - Wayang Puppet Theatre (`https://ich.unesco.org/en/RL/wayang-puppet-theatre-00063`)
+- S4: UNESCO ICH (2021) - Gamelan (`https://ich.unesco.org/en/RL/gamelan-01607`)
+- S5: Museum Sonobudoyo & ISI Surakarta (2019) - Kajian Lakon Ramayana (`https://sonobudoyo.jogjaprov.go.id`)
+- S6: Kemdikbud RI (2020) - Arsitektur Vernakular Pendopo Joglo & Tumpang Sari (`https://kebudayaan.kemdikbud.go.id`)
+- S7: Kongres Bahasa Jawa & Perpusnas RI (2021) - Aksara Jawa Unicode U+A980–U+A9DF (`https://www.perpusnas.go.id`)

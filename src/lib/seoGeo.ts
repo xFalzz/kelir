@@ -109,7 +109,7 @@ export function bangunJsonLdGraph(hal: HalamanSeoId = 'beranda', origin?: string
         inLanguage: ['id-ID', 'en-US', 'jv'],
         isAccessibleForFree: true,
         about: seoHalaman.geoTopic,
-        citation: Object.values(DAFTAR_SUMBER).map((s) => `${s.kode}: ${s.judul} (${s.lembaga}, ${s.tahun}) — ${s.tautan}`),
+        citation: Object.values(DAFTAR_SUMBER).map((s) => `${s.kode}: ${s.judul} (${s.lembaga}, ${s.tahun}) - ${s.tautan}`),
       },
       {
         '@type': 'ItemList',
