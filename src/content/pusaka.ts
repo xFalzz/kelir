@@ -207,7 +207,7 @@ export function ambilAksenBenda(id: BendaPusaka['id'] | 'kidang' | 'hanacaraka',
 export const DAFTAR_SUMBER: Record<KodeSumber, SumberKajian> = {
   S1: {
     kode: 'S1',
-    judul: 'Indonesian Keris — Intangible Cultural Heritage',
+    judul: 'Indonesian Keris: Intangible Cultural Heritage',
     lembaga: 'UNESCO ICH',
     tahun: '2008',
     tautan: 'https://ich.unesco.org/en/RL/indonesian-keris-00112',
@@ -219,7 +219,7 @@ export const DAFTAR_SUMBER: Record<KodeSumber, SumberKajian> = {
   },
   S2: {
     kode: 'S2',
-    judul: 'Indonesian Batik — Intangible Cultural Heritage',
+    judul: 'Indonesian Batik: Intangible Cultural Heritage',
     lembaga: 'UNESCO ICH',
     tahun: '2009',
     tautan: 'https://ich.unesco.org/en/RL/indonesian-batik-00170',
@@ -231,7 +231,7 @@ export const DAFTAR_SUMBER: Record<KodeSumber, SumberKajian> = {
   },
   S3: {
     kode: 'S3',
-    judul: 'Wayang Puppet Theatre — Intangible Cultural Heritage',
+    judul: 'Wayang Puppet Theatre: Intangible Cultural Heritage',
     lembaga: 'UNESCO ICH',
     tahun: '2008',
     tautan: 'https://ich.unesco.org/en/RL/wayang-puppet-theatre-00063',
@@ -243,7 +243,7 @@ export const DAFTAR_SUMBER: Record<KodeSumber, SumberKajian> = {
   },
   S4: {
     kode: 'S4',
-    judul: 'Gamelan — Intangible Cultural Heritage',
+    judul: 'Gamelan: Intangible Cultural Heritage',
     lembaga: 'UNESCO ICH',
     tahun: '2021',
     tautan: 'https://ich.unesco.org/en/RL/gamelan-01607',
@@ -268,7 +268,7 @@ export const DAFTAR_SUMBER: Record<KodeSumber, SumberKajian> = {
   S6: {
     kode: 'S6',
     judul: 'Arsitektur Vernakular Jawa: Konstruksi Pendopo Joglo & Tumpang Sari',
-    lembaga: 'Kemdikbud RI — Direktorat Pelindungan Kebudayaan',
+    lembaga: 'Kemdikbud RI, Direktorat Pelindungan Kebudayaan',
     tahun: '2020',
     tautan: 'https://kebudayaan.kemdikbud.go.id',
     ringkasan: {
@@ -330,7 +330,7 @@ export const DAFTAR_BENDA: BendaPusaka[] = [
     },
     filosofi: {
       id: 'Manunggaling kawula lan gusti terwujud lewat penyatuan ganja (penopang horizontal) dan wilah (bilah vertikal) sebagai simbol keselarasan batin.',
-      en: 'Manunggaling kawula lan gusti — unity of servant and Creator — is crystallized in the interlock of the horizontal ganja base and rising vertical wilah blade.',
+      en: 'Manunggaling kawula lan gusti, unity of servant and Creator, is crystallized in the interlock of the horizontal ganja base and rising vertical wilah blade.',
       jw: 'Manunggaling kawula gusti kawujud ing nyawijining ganja lan wilah minangka pralambang larasing lahir batin.',
     },
     sulukLarik: [
@@ -403,7 +403,7 @@ export const DAFTAR_BENDA: BendaPusaka[] = [
         judul: { id: 'Ganja Sebit Rontal & Sekar Kacang', en: 'Sebit Rontal Ganja Guard & Sekar Kacang Curl', jw: 'Ganja Dhuwung saha Sekar Kacang' },
         posisi: [-0.02, -0.35, 0.12],
         explodeVec: [-0.24, 0.18, 0.44],
-        material: { id: 'Besi Tempa Sirah Cecak — Buntut Urang', en: 'Hand-Forged Iron (Lizard Head to Shrimp Tail)', jw: 'Wesi Tempa Sirah Cecak — Buntut Urang' },
+        material: { id: 'Besi Tempa Sirah Cecak hingga Buntut Urang', en: 'Hand-Forged Iron (Lizard Head to Shrimp Tail)', jw: 'Wesi Tempa Sirah Cecak dumugi Buntut Urang' },
         fungsiTeknis: {
           id: 'Penopang horizontal pengunci persambungan wilah dengan batang pesi',
           en: 'Horizontal basal collar locking the wilah tang shoulder onto the wooden hilt shaft',
@@ -705,8 +705,8 @@ export const DAFTAR_BENDA: BendaPusaka[] = [
       jw: 'Ing abad kaping-18, motif Kawung klebu batik larangan kraton kanthi pewarna alam soga coklat lan wedel biru indigo.',
     },
     filosofi: {
-      id: 'Empat bulatan melingkari satu pusat mengajarkan konsep Kiblat Papat Lima Pancer — pengendalian diri di antara empat penjuru dunia.',
-      en: 'Four elliptical palm petals orbiting one shared origin embody Kiblat Papat Lima Pancer — mindful harmony anchoring the four cosmic compass directions.',
+      id: 'Empat bulatan melingkari satu pusat mengajarkan konsep Kiblat Papat Lima Pancer, yaitu pengendalian diri di antara empat penjuru dunia.',
+      en: 'Four elliptical palm petals orbiting one shared origin embody Kiblat Papat Lima Pancer, mindful harmony anchoring the four cosmic compass directions.',
       jw: 'Sekawan bunderan ngubengi punjer ngemot piwulang Keblat Papat Lima Pancer.',
     },
     sulukLarik: [
@@ -884,7 +884,7 @@ export const DAFTAR_BENDA: BendaPusaka[] = [
       jw: 'Payon brunjung kang dhuwur nyiptaake sirkulasi hawa adhem saha nuduhake sipat blaka lan terbuka.',
     },
     filosofi: {
-      id: 'Undakan Tumpang Sari menyusun balok jati semakin mengerucut ke puncak — lambang naiknya kesadaran spiritual manusia dari urusan dunia menuju pencipta.',
+      id: 'Undakan Tumpang Sari menyusun balok jati semakin mengerucut ke puncak sebagai lambang naiknya kesadaran spiritual manusia dari urusan dunia menuju pencipta.',
       en: 'Each narrowing tier of the Tumpang Sari beam pyramid ascends toward a unified central apex, symbolizing spiritual elevation from worldly multiplicity toward the One.',
       jw: 'Undhakan tumpang sari kang saya munggah saya nyawiji minangka pralambang laku spiritual manungsa.',
     },
@@ -1469,8 +1469,8 @@ export const LAKON_KIJANG_KENCANA: LakonWayang = {
       lokasi: { id: 'Kabut Senja Wana Dandaka', en: 'Dusk Mist in Dandaka Woods', jw: 'Pedhut Sore ing Wana Dandaka' },
       narasiDalang: {
         id: 'Sebelum sirna kembali ke rupa asli Marica, sang kijang menirukan suara serak Sri Rama memanggil Laksmana. Muslihat ganda ini mewariskan pesan abadi tentang ketenangan batin di hadapan godaan gemerlap semu.',
-        en: 'Before reverting to Marica’s true ogre shape, the falling deer mimics Sri Rama’s voice calling desperately for Laksmana — leaving an enduring teaching against superficial glitter.',
-        jw: 'Sadurunge sirna balik rupa Marica, kidang nirake swara Rama nyuwun tulung Laksmana — piwulang tumrap kasadaran batin.',
+        en: 'Before reverting to Marica’s true ogre shape, the falling deer mimics Sri Rama’s voice calling desperately for Laksmana, leaving an enduring teaching against superficial glitter.',
+        jw: 'Sadurunge sirna balik rupa Marica, kidang nirake swara Rama nyuwun tulung Laksmana, dados piwulang tumrap kasadaran batin.',
       },
       suluk: {
         id: 'Ampun gumunan ing cahya emas semu, amarga katentreman sejati dumunung ing ati kang eling...',
@@ -1496,7 +1496,7 @@ export const KAWRUH_FILOSOFI: KawruhFilosofi[] = [
     },
     makna: {
       id: 'Prinsip filosofis bahwa setiap penciptaan benda budaya (dari penempaan keris hingga panggung kelir) merupakan cermin perjalanan manusia mengenal asal dan arah kembalinya.',
-      en: 'Classical Javanese teaching that every artisanal heirloom — from meteoric keris forging to the white shadow screen — mirrors humanity’s journey knowing where life originates and returns.',
+      en: 'Classical Javanese teaching that every artisanal heirloom, from meteoric keris forging to the white shadow screen, mirrors humanity’s journey knowing where life originates and returns.',
       jw: 'Piwulang luhur yen saben karya budaya dadi pangilon tumrap manungsa mangerteni sangkan parane.',
     },
     keterkaitan: {
@@ -1517,7 +1517,7 @@ export const KAWRUH_FILOSOFI: KawruhFilosofi[] = [
     },
     makna: {
       id: 'Amanat menjaga kelestarian alam dan tata sosial. Terlihat pada pemilihan pewarna tumbuhan alami batik soga, kayu jati terbarukan joglo, dan pelarasan suara alam gamelan.',
-      en: 'Ethical duty to nurture ecological and social harmony — visible across plant-bark batik dyes, nail-free reusable joglo teak joinery, and collective gamelan tuning.',
+      en: 'Ethical duty to nurture ecological and social harmony, visible across plant-bark batik dyes, nail-free reusable joglo teak joinery, and collective gamelan tuning.',
       jw: 'Amanat njaga lestarining alam saha tata sosial, katon ing pewarna alam batik soga lan kayu joglo.',
     },
     keterkaitan: {

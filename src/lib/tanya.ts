@@ -20,6 +20,7 @@ import {
   auditDanBersihkanOutputAI,
   bersihkanInputPengguna,
   deteksiSeranganAtauLuarTopik,
+  hilangkanEmDashAI,
   pesanPenolakanKeamanan,
 } from './aiGuardrail.ts';
 
@@ -187,9 +188,9 @@ function buatDokumenKorpus(): {
         },
         kategori: sp.kategori,
         teks: {
-          id: `${t.judul.id} — ${t.ringkasan.id}`,
-          en: `${t.judul.en} — ${t.ringkasan.en}`,
-          jw: `${t.judul.jw} — ${t.ringkasan.jw}`,
+          id: `${t.judul.id}: ${t.ringkasan.id}`,
+          en: `${t.judul.en}: ${t.ringkasan.en}`,
+          jw: `${t.judul.jw}: ${t.ringkasan.jw}`,
         },
         sumber: t.sumber,
       });
@@ -474,7 +475,7 @@ export function jawabDariKurasiLokal(
           ? `\n\n${ambilTeks(kedua.judul, bahasa)} (${ambilTeks(kedua.wilayah, bahasa)}): ${ambilTeks(kedua.intiSejarah, bahasa)} ${ambilTeks(kedua.maknaFilosofis, bahasa)}`
           : '';
         return {
-          jawaban: `${judul} (${wil}): ${sejarah}\n\n${teknis}\n\n${filosofi}${sambunganKedua}`,
+          jawaban: hilangkanEmDashAI(`${judul} (${wil}): ${sejarah}\n\n${teknis}\n\n${filosofi}${sambunganKedua}`),
           sumber: [],
           mode: 'bm25-kurasi-lokal',
           modelNama: MODEL_AI_PAMOMONG,
@@ -565,7 +566,7 @@ export function jawabDariKurasiLokal(
       ),
     );
   }
-  const sintesisTeks = bagianParagraf.join('\n\n');
+  const sintesisTeks = hilangkanEmDashAI(bagianParagraf.join('\n\n'));
 
   const skorKeyakinan = Math.min(99, Math.max(54, Math.round(52 + Math.min(topSkor, 9.5) * 4.9)));
 

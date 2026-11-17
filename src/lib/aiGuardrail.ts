@@ -383,6 +383,17 @@ export function terindikasiKebocoranAtauHalusinasi(teks: string): boolean {
   return KEBOCORAN_OUTPUT_RE.some((re) => re.test(teks));
 }
 
+/** Menghapus tanda baca em-dash (—) agar jawaban AI memakai koma atau titik dua yang rapi. */
+export function hilangkanEmDashAI(teks: string): string {
+  return teks
+    .replace(/[ \t]*\u2014[ \t]*/g, ', ')
+    .replace(/[ \t]+--[ \t]+/g, ', ')
+    .replace(/[ \t]+,/g, ',')
+    .replace(/,\s*,+/g, ',')
+    .replace(/[ \t]+/g, ' ')
+    .trim();
+}
+
 /**
  * Mengaudit dan membersihkan teks keluaran AI sebelum ditampilkan atau disimpan ke cache.
  * Mengembalikan null bila output terdeteksi bocor, melenceng dari budaya, atau tidak jelas.
@@ -396,14 +407,14 @@ export function auditDanBersihkanOutputAI(
   const maxKarakter = opts.maxKarakter ?? BATAS_KARAKTER_OUTPUT_AI;
   const wajibJangkarBudaya = opts.wajibJangkarBudaya ?? true;
 
-  const trimmed = teksRaw
-    .normalize('NFKC')
-    .replace(/[\u00AD\u034F\u061C\u180E\u200B-\u200F\u202A-\u202E\u2060-\u206F\uFEFF]/g, '')
-    .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, ' ')
-    .replace(/\*\*([^*]+)\*\*/g, '$1')
-    .replace(/^#{1,6}\s+/gm, '')
-    .replace(/\u2014/g, ', ')
-    .replace(/[ \t]+/g, ' ')
+  const trimmed = hilangkanEmDashAI(
+    teksRaw
+      .normalize('NFKC')
+      .replace(/[\u00AD\u034F\u061C\u180E\u200B-\u200F\u202A-\u202E\u2060-\u206F\uFEFF]/g, '')
+      .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, ' ')
+      .replace(/\*\*([^*]+)\*\*/g, '$1')
+      .replace(/^#{1,6}\s+/gm, ''),
+  )
     .replace(/\n{3,}/g, '\n\n')
     .trim();
 

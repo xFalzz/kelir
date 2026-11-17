@@ -1,6 +1,12 @@
 import { describe, expect, it, vi } from 'vitest';
 import { ENSIKLOPEDIA_NUSANTARA, cariKonteksNusantara } from '../../src/content/nusantaraKB.ts';
-import { auditDanBersihkanOutputAI } from '../../src/lib/aiGuardrail.ts';
+import { auditDanBersihkanOutputAI, hilangkanEmDashAI } from '../../src/lib/aiGuardrail.ts';
+import {
+  bandingkanPusakaLokal,
+  susunKramaLokal,
+  susunPujanggaLokal,
+  susunRuteTurLokal,
+} from '../../src/lib/aiStudio.ts';
 import { MODEL_AI_PAMOMONG, jawabDariKurasiLokal } from '../../src/lib/tanya.ts';
 import {
   MODEL_GEMINI_TETAP,
@@ -149,5 +155,36 @@ describe('Ensiklopedia Budaya Nusantara & Identitas Pamomong Nusantara', () => {
       { wajibJangkarBudaya: true },
     );
     expect(aman).toContain('Rumah Gadang');
+  });
+
+  it('tidak pernah mengembalikan tanda em-dash (—) pada respons AI maupun sanitasi keluaran', () => {
+    const cleaned = hilangkanEmDashAI('Keris Luk 5 — pusaka Jawa — memadukan besi dan nikel.');
+    expect(cleaned).not.toContain('—');
+    expect(cleaned).toBe('Keris Luk 5, pusaka Jawa, memadukan besi dan nikel.');
+
+    const dariModel = auditDanBersihkanOutputAI(
+      'Tari Saman — warisan Gayo Aceh — memadukan kekompakan syair.\n\nSubak Bali — sistem irigasi tradisional — menjaga harmoni Tri Hita Karana.',
+      { wajibJangkarBudaya: true },
+    );
+    expect(dariModel).not.toBeNull();
+    expect(dariModel).not.toContain('—');
+    expect(dariModel).toContain('\n\n');
+
+    const ragS1 = jawabDariKurasiLokal('keris', 'Jelaskan ganja keris dan filosofinya', 'en');
+    expect(ragS1.jawaban).not.toContain('—');
+
+    const comp = bandingkanPusakaLokal('keris', 'batik', 'id');
+    expect(comp.persamaan).not.toContain('—');
+    expect(comp.perbedaanMaterial).not.toContain('—');
+    expect(comp.titikTemuFilosofi).not.toContain('—');
+
+    const puj = susunPujanggaLokal('persatuan nusantara', 'id');
+    expect(puj.catatanMakna).not.toContain('—');
+
+    const krama = susunKramaLokal('Saya ingin belajar gamelan dan keris', 'en');
+    expect(krama.catatanEtika).not.toContain('—');
+
+    const tur = susunRuteTurLokal('semua', 'kilat', '', 'id');
+    expect(tur.ringkasanRute).not.toContain('—');
   });
 });

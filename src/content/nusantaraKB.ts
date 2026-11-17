@@ -182,7 +182,7 @@ export const ENSIKLOPEDIA_NUSANTARA: EntriBudayaNusantara[] = [
     },
     maknaFilosofis: {
       id: 'Seluruh tata kehidupan Bali berporos pada Tri Hita Karana: keselarasan hubungan manusia dengan Tuhan (Parahyangan), sesama manusia (Pawongan), serta lingkungan alam (Palemahan), menjadikan air dan kesenian sebagai persembahan suci kolektif.',
-      en: 'Every institution manifests Tri Hita Karana—harmony among the divine (Parahyangan), human society (Pawongan), and the natural ecology (Palemahan).',
+      en: 'Every institution manifests Tri Hita Karana: harmony among the divine (Parahyangan), human society (Pawongan), and the natural ecology (Palemahan).',
       jw: 'Sedaya tatanan Bali ngugemi Tri Hita Karana: kaselarasan sesambungan kalih Gusti (Parahyangan), sesami manungsa (Pawongan), lan alam lingkungan (Palemahan).',
     },
   },
@@ -326,7 +326,7 @@ export const ENSIKLOPEDIA_NUSANTARA: EntriBudayaNusantara[] = [
       jw: 'Batu andesit Borobudur dipunsusun mawi sambungan ngunci tanpa semen lan saluran toya jawah, kaperang dados tigang tataran kosmos: Kamadhatu, Rupadhatu, lan Arupadhatu.',
     },
     maknaFilosofis: {
-      id: 'Ungkapan Bhinneka Tunggal Ika Tan Hana Dharma Mangrwa bermakna "berbeda-beda namun tetap satu jua, tiada kebenaran yang mendua"—mengajarkan toleransi lintas keyakinan, tradisi gotong royong sebagai etos komunal desa Nusantara, serta kesadaran menjaga warisan sejarah bangsa.',
+      id: 'Ungkapan Bhinneka Tunggal Ika Tan Hana Dharma Mangrwa bermakna "berbeda-beda namun tetap satu jua, tiada kebenaran yang mendua", mengajarkan toleransi lintas keyakinan, tradisi gotong royong sebagai etos komunal desa Nusantara, serta kesadaran menjaga warisan sejarah bangsa.',
       en: 'Bhinneka Tunggal Ika Tan Hana Dharma Mangrwa affirms unity in diversity and interfaith tolerance alongside Indonesia’s enduring communal ethic of Gotong Royong.',
       jw: 'Sesanti Bhinneka Tunggal Ika mulangake bilih sanajan maneka warna nanging tetep manunggal, sesarengan kalih semangat gotong royong.',
     },

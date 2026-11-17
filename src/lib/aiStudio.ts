@@ -11,6 +11,7 @@ import { latinKeAksaraJawa } from './aksara.ts';
 import {
   auditDanBersihkanOutputAI,
   bersihkanInputPengguna,
+  hilangkanEmDashAI,
   memilikiJangkarBudaya,
   validasiCatatanTur,
   validasiInputKrama,
@@ -198,9 +199,9 @@ export const BANK_KUIS_S1_S7: SoalKuisKurasi[] = [
     },
     pilihan: [
       {
-        id: 'Kiblat Papat Lima Pancer — keseimbangan empat penjuru pada satu kesadaran pusat',
-        en: 'Kiblat Papat Lima Pancer — four cardinal forces centered in one disciplined self',
-        jw: 'Kiblat Papat Lima Pancer — sekawan keblat wonten ing satunggal punjer kesadaran',
+        id: 'Kiblat Papat Lima Pancer, keseimbangan empat penjuru pada satu kesadaran pusat',
+        en: 'Kiblat Papat Lima Pancer, four cardinal forces centered in one disciplined self',
+        jw: 'Kiblat Papat Lima Pancer, sekawan keblat wonten ing satunggal punjer kesadaran',
       },
       {
         id: 'Sistem kalender Masehi dua belas bulan penuh',
@@ -377,7 +378,7 @@ export function bandingkanPusakaLokal(
       persamaan:
         a.id === b.id
           ? `${judulA} kagungan disiplin kriya ${katA} ingkang utuh miturut arsip ${sumber.join(', ')} kanthi presisi ukuran (${cadA || asalA}) saha piwulang luhur.`
-          : `Kalih-kalihipun — ${judulA} (${katA}) lan ${judulB} (${katB}) — sami-sami ngutamakaken kasabaran garap empu, presisi konstruksi, saha selaras kalih alam miturut pustaka ${sumber.join(', ')}.`,
+          : `Kalih-kalihipun, inggih punika ${judulA} (${katA}) lan ${judulB} (${katB}), sami-sami ngutamakaken kasabaran garap empu, presisi konstruksi, saha selaras kalih alam miturut pustaka ${sumber.join(', ')}.`,
       perbedaanMaterial: `${judulA} ngandelake ${matA} (${cadA || asalA}), dene ${judulB} kagawe saking ${matB} (${cadB || asalB}) ingkang mbutuhake tata pangreksan beda.`,
       titikTemuFilosofi: `${judulA}: ${ambilTeks(a.filosofi, 'jw')} Jumbuh kalih ${judulB}: ${ambilTeks(b.filosofi, 'jw')}`,
       sumber,
@@ -393,12 +394,17 @@ export function bandingkanPusakaLokal(
     bahasa,
     judulA,
     judulB,
-    persamaan:
+    persamaan: hilangkanEmDashAI(
       a.id === b.id
         ? `${judulA} merupakan satu kesatuan utuh disiplin ${katA} dalam arsip ${sumber.join(', ')} yang memadukan presisi rekayasa fisik (${cadA || asalA}) dengan kesadaran budaya turun-temurun.`
-        : `Keduanya — ${judulA} (${katA}) dan ${judulB} (${katB}) — sama-sama menuntut penguasaan teknik bertahap lintas generasi, ketelitian proporsi material, serta fungsi edukasi nilai budaya menurut pustaka ${sumber.join(', ')}.`,
-    perbedaanMaterial: `${judulA} bertumpu pada ${matA} (${cadA || asalA})${tekA ? ` dengan fungsi teknis ${tekA.toLowerCase()}` : ''}, sedangkan ${judulB} dibangun menggunakan ${matB} (${cadB || asalB})${tekB ? ` yang menonjolkan ${tekB.toLowerCase()}` : ''}. Konservasi material keduanya menuntut perlakuan pelestarian yang khas.`,
-    titikTemuFilosofi: `${judulA}: ${ambilTeks(a.filosofi, 'id')} Bersanding erat dengan ${judulB}: ${ambilTeks(b.filosofi, 'id')}`,
+        : `Keduanya, ${judulA} (${katA}) dan ${judulB} (${katB}), sama-sama menuntut penguasaan teknik bertahap lintas generasi, ketelitian proporsi material, serta fungsi edukasi nilai budaya menurut pustaka ${sumber.join(', ')}.`,
+    ),
+    perbedaanMaterial: hilangkanEmDashAI(
+      `${judulA} bertumpu pada ${matA} (${cadA || asalA})${tekA ? ` dengan fungsi teknis ${tekA.toLowerCase()}` : ''}, sedangkan ${judulB} dibangun menggunakan ${matB} (${cadB || asalB})${tekB ? ` yang menonjolkan ${tekB.toLowerCase()}` : ''}. Konservasi material keduanya menuntut perlakuan pelestarian yang khas.`,
+    ),
+    titikTemuFilosofi: hilangkanEmDashAI(
+      `${judulA}: ${ambilTeks(a.filosofi, 'id')} Bersanding erat dengan ${judulB}: ${ambilTeks(b.filosofi, 'id')}`,
+    ),
     sumber,
     modelNama: MODEL_AI_STUDIO,
     mode: 'kurasi-lokal',
@@ -518,7 +524,7 @@ export function susunPujanggaLokal(temaInput: string, bahasa: BahasaAktif): Puja
     artiEn =
       'From Sabang to Merauke, diverse rhythms meet in shared grace;\nOcean waves and communal arts safeguard the dignity of our archipelago.';
     maknaId =
-      'Menggemakan nilai persaudaraan Nusantara—dari kekompakan seni gerak kolektif hingga kearifan pelaut dan gotong royong penjaga warisan Indonesia.';
+      'Menggemakan nilai persaudaraan Nusantara, dari kekompakan seni gerak kolektif hingga kearifan pelaut dan gotong royong penjaga warisan Indonesia.';
     maknaEn =
       'Celebrates Nusantara unity across diverse regional dances, seafaring crafts, and communal stewardship from Sumatra to Papua.';
     maknaJw =
@@ -537,11 +543,11 @@ export function susunPujanggaLokal(temaInput: string, bahasa: BahasaAktif): Puja
   return {
     tema: temaBersih,
     bahasa,
-    guritJawa,
-    terjemahan,
+    guritJawa: hilangkanEmDashAI(guritJawa),
+    terjemahan: hilangkanEmDashAI(terjemahan),
     aksaraJawa: latinKeAksaraJawa(guritJawa),
-    catatanMakna,
-    naskahSuara,
+    catatanMakna: hilangkanEmDashAI(catatanMakna),
+    naskahSuara: hilangkanEmDashAI(naskahSuara),
     kodeBcp47,
     audioBase64: null,
     mimeType: null,
@@ -675,7 +681,7 @@ export function susunKramaLokal(
     etikaId =
       'Basa Krama mengganti kata benda sehari-hari dengan kosakata takzim: dhuwung (keris), gangsa (gamelan perunggu), dan sinjang (kain batik) sebagai hormat pada keluhuran kriya leluhur (S1, S2, S4, S7).';
     etikaEn =
-      'Refined Krama Inggil elevates heirloom nouns — dhuwung (keris), gangsa (bronze gamelan), and sinjang (batik) — plus nyuwun pirsa rather than plain takon when inquiring respectfully (S1, S2, S4, S7).';
+      'Refined Krama Inggil elevates heirloom nouns: dhuwung (keris), gangsa (bronze gamelan), and sinjang (batik), plus nyuwun pirsa rather than plain takon when inquiring respectfully (S1, S2, S4, S7).';
     etikaJw =
       'Tembung krama dhuwung, gangsa, lan sinjang nglairaken pakurmatan dhumateng karya empu, pengrawit, lan pambatik (S1, S2, S4, S7).';
     sumber = ['S1', 'S2', 'S4', 'S7'];
@@ -697,11 +703,11 @@ export function susunKramaLokal(
   return {
     kalimatAsal,
     bahasa,
-    ngoko,
-    kramaInggil,
+    ngoko: hilangkanEmDashAI(ngoko),
+    kramaInggil: hilangkanEmDashAI(kramaInggil),
     aksaraJawa: latinKeAksaraJawa(kramaInggil),
-    catatanEtika,
-    naskahSuara: kramaInggil,
+    catatanEtika: hilangkanEmDashAI(catatanEtika),
+    naskahSuara: hilangkanEmDashAI(kramaInggil),
     kodeBcp47: 'jv-ID',
     audioBase64: null,
     mimeType: null,
@@ -1029,13 +1035,15 @@ export function susunRuteTurLokal(
     durasi,
     catatan: catatanBersih,
     bahasa,
-    ringkasanRute: ambilTeks(
-      {
-        id: `Rute kurasi ${isMendalam ? 'mendalam' : 'kilat'} (±${estimasiMenit} menit) menyoroti ${langkah.length} titik warisan terverifikasi S1–S7.${catatanLabel}`,
-        en: `Curated ${isMendalam ? 'deep' : 'express'} spatial itinerary (~${estimasiMenit} min) spanning ${langkah.length} verified S1–S7 rooms.${catatanLabel}`,
-        jw: `Rute kurasi ${isMendalam ? 'jembar' : 'rikat'} (±${estimasiMenit} menit) ngliwati ${langkah.length} papan warisan S1–S7.${catatanLabel}`,
-      },
-      bahasa,
+    ringkasanRute: hilangkanEmDashAI(
+      ambilTeks(
+        {
+          id: `Rute kurasi ${isMendalam ? 'mendalam' : 'kilat'} (±${estimasiMenit} menit) menyoroti ${langkah.length} titik warisan terverifikasi S1–S7.${catatanLabel}`,
+          en: `Curated ${isMendalam ? 'deep' : 'express'} spatial itinerary (~${estimasiMenit} min) spanning ${langkah.length} verified S1–S7 rooms.${catatanLabel}`,
+          jw: `Rute kurasi ${isMendalam ? 'jembar' : 'rikat'} (±${estimasiMenit} menit) ngliwati ${langkah.length} papan warisan S1–S7.${catatanLabel}`,
+        },
+        bahasa,
+      ),
     ),
     estimasiMenit,
     langkah,
