@@ -1097,6 +1097,64 @@ test.describe('Kelir Multi-Page Spasial 3D — Verifikasi 5 Halaman & Realisme 3
     await expect(page.getByTestId('pwa-install-guide')).toBeVisible();
     await page.screenshot({ path: `${ARTIFACT_DIR}/mp-20-mobile-footer-pwa.png` });
 
+    // 9. Verifikasi Pop-up & Tombol Ready Install PWA pada Mobile (390x844) & Desktop (1440x900)
+    await page.evaluate(() => {
+      const ev = new Event('beforeinstallprompt', { cancelable: true }) as Event & {
+        prompt?: () => Promise<void>;
+        userChoice?: Promise<{ outcome: 'accepted' | 'dismissed'; platform: string }>;
+      };
+      ev.prompt = async () => undefined;
+      ev.userChoice = Promise.resolve({ outcome: 'dismissed', platform: 'web' });
+      window.dispatchEvent(ev);
+    });
+    const pwaToast = page.getByTestId('pwa-install-toast');
+    await expect(pwaToast).toBeVisible();
+    await page.waitForTimeout(260);
+    const mobToastGeo = await page.evaluate(() => {
+      const toast = document.querySelector('.pwa-install-toast')?.getBoundingClientRect();
+      const dock = document.querySelector('.mobile-page-dock')?.getBoundingClientRect();
+      if (!toast || !dock) return null;
+      return {
+        left: toast.left,
+        rightGap: window.innerWidth - toast.right,
+        bottomGapToDock: dock.top - toast.bottom,
+        winW: window.innerWidth,
+        right: toast.right,
+      };
+    });
+    expect(mobToastGeo).not.toBeNull();
+    if (mobToastGeo) {
+      expect(mobToastGeo.left).toBeGreaterThanOrEqual(8);
+      expect(mobToastGeo.right).toBeLessThanOrEqual(mobToastGeo.winW - 8);
+      expect(Math.abs(mobToastGeo.left - mobToastGeo.rightGap)).toBeLessThanOrEqual(4);
+      expect(mobToastGeo.bottomGapToDock).toBeGreaterThanOrEqual(6);
+    }
+    await page.screenshot({ path: `${ARTIFACT_DIR}/mp-23-mobile-pwa-popup.png` });
+
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+    await page.waitForTimeout(260);
+    const deskToastGeo = await page.evaluate(() => {
+      const toast = document.querySelector('.pwa-install-toast')?.getBoundingClientRect();
+      const btn = document.querySelector('[data-testid="btn-install-pwa"]');
+      if (!toast || !btn) return null;
+      return {
+        hasReadyClass: btn.classList.contains('is-ready'),
+        rightGap: window.innerWidth - toast.right,
+        bottomGap: window.innerHeight - toast.bottom,
+        width: toast.width,
+      };
+    });
+    expect(deskToastGeo).not.toBeNull();
+    if (deskToastGeo) {
+      expect(deskToastGeo.hasReadyClass).toBe(true);
+      expect(deskToastGeo.rightGap).toBeGreaterThanOrEqual(16);
+      expect(deskToastGeo.rightGap).toBeLessThanOrEqual(36);
+      expect(deskToastGeo.bottomGap).toBeGreaterThanOrEqual(16);
+      expect(deskToastGeo.bottomGap).toBeLessThanOrEqual(36);
+    }
+    await page.screenshot({ path: `${ARTIFACT_DIR}/mp-22-desktop-pwa-install.png` });
+
     expect(errors).toEqual([]);
   });
 });

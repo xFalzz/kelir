@@ -22,6 +22,7 @@
     pwaIosSafari?: boolean;
     pwaPanduanTerbuka?: boolean;
     onPasangPwa?: () => void;
+    onTutupPanduan?: () => void;
   }
 
   let {
@@ -36,6 +37,7 @@
     pwaIosSafari = false,
     pwaPanduanTerbuka = false,
     onPasangPwa,
+    onTutupPanduan,
   }: Props = $props();
 
   // Tahun hak cipta diperbarui otomatis setiap mount, jeda pergantian hari/tahun, maupun focus ulang tab
@@ -160,18 +162,52 @@
           aria-expanded={pwaPanduanTerbuka}
           data-testid="btn-install-pwa"
         >
-          <svg class="footer-pwa-ico" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-            <path
-              d="M8 2.2v7.3m0 0L5.3 6.8M8 9.5l2.7-2.7M3 12.2v.6a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1v-.6"
-              stroke="currentColor"
-              stroke-width="1.45"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            />
-          </svg>
-          <span>
-            {pwaTerpasang ? tI18n(bahasa, 'footer.installedApp') : tI18n(bahasa, 'footer.installApp')}
+          <span class="footer-pwa-badge" aria-hidden="true">
+            {#if pwaTerpasang}
+              <svg class="footer-pwa-ico" viewBox="0 0 16 16" fill="none">
+                <path
+                  d="M3.4 8.3l3.1 3.1 6.1-6.5"
+                  stroke="currentColor"
+                  stroke-width="1.65"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+              </svg>
+            {:else}
+              <svg class="footer-pwa-ico" viewBox="0 0 16 16" fill="none">
+                <path
+                  d="M8 2.4v7m0 0L5.4 6.8M8 9.4l2.6-2.6M3.2 12v.6a1 1 0 0 0 1 1h7.6a1 1 0 0 0 1-1V12"
+                  stroke="currentColor"
+                  stroke-width="1.5"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+              </svg>
+            {/if}
           </span>
+          <span class="footer-pwa-label-group">
+            <span class="footer-pwa-title">
+              {pwaTerpasang ? tI18n(bahasa, 'footer.installedApp') : tI18n(bahasa, 'footer.installApp')}
+            </span>
+            <span class="footer-pwa-meta">
+              {pwaTerpasang
+                ? 'STANDALONE'
+                : pwaPromptTersedia
+                  ? tI18n(bahasa, 'footer.installReadyTag')
+                  : tI18n(bahasa, 'footer.installGuideTag')}
+            </span>
+          </span>
+          {#if !pwaTerpasang}
+            <svg class="footer-pwa-arrow" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+              <path
+                d="M5.5 3.5L10 8l-4.5 4.5"
+                stroke="currentColor"
+                stroke-width="1.45"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+          {/if}
         </button>
       {/if}
     </div>
@@ -179,9 +215,33 @@
 
   {#if pwaPanduanTerbuka && !pwaTerpasang}
     <div class="footer-pwa-guide" role="status" data-testid="pwa-install-guide">
-      {pwaIosSafari
-        ? tI18n(bahasa, 'footer.installGuideIos')
-        : tI18n(bahasa, 'footer.installGuideChrome')}
+      <div class="footer-pwa-guide-emblem" aria-hidden="true">
+        <img src="/icons/icon-192.png" alt="" width="38" height="38" loading="lazy" decoding="async" />
+      </div>
+      <div class="footer-pwa-guide-copy">
+        <div class="footer-pwa-guide-head">
+          <span class="footer-pwa-guide-tag">
+            <span class="live-dot" aria-hidden="true"></span>
+            {tI18n(bahasa, 'footer.installEyebrow')}
+          </span>
+          <strong>{tI18n(bahasa, 'footer.installGuideTitle')}</strong>
+        </div>
+        <p>
+          {pwaIosSafari
+            ? tI18n(bahasa, 'footer.installGuideIos')
+            : tI18n(bahasa, 'footer.installGuideChrome')}
+        </p>
+      </div>
+      {#if onTutupPanduan}
+        <button
+          type="button"
+          class="footer-pwa-guide-close"
+          onclick={onTutupPanduan}
+          aria-label={tI18n(bahasa, 'footer.installGuideClose')}
+        >
+          {tI18n(bahasa, 'footer.installGuideClose')}
+        </button>
+      {/if}
     </div>
   {/if}
 

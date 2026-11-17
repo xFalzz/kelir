@@ -1093,6 +1093,7 @@
     const onBeforeInstallPrompt = (e: Event) => {
       e.preventDefault();
       deferredInstallPrompt = e as PwaInstallPromptEvent;
+      pwaPanduanTerbuka = false;
     };
     const onAppInstalled = () => {
       pwaTerpasang = true;
@@ -2101,21 +2102,68 @@
   {pwaIosSafari}
   {pwaPanduanTerbuka}
   onPasangPwa={pasangAplikasiPwa}
+  onTutupPanduan={() => (pwaPanduanTerbuka = false)}
 />
 
-{#if deferredInstallPrompt && !pwaTerpasang && !pwaBannerDismissed}
-  <aside class="pwa-install-toast" aria-label={tI18n(bahasa, 'footer.installBannerAria')} data-testid="pwa-install-toast">
-    <div class="pwa-toast-copy">
-      <strong>{tI18n(bahasa, 'footer.installPromptTitle')}</strong>
-      <span>{tI18n(bahasa, 'footer.installPromptDesc')}</span>
+{#if deferredInstallPrompt && !pwaTerpasang && !pwaBannerDismissed && !modalSulukBuka && !searchModalBuka && !legalModalBuka}
+  <aside
+    class="pwa-install-toast"
+    class:has-audio-bar={audioAktif}
+    aria-label={tI18n(bahasa, 'footer.installBannerAria')}
+    data-testid="pwa-install-toast"
+  >
+    <div class="pwa-toast-accent-rail" aria-hidden="true"></div>
+    <div class="pwa-toast-top">
+      <div class="pwa-toast-emblem" aria-hidden="true">
+        <img src="/icons/icon-192.png" alt="" width="44" height="44" decoding="async" />
+      </div>
+      <div class="pwa-toast-copy">
+        <div class="pwa-toast-eyebrow">
+          <span class="live-dot" aria-hidden="true"></span>
+          <span>{tI18n(bahasa, 'footer.installEyebrow')}</span>
+        </div>
+        <strong>{tI18n(bahasa, 'footer.installPromptTitle')}</strong>
+        <p>{tI18n(bahasa, 'footer.installPromptDesc')}</p>
+      </div>
+      <button
+        type="button"
+        class="pwa-toast-close"
+        onclick={() => (pwaBannerDismissed = true)}
+        aria-label={tI18n(bahasa, 'footer.installDismissAria')}
+      >
+        <svg viewBox="0 0 16 16" fill="none" aria-hidden="true">
+          <path
+            d="M4.2 4.2L11.8 11.8M11.8 4.2L4.2 11.8"
+            stroke="currentColor"
+            stroke-width="1.5"
+            stroke-linecap="round"
+          />
+        </svg>
+      </button>
     </div>
-    <div class="pwa-toast-actions">
-      <button type="button" class="pill-cta-crimson pwa-toast-btn" onclick={() => void pasangAplikasiPwa()}>
-        {tI18n(bahasa, 'footer.installPromptBtn')}
-      </button>
-      <button type="button" class="util-pill" onclick={() => (pwaBannerDismissed = true)}>
-        {tI18n(bahasa, 'footer.installCloseBtn')}
-      </button>
+
+    <div class="pwa-toast-foot">
+      <div class="pwa-toast-perks" aria-hidden="true">
+        <span>{tI18n(bahasa, 'footer.installPerk1')}</span>
+        <span>{tI18n(bahasa, 'footer.installPerk2')}</span>
+      </div>
+      <div class="pwa-toast-actions">
+        <button type="button" class="pwa-toast-btn-secondary" onclick={() => (pwaBannerDismissed = true)}>
+          {tI18n(bahasa, 'footer.installCloseBtn')}
+        </button>
+        <button type="button" class="pwa-toast-btn-primary" onclick={() => void pasangAplikasiPwa()}>
+          <svg viewBox="0 0 16 16" fill="none" aria-hidden="true">
+            <path
+              d="M8 2.4v7m0 0L5.4 6.8M8 9.4l2.6-2.6M3.2 11.8v.8a1 1 0 0 0 1 1h7.6a1 1 0 0 0 1-1v-.8"
+              stroke="currentColor"
+              stroke-width="1.55"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+          </svg>
+          <span>{tI18n(bahasa, 'footer.installPromptBtn')}</span>
+        </button>
+      </div>
     </div>
   </aside>
 {/if}

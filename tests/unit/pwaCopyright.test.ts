@@ -28,6 +28,9 @@ describe('PWA Installability & Footer Hak Cipta Tahun Otomatis', () => {
       expect(cp).toContain('2027');
       expect(cp).toContain('KELIR');
       expect(tI18n(lang, 'footer.installApp').length).toBeGreaterThan(5);
+      expect(tI18n(lang, 'footer.installReadyTag').length).toBeGreaterThan(3);
+      expect(tI18n(lang, 'footer.installEyebrow').length).toBeGreaterThan(5);
+      expect(tI18n(lang, 'footer.installGuideTitle').length).toBeGreaterThan(5);
       expect(tI18n(lang, 'footer.installGuideChrome').length).toBeGreaterThan(10);
     }
   });
