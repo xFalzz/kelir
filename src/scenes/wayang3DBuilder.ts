@@ -41,16 +41,19 @@ function getTeksturPradaTatahan(): {
   }
 
   const canvas = document.createElement('canvas');
-  canvas.width = 1024;
-  canvas.height = 1024;
+  canvas.width = 512;
+  canvas.height = 512;
   const ctx = canvas.getContext('2d');
 
   const bumpCanvas = document.createElement('canvas');
-  bumpCanvas.width = 1024;
-  bumpCanvas.height = 1024;
+  bumpCanvas.width = 512;
+  bumpCanvas.height = 512;
   const bctx = bumpCanvas.getContext('2d');
 
   if (!ctx || !bctx) return { diffuse: null, bump: null };
+
+  ctx.scale(0.5, 0.5);
+  bctx.scale(0.5, 0.5);
 
   // Latar perkamen kulit kerbau berlapis prada emas murni (sesuai foto referensi)
   const grad = ctx.createLinearGradient(0, 0, 1024, 1024);
@@ -134,10 +137,12 @@ function getTeksturKainDodot(): THREE.CanvasTexture | null {
   if (cacheDodotDiffuse) return cacheDodotDiffuse;
 
   const canvas = document.createElement('canvas');
-  canvas.width = 1024;
-  canvas.height = 1024;
+  canvas.width = 512;
+  canvas.height = 512;
   const ctx = canvas.getContext('2d');
   if (!ctx) return null;
+
+  ctx.scale(0.5, 0.5);
 
   // Dasar putih gading & prada
   ctx.fillStyle = '#f8f1df';
@@ -209,10 +214,12 @@ function getTeksturGununganDetail(): THREE.CanvasTexture | null {
   if (cacheGununganDiffuse) return cacheGununganDiffuse;
 
   const canvas = document.createElement('canvas');
-  canvas.width = 1024;
-  canvas.height = 1536;
+  canvas.width = 512;
+  canvas.height = 768;
   const ctx = canvas.getContext('2d');
   if (!ctx) return null;
+
+  ctx.scale(0.5, 0.5);
 
   // Gradasi kulit kerbau prada emas & bingkai merah api
   const grad = ctx.createRadialGradient(512, 820, 60, 512, 760, 820);

@@ -5,6 +5,7 @@ import {
   disposeSceneObject,
   hitungFovResponsif,
   isMobileGpuProfile,
+  jalankanLoopSetelahSiap,
   pasangObservasiPanggung,
 } from './threeHelpers.ts';
 import {
@@ -77,7 +78,10 @@ export class SulukShowcaseStage {
   private isPlaying = false;
   private rafId: number | null = null;
   private loopAktif = true;
+  private loopSiapMulai = false;
   private stopObservasi: (() => void) | null = null;
+  private abortCtrl = new AbortController();
+  private cancelMulaiLoop: (() => void) | null = null;
 
   constructor(
     container: HTMLElement,
@@ -90,7 +94,10 @@ export class SulukShowcaseStage {
 
     this.camera.position.set(0, 1.05, 6.2);
     this.camera.lookAt(0, 0.02, 0);
-    void applyStudioHDR(this.renderer, this.scene);
+    void applyStudioHDR(this.renderer, this.scene, {
+      signal: this.abortCtrl.signal,
+      delayMs: 140,
+    });
 
     this.setupLightingAndPedestal(tema);
     this.scene.add(this.pedestalGroup, this.modelPivot);
@@ -100,14 +107,25 @@ export class SulukShowcaseStage {
 
     this.stopObservasi = pasangObservasiPanggung(container, (aktif) => {
       this.loopAktif = aktif;
-      if (aktif && this.rafId === null) {
+      if (aktif && this.loopSiapMulai && this.rafId === null) {
         this.loop();
       } else if (!aktif && this.rafId !== null) {
         window.cancelAnimationFrame(this.rafId);
         this.rafId = null;
       }
     });
-    this.loop();
+    this.cancelMulaiLoop = jalankanLoopSetelahSiap(
+      this.renderer,
+      this.scene,
+      this.camera,
+      () => !this.abortCtrl.signal.aborted && Boolean(this.renderer),
+      () => {
+        this.loopSiapMulai = true;
+        if (this.loopAktif && this.rafId === null) {
+          this.loop();
+        }
+      },
+    );
   }
 
   private setupLightingAndPedestal(tema: 'malam' | 'terang'): void {
@@ -318,6 +336,9 @@ export class SulukShowcaseStage {
 
   public destroy(): void {
     this.loopAktif = false;
+    this.abortCtrl.abort();
+    this.cancelMulaiLoop?.();
+    this.cancelMulaiLoop = null;
     this.stopObservasi?.();
     this.stopObservasi = null;
     if (this.rafId !== null) window.cancelAnimationFrame(this.rafId);

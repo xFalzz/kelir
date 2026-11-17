@@ -96,19 +96,25 @@
   function mountSuluk3D(node: HTMLDivElement) {
     let destroyed = false;
     let ro: ResizeObserver | null = null;
+    let rafId: number | null = null;
 
     void import('../../scenes/sulukShowcaseStage.ts').then(({ SulukShowcaseStage }) => {
       if (destroyed) return;
-      const inst = new SulukShowcaseStage(node, tema, track.artefakId);
-      inst.aturLarikAktif(sulukLarikAktif, autoPlayAktif);
-      stage = inst;
-      ro = new ResizeObserver(() => inst.ubahUkuran());
-      ro.observe(node);
+      rafId = window.requestAnimationFrame(() => {
+        rafId = null;
+        if (destroyed) return;
+        const inst = new SulukShowcaseStage(node, tema, track.artefakId);
+        inst.aturLarikAktif(sulukLarikAktif, autoPlayAktif);
+        stage = inst;
+        ro = new ResizeObserver(() => inst.ubahUkuran());
+        ro.observe(node);
+      });
     });
 
     return {
       destroy() {
         destroyed = true;
+        if (rafId !== null) window.cancelAnimationFrame(rafId);
         ro?.disconnect();
         stage?.destroy();
         stage = null;

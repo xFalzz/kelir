@@ -7,13 +7,16 @@ import {
   disposeSceneObject,
   hitungFovResponsif,
   isMobileGpuProfile,
+  jalankanLoopSetelahSiap,
   loadBudayaTextures,
   pasangObservasiPanggung,
   pinProyeksiBerubah,
+  scheduleIdleWork,
 } from './threeHelpers.ts';
 
 let cacheGentengCanvas: { diff: HTMLCanvasElement; bump: HTMLCanvasElement } | null = null;
 let cacheAndesitCanvas: HTMLCanvasElement | null = null;
+let cacheBatikKawungCanvas: HTMLCanvasElement | null = null;
 
 export interface ProyeksiPinDiorama {
   bendaId: BendaPusaka['id'];
@@ -218,7 +221,11 @@ export class LivingPendopoStage {
   private onPinCb: ((pins: ProyeksiPinDiorama[]) => void) | null = null;
   private rafId: number | null = null;
   private loopAktif = true;
+  private loopSiapMulai = false;
   private stopObservasi: (() => void) | null = null;
+  private abortCtrl = new AbortController();
+  private cancelIdleCad: (() => void) | null = null;
+  private cancelMulaiLoop: (() => void) | null = null;
   private prevPins: ProyeksiPinDiorama[] = [];
   private readonly goalPosScratch = new THREE.Vector3();
   private readonly pinProjScratch = new THREE.Vector3();
@@ -231,11 +238,16 @@ export class LivingPendopoStage {
     this.renderer = createSafeWebGLRenderer(container, { alpha: true, antialias: true, shadows: true });
     if (!this.renderer) return;
 
-    void applyStudioHDR(this.renderer, this.scene);
+    void applyStudioHDR(this.renderer, this.scene, {
+      signal: this.abortCtrl.signal,
+      delayMs: 170,
+    });
 
     this.setupLighting();
     this.bangunPulauDiorama();
-    this.cadLineMat = attachCadWireframeLayer(this.islandRoot, 0xe85d2a, this.currentWireframe);
+    this.cancelIdleCad = scheduleIdleWork(() => {
+      this.pastikanCadWireframeLayer();
+    }, 150);
     this.setTheme(initialTheme);
 
     this.camera.position.copy(this.curCamPos);
@@ -243,14 +255,31 @@ export class LivingPendopoStage {
     this.ubahUkuran();
     this.stopObservasi = pasangObservasiPanggung(container, (aktif) => {
       this.loopAktif = aktif;
-      if (aktif && this.rafId === null) {
+      if (aktif && this.loopSiapMulai && this.rafId === null) {
         this.loop();
       } else if (!aktif && this.rafId !== null) {
         window.cancelAnimationFrame(this.rafId);
         this.rafId = null;
       }
     });
-    this.loop();
+    this.cancelMulaiLoop = jalankanLoopSetelahSiap(
+      this.renderer,
+      this.scene,
+      this.camera,
+      () => !this.abortCtrl.signal.aborted && Boolean(this.renderer),
+      () => {
+        this.loopSiapMulai = true;
+        if (this.loopAktif && this.rafId === null) {
+          this.loop();
+        }
+      },
+      150,
+    );
+  }
+
+  private pastikanCadWireframeLayer(): void {
+    if (this.cadLineMat || !this.renderer || this.abortCtrl.signal.aborted) return;
+    this.cadLineMat = attachCadWireframeLayer(this.islandRoot, 0xe85d2a, this.currentWireframe);
   }
 
   public setTheme(tema: 'malam' | 'terang'): void {
@@ -882,41 +911,44 @@ export class LivingPendopoStage {
     panggungBatik.receiveShadow = true;
     grupBatik.add(panggungBatik);
 
-    // Tekstur batik Kawung prosedural untuk layar kain gazebo
-    const batikCanvas = document.createElement('canvas');
-    batikCanvas.width = 256;
-    batikCanvas.height = 256;
-    const bctx = batikCanvas.getContext('2d');
-    if (bctx) {
-      bctx.fillStyle = '#efe3cc';
-      bctx.fillRect(0, 0, 256, 256);
-      bctx.strokeStyle = '#6f3a18';
-      bctx.fillStyle = '#a45724';
-      bctx.lineWidth = 2.5;
-      for (let gx = 32; gx < 256; gx += 64) {
-        for (let gy = 32; gy < 256; gy += 64) {
-          for (const ang of [Math.PI * 0.25, Math.PI * 0.75, Math.PI * 1.25, Math.PI * 1.75]) {
-            bctx.save();
-            bctx.translate(gx + Math.cos(ang) * 14, gy + Math.sin(ang) * 14);
-            bctx.rotate(ang);
+    // Tekstur batik Kawung prosedural untuk layar kain gazebo (di-cache agar rebuild instan)
+    if (!cacheBatikKawungCanvas) {
+      const batikCanvas = document.createElement('canvas');
+      batikCanvas.width = 256;
+      batikCanvas.height = 256;
+      const bctx = batikCanvas.getContext('2d');
+      if (bctx) {
+        bctx.fillStyle = '#efe3cc';
+        bctx.fillRect(0, 0, 256, 256);
+        bctx.strokeStyle = '#6f3a18';
+        bctx.fillStyle = '#a45724';
+        bctx.lineWidth = 2.5;
+        for (let gx = 32; gx < 256; gx += 64) {
+          for (let gy = 32; gy < 256; gy += 64) {
+            for (const ang of [Math.PI * 0.25, Math.PI * 0.75, Math.PI * 1.25, Math.PI * 1.75]) {
+              bctx.save();
+              bctx.translate(gx + Math.cos(ang) * 14, gy + Math.sin(ang) * 14);
+              bctx.rotate(ang);
+              bctx.beginPath();
+              bctx.ellipse(0, 0, 12, 6, 0, 0, Math.PI * 2);
+              bctx.fill();
+              bctx.stroke();
+              bctx.restore();
+            }
+            bctx.fillStyle = '#3b2416';
             bctx.beginPath();
-            bctx.ellipse(0, 0, 12, 6, 0, 0, Math.PI * 2);
+            bctx.arc(gx, gy, 3.2, 0, Math.PI * 2);
             bctx.fill();
-            bctx.stroke();
-            bctx.restore();
+            bctx.fillStyle = '#a45724';
           }
-          bctx.fillStyle = '#3b2416';
-          bctx.beginPath();
-          bctx.arc(gx, gy, 3.2, 0, Math.PI * 2);
-          bctx.fill();
-          bctx.fillStyle = '#a45724';
         }
+        bctx.fillStyle = '#5c2810';
+        bctx.fillRect(0, 0, 256, 12);
+        bctx.fillRect(0, 244, 256, 12);
       }
-      bctx.fillStyle = '#5c2810';
-      bctx.fillRect(0, 0, 256, 12);
-      bctx.fillRect(0, 244, 256, 12);
+      cacheBatikKawungCanvas = batikCanvas;
     }
-    const texBatikKawung = new THREE.CanvasTexture(batikCanvas);
+    const texBatikKawung = new THREE.CanvasTexture(cacheBatikKawungCanvas);
     texBatikKawung.colorSpace = THREE.SRGBColorSpace;
 
     const glowBatik = new THREE.MeshStandardMaterial({
@@ -1092,6 +1124,9 @@ export class LivingPendopoStage {
 
   public aturWireframeMode(ratio: number): void {
     this.targetWireframe = THREE.MathUtils.clamp(ratio, 0, 1);
+    if (this.targetWireframe > 0.015) {
+      this.pastikanCadWireframeLayer();
+    }
   }
 
   public aturParalaks(normX: number, normY: number): void {
@@ -1226,6 +1261,11 @@ export class LivingPendopoStage {
 
   public destroy(): void {
     this.loopAktif = false;
+    this.abortCtrl.abort();
+    this.cancelIdleCad?.();
+    this.cancelIdleCad = null;
+    this.cancelMulaiLoop?.();
+    this.cancelMulaiLoop = null;
     this.stopObservasi?.();
     this.stopObservasi = null;
     if (this.rafId !== null) window.cancelAnimationFrame(this.rafId);

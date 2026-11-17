@@ -108,10 +108,132 @@ export function loadBudayaTextures(): PaketTeksturBudaya {
   return cacheTekstur;
 }
 
+export function scheduleIdleWork(fn: () => void, minDelayMs = 110): () => void {
+  if (typeof window === 'undefined') {
+    fn();
+    return () => undefined;
+  }
+  let cancelled = false;
+  let idleHandle: number | null = null;
+  const winIdle = window as unknown as {
+    requestIdleCallback?: (cb: () => void, opts?: { timeout: number }) => number;
+    cancelIdleCallback?: (id: number) => void;
+  };
+
+  const run = (): void => {
+    if (cancelled) return;
+    if (winIdle.requestIdleCallback) {
+      idleHandle = winIdle.requestIdleCallback(
+        () => {
+          idleHandle = null;
+          if (!cancelled) fn();
+        },
+        { timeout: 450 },
+      );
+    } else {
+      fn();
+    }
+  };
+
+  const timerId = window.setTimeout(run, Math.max(0, minDelayMs));
+  return () => {
+    cancelled = true;
+    window.clearTimeout(timerId);
+    if (idleHandle !== null && winIdle.cancelIdleCallback) {
+      winIdle.cancelIdleCallback(idleHandle);
+    }
+  };
+}
+
+/**
+ * Menunggu 1 frame paint UI lalu melakukan kompilasi shader paralel asinkron (`compileAsync`)
+ * sebelum memulai loop render agar transisi antar-halaman tidak membeku.
+ */
+export function jalankanLoopSetelahSiap(
+  renderer: THREE.WebGLRenderer,
+  scene: THREE.Scene,
+  camera: THREE.Camera,
+  shouldContinue: () => boolean,
+  startLoop: () => void,
+  maxCompileWaitMs = 180,
+): () => void {
+  if (typeof window === 'undefined') return () => undefined;
+  let cancelled = false;
+  let started = false;
+  let rafId: number | null = null;
+  let timerId: number | null = null;
+
+  const selesai = (): void => {
+    if (cancelled || started) return;
+    started = true;
+    if (timerId !== null) {
+      window.clearTimeout(timerId);
+      timerId = null;
+    }
+    if (shouldContinue()) {
+      startLoop();
+    }
+  };
+
+  rafId = window.requestAnimationFrame(() => {
+    rafId = null;
+    if (cancelled || !shouldContinue()) return;
+    try {
+      const gl = renderer.getContext();
+      if (!gl || gl.isContextLost()) {
+        selesai();
+        return;
+      }
+      timerId = window.setTimeout(selesai, maxCompileWaitMs);
+      const maybeAsync = (
+        renderer as unknown as {
+          compileAsync?: (s: THREE.Scene, c: THREE.Camera) => Promise<unknown>;
+        }
+      ).compileAsync?.(scene, camera);
+
+      if (maybeAsync && typeof maybeAsync.then === 'function') {
+        void maybeAsync.then(selesai, selesai);
+      } else {
+        selesai();
+      }
+    } catch {
+      selesai();
+    }
+  });
+
+  return () => {
+    cancelled = true;
+    if (rafId !== null) window.cancelAnimationFrame(rafId);
+    if (timerId !== null) window.clearTimeout(timerId);
+  };
+}
+
 export async function applyStudioHDR(
   renderer: THREE.WebGLRenderer,
   scene: THREE.Scene,
+  opts?: { signal?: AbortSignal; delayMs?: number },
 ): Promise<void> {
+  if (opts?.signal?.aborted) return;
+
+  await new Promise<void>((resolve) => {
+    const delayMs = opts?.delayMs ?? 120;
+    const cancelIdle = scheduleIdleWork(() => {
+      resolve();
+    }, delayMs);
+    if (opts?.signal) {
+      opts.signal.addEventListener(
+        'abort',
+        () => {
+          cancelIdle();
+          resolve();
+        },
+        { once: true },
+      );
+    }
+  });
+
+  if (opts?.signal?.aborted) return;
+
   if (!janjiHdrRaw) {
     janjiHdrRaw = new Promise((resolve) => {
       try {
@@ -129,7 +251,7 @@ export async function applyStudioHDR(
   }
 
   const hdrTexture = await janjiHdrRaw;
-  if (!hdrTexture) return;
+  if (!hdrTexture || opts?.signal?.aborted) return;
   try {
     const gl = renderer.getContext();
     if (!gl || gl.isContextLost()) return;

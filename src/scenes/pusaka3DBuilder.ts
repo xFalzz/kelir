@@ -12,21 +12,38 @@ export interface PaketModel3D {
   orbitAccent?: THREE.Object3D | null;
 }
 
+interface PasanganTekstur {
+  diffuse: THREE.CanvasTexture | null;
+  bump: THREE.CanvasTexture | null;
+}
+
+let cachePamorKeris: PasanganTekstur | null = null;
+let cachePerungguGangsa: PasanganTekstur | null = null;
+let cacheBatikKawung: PasanganTekstur | null = null;
+let cacheUkiranRancakan: PasanganTekstur | null = null;
+let cacheGentengAtap: PasanganTekstur | null = null;
+let cachePrasastiHanacaraka: PasanganTekstur | null = null;
+
 export function buatTeksturPamorKeris(): {
   diffuse: THREE.CanvasTexture | null;
   bump: THREE.CanvasTexture | null;
 } {
   if (typeof document === 'undefined') return { diffuse: null, bump: null };
+  if (cachePamorKeris) return cachePamorKeris;
+
   const canvas = document.createElement('canvas');
-  canvas.width = 512;
-  canvas.height = 1024;
+  canvas.width = 256;
+  canvas.height = 512;
   const ctx = canvas.getContext('2d');
 
   const bumpCanvas = document.createElement('canvas');
-  bumpCanvas.width = 512;
-  bumpCanvas.height = 1024;
+  bumpCanvas.width = 256;
+  bumpCanvas.height = 512;
   const bctx = bumpCanvas.getContext('2d');
   if (!ctx || !bctx) return { diffuse: null, bump: null };
+
+  ctx.scale(0.5, 0.5);
+  bctx.scale(0.5, 0.5);
 
   // Baja inti tempa hitam warangan arsenik
   ctx.fillStyle = '#14171c';
@@ -84,7 +101,8 @@ export function buatTeksturPamorKeris(): {
   bump.wrapS = THREE.RepeatWrapping;
   bump.wrapT = THREE.RepeatWrapping;
 
-  return { diffuse, bump };
+  cachePamorKeris = { diffuse, bump };
+  return cachePamorKeris;
 }
 
 function buatTeksturPerungguGangsa(): {
@@ -92,7 +110,10 @@ function buatTeksturPerungguGangsa(): {
   bump: THREE.CanvasTexture | null;
 } {
   if (typeof document === 'undefined') return { diffuse: null, bump: null };
-  const size = 512;
+  if (cachePerungguGangsa) return cachePerungguGangsa;
+
+  const size = 256;
+  const logical = 512;
   const diffCanvas = document.createElement('canvas');
   diffCanvas.width = size;
   diffCanvas.height = size;
@@ -104,20 +125,23 @@ function buatTeksturPerungguGangsa(): {
   const bCtx = bumpCanvas.getContext('2d');
   if (!dCtx || !bCtx) return { diffuse: null, bump: null };
 
-  const grad = dCtx.createLinearGradient(0, 0, size, size);
+  dCtx.scale(0.5, 0.5);
+  bCtx.scale(0.5, 0.5);
+
+  const grad = dCtx.createLinearGradient(0, 0, logical, logical);
   grad.addColorStop(0, '#f3c15c');
   grad.addColorStop(0.5, '#d9962b');
   grad.addColorStop(1, '#b87419');
   dCtx.fillStyle = grad;
-  dCtx.fillRect(0, 0, size, size);
+  dCtx.fillRect(0, 0, logical, logical);
 
   bCtx.fillStyle = '#7c7c7c';
-  bCtx.fillRect(0, 0, size, size);
+  bCtx.fillRect(0, 0, logical, logical);
 
   // Jejak palu tempa pengrajin gangsa 78/22 & guratan laras nada
-  for (let i = 0; i < 360; i++) {
-    const x = ((i * 97) % size);
-    const y = ((i * 53) % size);
+  for (let i = 0; i < 240; i++) {
+    const x = ((i * 97) % logical);
+    const y = ((i * 53) % logical);
     const r = 6 + (i % 10);
     dCtx.fillStyle = i % 2 === 0 ? 'rgba(255, 240, 195, 0.08)' : 'rgba(90, 52, 8, 0.09)';
     dCtx.beginPath();
@@ -130,11 +154,11 @@ function buatTeksturPerungguGangsa(): {
     bCtx.fill();
   }
 
-  for (let y = 0; y < size; y += 6) {
+  for (let y = 0; y < logical; y += 8) {
     dCtx.strokeStyle = 'rgba(255, 250, 230, 0.05)';
     dCtx.beginPath();
     dCtx.moveTo(0, y);
-    dCtx.lineTo(size, y);
+    dCtx.lineTo(logical, y);
     dCtx.stroke();
   }
 
@@ -147,7 +171,8 @@ function buatTeksturPerungguGangsa(): {
   bump.wrapS = THREE.RepeatWrapping;
   bump.wrapT = THREE.RepeatWrapping;
 
-  return { diffuse, bump };
+  cachePerungguGangsa = { diffuse, bump };
+  return cachePerungguGangsa;
 }
 
 export function buatTeksturBatikKawung(): {
@@ -155,16 +180,21 @@ export function buatTeksturBatikKawung(): {
   bump: THREE.CanvasTexture | null;
 } {
   if (typeof document === 'undefined') return { diffuse: null, bump: null };
+  if (cacheBatikKawung) return cacheBatikKawung;
+
   const canvas = document.createElement('canvas');
-  canvas.width = 1024;
-  canvas.height = 1024;
+  canvas.width = 512;
+  canvas.height = 512;
   const ctx = canvas.getContext('2d');
 
   const bumpCanvas = document.createElement('canvas');
-  bumpCanvas.width = 1024;
-  bumpCanvas.height = 1024;
+  bumpCanvas.width = 512;
+  bumpCanvas.height = 512;
   const bctx = bumpCanvas.getContext('2d');
   if (!ctx || !bctx) return { diffuse: null, bump: null };
+
+  ctx.scale(0.5, 0.5);
+  bctx.scale(0.5, 0.5);
 
   // Latar biru nila tarum & soga keraton gelap
   ctx.fillStyle = '#18120e';
@@ -177,7 +207,7 @@ export function buatTeksturBatikKawung(): {
   bctx.strokeStyle = 'rgba(255, 255, 255, 0.08)';
   ctx.lineWidth = 1;
   bctx.lineWidth = 1;
-  for (let g = 0; g < 1024; g += 8) {
+  for (let g = 0; g < 1024; g += 16) {
     ctx.beginPath();
     ctx.moveTo(g, 0);
     ctx.lineTo(g, 1024);
@@ -289,7 +319,8 @@ export function buatTeksturBatikKawung(): {
   diffuse.colorSpace = THREE.SRGBColorSpace;
   const bump = new THREE.CanvasTexture(bumpCanvas);
 
-  return { diffuse, bump };
+  cacheBatikKawung = { diffuse, bump };
+  return cacheBatikKawung;
 }
 
 function buatTeksturUkiranRancakan(): {
@@ -297,18 +328,23 @@ function buatTeksturUkiranRancakan(): {
   bump: THREE.CanvasTexture | null;
 } {
   if (typeof document === 'undefined') return { diffuse: null, bump: null };
+  if (cacheUkiranRancakan) return cacheUkiranRancakan;
+
   const w = 1024;
   const h = 256;
   const dCanvas = document.createElement('canvas');
-  dCanvas.width = w;
-  dCanvas.height = h;
+  dCanvas.width = 512;
+  dCanvas.height = 128;
   const dCtx = dCanvas.getContext('2d');
 
   const bCanvas = document.createElement('canvas');
-  bCanvas.width = w;
-  bCanvas.height = h;
+  bCanvas.width = 512;
+  bCanvas.height = 128;
   const bCtx = bCanvas.getContext('2d');
   if (!dCtx || !bCtx) return { diffuse: null, bump: null };
+
+  dCtx.scale(0.5, 0.5);
+  bCtx.scale(0.5, 0.5);
 
   dCtx.fillStyle = '#4c180c';
   dCtx.fillRect(0, 0, w, h);
@@ -348,7 +384,8 @@ function buatTeksturUkiranRancakan(): {
   const diffuse = new THREE.CanvasTexture(dCanvas);
   diffuse.colorSpace = THREE.SRGBColorSpace;
   const bump = new THREE.CanvasTexture(bCanvas);
-  return { diffuse, bump };
+  cacheUkiranRancakan = { diffuse, bump };
+  return cacheUkiranRancakan;
 }
 
 function buatTeksturGentengAtap(): {
@@ -356,17 +393,22 @@ function buatTeksturGentengAtap(): {
   bump: THREE.CanvasTexture | null;
 } {
   if (typeof document === 'undefined') return { diffuse: null, bump: null };
+  if (cacheGentengAtap) return cacheGentengAtap;
+
   const size = 512;
   const dCanvas = document.createElement('canvas');
-  dCanvas.width = size;
-  dCanvas.height = size;
+  dCanvas.width = 256;
+  dCanvas.height = 256;
   const dCtx = dCanvas.getContext('2d');
 
   const bCanvas = document.createElement('canvas');
-  bCanvas.width = size;
-  bCanvas.height = size;
+  bCanvas.width = 256;
+  bCanvas.height = 256;
   const bCtx = bCanvas.getContext('2d');
   if (!dCtx || !bCtx) return { diffuse: null, bump: null };
+
+  dCtx.scale(0.5, 0.5);
+  bCtx.scale(0.5, 0.5);
 
   dCtx.fillStyle = '#8b3116';
   dCtx.fillRect(0, 0, size, size);
@@ -405,7 +447,8 @@ function buatTeksturGentengAtap(): {
   bump.wrapT = THREE.RepeatWrapping;
   bump.repeat.set(2.5, 2.5);
 
-  return { diffuse, bump };
+  cacheGentengAtap = { diffuse, bump };
+  return cacheGentengAtap;
 }
 
 function buatTeksturPrasastiHanacaraka(): {
@@ -413,18 +456,25 @@ function buatTeksturPrasastiHanacaraka(): {
   bump: THREE.CanvasTexture | null;
 } {
   if (typeof document === 'undefined') return { diffuse: null, bump: null };
+  if (cachePrasastiHanacaraka) return cachePrasastiHanacaraka;
+
   const w = 768;
   const h = 1024;
+  const outW = 512;
+  const outH = 682;
   const dCanvas = document.createElement('canvas');
-  dCanvas.width = w;
-  dCanvas.height = h;
+  dCanvas.width = outW;
+  dCanvas.height = outH;
   const dCtx = dCanvas.getContext('2d');
 
   const bCanvas = document.createElement('canvas');
-  bCanvas.width = w;
-  bCanvas.height = h;
+  bCanvas.width = outW;
+  bCanvas.height = outH;
   const bCtx = bCanvas.getContext('2d');
   if (!dCtx || !bCtx) return { diffuse: null, bump: null };
+
+  dCtx.scale(outW / w, outH / h);
+  bCtx.scale(outW / w, outH / h);
 
   // Lempeng perunggu tua berpatina gelap
   const bg = dCtx.createLinearGradient(0, 0, w, h);
@@ -491,7 +541,8 @@ function buatTeksturPrasastiHanacaraka(): {
   const diffuse = new THREE.CanvasTexture(dCanvas);
   diffuse.colorSpace = THREE.SRGBColorSpace;
   const bump = new THREE.CanvasTexture(bCanvas);
-  return { diffuse, bump };
+  cachePrasastiHanacaraka = { diffuse, bump };
+  return cachePrasastiHanacaraka;
 }
 
 function buatGeometriAtapTrapesiumTwin(

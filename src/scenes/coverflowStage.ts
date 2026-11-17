@@ -5,6 +5,7 @@ import {
   disposeSceneObject,
   hitungFovResponsif,
   isMobileGpuProfile,
+  jalankanLoopSetelahSiap,
   pasangObservasiPanggung,
 } from './threeHelpers.ts';
 import {
@@ -100,10 +101,17 @@ export class CoverflowStage {
   private onSwipeCb: ((delta: number) => void) | null = null;
   private rafId: number | null = null;
   private loopAktif = true;
+  private loopSiapMulai = false;
+  private temaAktif: 'malam' | 'terang' = 'terang';
+  private pendingSlotIndices: number[] = [];
+  private slotQueueRafId: number | null = null;
   private stopObservasi: (() => void) | null = null;
+  private abortCtrl = new AbortController();
+  private cancelMulaiLoop: (() => void) | null = null;
 
   constructor(container: HTMLElement, tema: 'malam' | 'terang' = 'terang', initialIdx = 0) {
     this.container = container;
+    this.temaAktif = tema;
     this.activeIdx = initialIdx;
     this.continuousIdx = initialIdx;
     this.renderer = createSafeWebGLRenderer(container, { alpha: true, antialias: true, shadows: true });
@@ -111,7 +119,10 @@ export class CoverflowStage {
 
     this.camera.position.set(0, 1.38, 8.85);
     this.camera.lookAt(0, 0.14, 0.25);
-    void applyStudioHDR(this.renderer, this.scene);
+    void applyStudioHDR(this.renderer, this.scene, {
+      signal: this.abortCtrl.signal,
+      delayMs: 140,
+    });
 
     this.setupLightingAndStudio();
     this.bangunCarousel(tema);
@@ -123,14 +134,26 @@ export class CoverflowStage {
     window.addEventListener('pointerup', this.handlePointerUp);
     this.stopObservasi = pasangObservasiPanggung(container, (aktif) => {
       this.loopAktif = aktif;
-      if (aktif && this.rafId === null) {
+      if (aktif && this.loopSiapMulai && this.rafId === null) {
         this.loop();
       } else if (!aktif && this.rafId !== null) {
         window.cancelAnimationFrame(this.rafId);
         this.rafId = null;
       }
     });
-    this.loop();
+    this.cancelMulaiLoop = jalankanLoopSetelahSiap(
+      this.renderer,
+      this.scene,
+      this.camera,
+      () => !this.abortCtrl.signal.aborted && Boolean(this.renderer),
+      () => {
+        this.loopSiapMulai = true;
+        if (this.loopAktif && this.rafId === null) {
+          this.loop();
+        }
+        this.jadwalkanAntreanSlot();
+      },
+    );
   }
 
   private setupLightingAndStudio(): void {
@@ -206,137 +229,186 @@ export class CoverflowStage {
     this.scene.add(this.partikel);
   }
 
-  private bangunCarousel(tema: 'malam' | 'terang'): void {
-    const isDark = tema === 'malam';
+  private bangunSatuSlot(indeks: number): void {
+    const cfg = URUTAN_MODEL[indeks];
+    if (!cfg) return;
+    const isDark = this.temaAktif === 'malam';
+    const slotRoot = new THREE.Group();
+    slotRoot.userData.coverflowIndex = indeks;
 
-    URUTAN_MODEL.forEach((cfg, indeks) => {
-      const slotRoot = new THREE.Group();
-      slotRoot.userData.coverflowIndex = indeks;
-
-      // Pedestal pameran andesit pahat 2 tingkat, alas beludru burgundy, & ganda lis kuningan
-      const basePlinthMat = new THREE.MeshStandardMaterial({
-        color: isDark ? 0x25201b : 0x342d26,
-        roughness: 0.52,
-        metalness: 0.16,
-      });
-      const velvetMat = new THREE.MeshPhysicalMaterial({
-        color: isDark ? 0x4b1512 : 0x5d1814,
-        roughness: 0.88,
-        sheen: 0.85,
-        sheenColor: new THREE.Color(0xd1491b),
-      });
-      const rimMat = new THREE.MeshPhysicalMaterial({
-        color: 0xe0b254,
-        emissive: 0x5c3e10,
-        emissiveIntensity: 0.06,
-        metalness: 0.92,
-        roughness: 0.19,
-        clearcoat: 0.55,
-      });
-
-      const velvetPad = new THREE.Mesh(new THREE.CylinderGeometry(0.92, 0.94, 0.032, 40), velvetMat);
-      velvetPad.position.y = -0.742;
-      velvetPad.receiveShadow = true;
-      velvetPad.userData.coverflowIndex = indeks;
-
-      const alas = new THREE.Mesh(new THREE.CylinderGeometry(1.02, 1.09, 0.125, 40), basePlinthMat);
-      alas.position.y = -0.82;
-      alas.castShadow = true;
-      alas.receiveShadow = true;
-      alas.userData.coverflowIndex = indeks;
-
-      const tiangPlinth = new THREE.Mesh(new THREE.CylinderGeometry(0.84, 0.97, 0.18, 28), basePlinthMat);
-      tiangPlinth.position.y = -0.975;
-      tiangPlinth.castShadow = true;
-      tiangPlinth.receiveShadow = true;
-      tiangPlinth.userData.coverflowIndex = indeks;
-
-      const cincinLis = new THREE.Mesh(new THREE.TorusGeometry(1.01, 0.022, 14, 48), rimMat);
-      cincinLis.rotation.x = Math.PI / 2;
-      cincinLis.position.y = -0.758;
-
-      const cincinBawah = new THREE.Mesh(new THREE.TorusGeometry(0.96, 0.017, 10, 42), rimMat);
-      cincinBawah.rotation.x = Math.PI / 2;
-      cincinBawah.position.y = -1.055;
-
-      // Bangun & normalkan dimensi + dudukkan flush persis di atas bantalan beludru via Box3
-      const paket = buatPaketOlehId(cfg.id);
-      paket.group.traverse((child) => {
-        child.userData.coverflowIndex = indeks;
-      });
-      const rawBox = new THREE.Box3().setFromObject(paket.group);
-      const rawSize = new THREE.Vector3();
-      rawBox.getSize(rawSize);
-      const scaleNorm = Math.min(
-        MAX_BOUND_W / Math.max(rawSize.x, 0.01),
-        MAX_BOUND_H / Math.max(rawSize.y, 0.01),
-        0.74,
-      );
-      paket.group.scale.setScalar(scaleNorm);
-      paket.group.updateMatrixWorld(true);
-
-      const scaledBox = new THREE.Box3().setFromObject(paket.group);
-      const centerX = (scaledBox.min.x + scaledBox.max.x) * 0.5;
-      const centerZ = (scaledBox.min.z + scaledBox.max.z) * 0.5;
-      paket.group.position.x = -centerX;
-      paket.group.position.z = -centerZ;
-      paket.group.position.y = PAD_TOP_Y - scaledBox.min.y - 0.01;
-
-      const artefakPivot = new THREE.Group();
-      artefakPivot.add(paket.group);
-
-      slotRoot.add(velvetPad, alas, tiangPlinth, cincinLis, cincinBawah, artefakPivot);
-      this.scene.add(slotRoot);
-
-      this.slots.push({
-        indeks,
-        artefakId: cfg.id,
-        root: slotRoot,
-        artefakPivot,
-        rimMat,
-        basePlinthMat,
-        velvetMat,
-        paket,
-        targetX: 0,
-        targetY: 0,
-        targetZ: 0,
-        targetRotY: 0,
-        targetScale: 1,
-      });
+    // Pedestal pameran andesit pahat 2 tingkat, alas beludru burgundy, & ganda lis kuningan
+    const basePlinthMat = new THREE.MeshStandardMaterial({
+      color: isDark ? 0x25201b : 0x342d26,
+      roughness: 0.52,
+      metalness: 0.16,
+    });
+    const velvetMat = new THREE.MeshPhysicalMaterial({
+      color: isDark ? 0x4b1512 : 0x5d1814,
+      roughness: 0.88,
+      sheen: 0.85,
+      sheenColor: new THREE.Color(0xd1491b),
+    });
+    const rimMat = new THREE.MeshPhysicalMaterial({
+      color: 0xe0b254,
+      emissive: 0x5c3e10,
+      emissiveIntensity: 0.06,
+      metalness: 0.92,
+      roughness: 0.19,
+      clearcoat: 0.55,
     });
 
+    const velvetPad = new THREE.Mesh(new THREE.CylinderGeometry(0.92, 0.94, 0.032, 40), velvetMat);
+    velvetPad.position.y = -0.742;
+    velvetPad.receiveShadow = true;
+    velvetPad.userData.coverflowIndex = indeks;
+
+    const alas = new THREE.Mesh(new THREE.CylinderGeometry(1.02, 1.09, 0.125, 40), basePlinthMat);
+    alas.position.y = -0.82;
+    alas.castShadow = true;
+    alas.receiveShadow = true;
+    alas.userData.coverflowIndex = indeks;
+
+    const tiangPlinth = new THREE.Mesh(new THREE.CylinderGeometry(0.84, 0.97, 0.18, 28), basePlinthMat);
+    tiangPlinth.position.y = -0.975;
+    tiangPlinth.castShadow = true;
+    tiangPlinth.receiveShadow = true;
+    tiangPlinth.userData.coverflowIndex = indeks;
+
+    const cincinLis = new THREE.Mesh(new THREE.TorusGeometry(1.01, 0.022, 14, 48), rimMat);
+    cincinLis.rotation.x = Math.PI / 2;
+    cincinLis.position.y = -0.758;
+
+    const cincinBawah = new THREE.Mesh(new THREE.TorusGeometry(0.96, 0.017, 10, 42), rimMat);
+    cincinBawah.rotation.x = Math.PI / 2;
+    cincinBawah.position.y = -1.055;
+
+    // Bangun & normalkan dimensi + dudukkan flush persis di atas bantalan beludru via Box3
+    const paket = buatPaketOlehId(cfg.id);
+    paket.group.traverse((child) => {
+      child.userData.coverflowIndex = indeks;
+    });
+    const rawBox = new THREE.Box3().setFromObject(paket.group);
+    const rawSize = new THREE.Vector3();
+    rawBox.getSize(rawSize);
+    const scaleNorm = Math.min(
+      MAX_BOUND_W / Math.max(rawSize.x, 0.01),
+      MAX_BOUND_H / Math.max(rawSize.y, 0.01),
+      0.74,
+    );
+    paket.group.scale.setScalar(scaleNorm);
+    paket.group.updateMatrixWorld(true);
+
+    const scaledBox = new THREE.Box3().setFromObject(paket.group);
+    const centerX = (scaledBox.min.x + scaledBox.max.x) * 0.5;
+    const centerZ = (scaledBox.min.z + scaledBox.max.z) * 0.5;
+    paket.group.position.x = -centerX;
+    paket.group.position.z = -centerZ;
+    paket.group.position.y = PAD_TOP_Y - scaledBox.min.y - 0.01;
+
+    const artefakPivot = new THREE.Group();
+    artefakPivot.add(paket.group);
+
+    slotRoot.add(velvetPad, alas, tiangPlinth, cincinLis, cincinBawah, artefakPivot);
+    this.scene.add(slotRoot);
+
+    const slot: SlotCoverflow3D = {
+      indeks,
+      artefakId: cfg.id,
+      root: slotRoot,
+      artefakPivot,
+      rimMat,
+      basePlinthMat,
+      velvetMat,
+      paket,
+      targetX: 0,
+      targetY: 0,
+      targetZ: 0,
+      targetRotY: 0,
+      targetScale: 1,
+    };
+    this.posisikanSlot(slot, true);
+    this.slots.push(slot);
+  }
+
+  private jadwalkanAntreanSlot(): void {
+    if (
+      this.slotQueueRafId !== null ||
+      this.pendingSlotIndices.length === 0 ||
+      this.abortCtrl.signal.aborted ||
+      !this.renderer
+    ) {
+      return;
+    }
+    this.slotQueueRafId = window.requestAnimationFrame(() => {
+      this.slotQueueRafId = null;
+      if (this.abortCtrl.signal.aborted || !this.renderer) return;
+      const nextIdx = this.pendingSlotIndices.shift();
+      if (nextIdx !== undefined) {
+        this.bangunSatuSlot(nextIdx);
+      }
+      if (this.pendingSlotIndices.length > 0) {
+        this.jadwalkanAntreanSlot();
+      }
+    });
+  }
+
+  private bangunCarousel(tema: 'malam' | 'terang'): void {
+    this.temaAktif = tema;
+    const len = URUTAN_MODEL.length;
+    const prioritasUrut = URUTAN_MODEL.map((_, idx) => {
+      let dist = Math.abs(idx - this.activeIdx);
+      if (dist > len / 2) dist = len - dist;
+      return { idx, dist };
+    }).sort((a, b) => a.dist - b.dist);
+
+    this.pendingSlotIndices = [];
+    for (const item of prioritasUrut) {
+      if (item.dist <= 1) {
+        this.bangunSatuSlot(item.idx);
+      } else {
+        this.pendingSlotIndices.push(item.idx);
+      }
+    }
     this.sinkronkanTargetSlot(true);
   }
 
-  private sinkronkanTargetSlot(instan = false): void {
-    const len = this.slots.length;
+  private posisikanSlot(slot: SlotCoverflow3D, instan = false): void {
+    const len = URUTAN_MODEL.length;
     const isNarrow = (this.container.clientWidth || 1000) < 680;
     const xStep = isNarrow ? 2.5 : 3.05;
 
+    let delta = slot.indeks - this.continuousIdx;
+    if (delta > len / 2) delta -= len;
+    if (delta < -len / 2) delta += len;
+
+    const abs = Math.abs(delta);
+    slot.targetX = delta * xStep;
+    slot.targetY = abs * 0.04;
+    slot.targetZ = 2.15 - Math.min(abs, 2.35) * 1.38 - abs * abs * 0.14;
+    slot.targetRotY = -delta * 0.36;
+    slot.targetScale = Math.max(0.46, 1.14 - abs * 0.22);
+
+    if (instan) {
+      slot.root.position.set(slot.targetX, slot.targetY, slot.targetZ);
+      slot.root.rotation.y = slot.targetRotY;
+      slot.root.scale.setScalar(slot.targetScale);
+    }
+  }
+
+  private sinkronkanTargetSlot(instan = false): void {
     for (const slot of this.slots) {
-      let delta = slot.indeks - this.continuousIdx;
-      if (delta > len / 2) delta -= len;
-      if (delta < -len / 2) delta += len;
-
-      const abs = Math.abs(delta);
-      slot.targetX = delta * xStep;
-      slot.targetY = abs * 0.04;
-      slot.targetZ = 2.15 - Math.min(abs, 2.35) * 1.38 - abs * abs * 0.14;
-      slot.targetRotY = -delta * 0.36;
-      slot.targetScale = Math.max(0.46, 1.14 - abs * 0.22);
-
-      if (instan) {
-        slot.root.position.set(slot.targetX, slot.targetY, slot.targetZ);
-        slot.root.rotation.y = slot.targetRotY;
-        slot.root.scale.setScalar(slot.targetScale);
-      }
+      this.posisikanSlot(slot, instan);
     }
   }
 
   public aturIndeksAktif(idx: number): void {
-    const len = this.slots.length;
+    const len = URUTAN_MODEL.length;
     if (!len) return;
     this.activeIdx = ((idx % len) + len) % len;
+    while (this.pendingSlotIndices.length > 0) {
+      const nextIdx = this.pendingSlotIndices.shift();
+      if (nextIdx !== undefined) this.bangunSatuSlot(nextIdx);
+    }
   }
 
   public aturProgresGulir(norm0ke1: number): void {
@@ -357,6 +429,7 @@ export class CoverflowStage {
   }
 
   public setTheme(tema: 'malam' | 'terang'): void {
+    this.temaAktif = tema;
     const isDark = tema === 'malam';
     if (this.ambientLight) {
       this.ambientLight.color.setHex(isDark ? 0xeae0d0 : 0xfff6ea);
@@ -453,7 +526,7 @@ export class CoverflowStage {
     this.rafId = window.requestAnimationFrame(this.loop);
 
     const t = performance.now() * 0.001;
-    const len = this.slots.length;
+    const len = URUTAN_MODEL.length;
 
     let shortestDelta = this.activeIdx - this.continuousIdx;
     if (shortestDelta > len / 2) shortestDelta -= len;
@@ -531,6 +604,10 @@ export class CoverflowStage {
 
   public destroy(): void {
     this.loopAktif = false;
+    this.abortCtrl.abort();
+    this.cancelMulaiLoop?.();
+    this.cancelMulaiLoop = null;
+    if (this.slotQueueRafId !== null) window.cancelAnimationFrame(this.slotQueueRafId);
     this.stopObservasi?.();
     this.stopObservasi = null;
     this.container.removeEventListener('pointerdown', this.handlePointerDown);

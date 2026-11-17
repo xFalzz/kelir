@@ -60,16 +60,13 @@
       <stop offset="85%" stop-color="#ededf4" />
       <stop offset="100%" stop-color="#1a1a20" />
     </linearGradient>
-    <filter id="drop-{uid}" x="-20%" y="-20%" width="140%" height="140%">
-      <feDropShadow dx="0" dy="6" stdDeviation="5" flood-color="#000" flood-opacity={variant === 'paper' ? '0.18' : '0.48'} />
-    </filter>
   </defs>
 
   <rect width="320" height="220" fill="url(#studio-{uid})" />
   <ellipse cx="160" cy="184" rx="108" ry="18" fill={variant === 'paper' ? 'rgba(40,30,18,0.12)' : 'rgba(0,0,0,0.45)'} />
 
   {#if tipeEfektif === 'keris' || tipeEfektif === 'warangka'}
-    <g filter="url(#drop-{uid})">
+    <g>
       {#if tipeEfektif === 'warangka'}
         <path d="M128 74 Q166 56 226 68 Q210 92 178 96 L142 96 Q120 92 128 74 Z" fill="url(#wood-{uid})" stroke="#d8a84a" stroke-width="1.2" />
         <path d="M160 94 L182 94 L172 204 L162 204 Z" fill="url(#brass-{uid})" />
@@ -79,7 +76,7 @@
       <ellipse cx="152" cy="180" rx="10" ry="6" fill="url(#brass-{uid})" />
     </g>
   {:else if tipeEfektif === 'saron'}
-    <g filter="url(#drop-{uid})">
+    <g>
       <path d="M54 142 L266 142 L250 184 L70 184 Z" fill="url(#wood-{uid})" stroke="#d8a84a" stroke-width="1.4" />
       {#each [0, 1, 2, 3, 4, 5] as i}
         <rect x={76 + i * 29} y={118 - i * 2} width="22" height="24" rx="3" fill="url(#brass-{uid})" />
@@ -88,7 +85,7 @@
       <circle cx="160" cy="64" r="10" fill="url(#brass-{uid})" />
     </g>
   {:else if tipeEfektif === 'batik'}
-    <g filter="url(#drop-{uid})">
+    <g>
       <rect x="64" y="42" width="192" height="132" rx="6" fill={variant === 'paper' ? '#3d2415' : '#2a180d'} stroke="url(#brass-{uid})" stroke-width="1.8" />
       {#each [0, 90, 180, 270] as deg}
         <ellipse cx="160" cy="70" rx="18" ry="38" transform="rotate({deg + 45} 160 108)" fill="rgba(229,180,108,0.28)" stroke="#f1d39a" stroke-width="2" />
@@ -96,7 +93,7 @@
       <circle cx="160" cy="108" r="10" fill="#fff6e0" stroke={accent} stroke-width="2.4" />
     </g>
   {:else if tipeEfektif === 'joglo' || tipeEfektif === 'umpak'}
-    <g filter="url(#drop-{uid})">
+    <g>
       {#if tipeEfektif === 'umpak'}
         <rect x="44" y="164" width="232" height="22" rx="4" fill="#4b5563" />
         {#each [96, 224] as px}
@@ -112,14 +109,14 @@
       {/if}
     </g>
   {:else if tipeEfektif === 'kidang'}
-    <g filter="url(#drop-{uid})">
+    <g>
       <ellipse cx="160" cy="46" rx="18" ry="12" fill="url(#brass-{uid})" />
       <ellipse cx="160" cy="64" rx="7" ry="10" fill="#f59e0b" />
       <path d="M108 158 C132 132, 168 134, 194 114 L214 88 M132 154 L120 186 M178 140 L198 182" stroke="url(#brass-{uid})" stroke-width="5" stroke-linecap="round" fill="none" />
       <ellipse cx="156" cy="140" rx="38" ry="18" transform="rotate(-12 156 140)" fill="url(#brass-{uid})" />
     </g>
   {:else}
-    <g filter="url(#drop-{uid})">
+    <g>
       <path d="M160 28 C196 76, 224 134, 204 178 L116 178 C96 134, 124 76, 160 28 Z" fill={accent} stroke="url(#brass-{uid})" stroke-width="2" />
       <rect x="157" y="48" width="6" height="148" fill="url(#brass-{uid})" />
     </g>

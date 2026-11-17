@@ -12,6 +12,7 @@ import {
   createSafeWebGLRenderer,
   disposeSceneObject,
   hitungFovResponsif,
+  jalankanLoopSetelahSiap,
   pasangObservasiPanggung,
   pinProyeksiBerubah,
 } from './threeHelpers.ts';
@@ -139,7 +140,10 @@ export class DigitalTwinStage {
   private onPinCb: ((pins: ProyeksiPinTwin[]) => void) | null = null;
   private rafId: number | null = null;
   private loopAktif = true;
+  private loopSiapMulai = false;
   private stopObservasi: (() => void) | null = null;
+  private abortCtrl = new AbortController();
+  private cancelMulaiLoop: (() => void) | null = null;
 
   constructor(container: HTMLElement, tema: 'malam' | 'terang' = 'terang') {
     this.container = container;
@@ -147,7 +151,10 @@ export class DigitalTwinStage {
     if (!this.renderer) return;
 
     this.camera.position.set(...PRESET_KAMERA_PUSAKA.keris.pos);
-    void applyStudioHDR(this.renderer, this.scene);
+    void applyStudioHDR(this.renderer, this.scene, {
+      signal: this.abortCtrl.signal,
+      delayMs: 140,
+    });
 
     this.controls = new OrbitControls(this.camera, this.renderer.domElement);
     this.controls.enableDamping = true;
@@ -176,14 +183,25 @@ export class DigitalTwinStage {
     this.ubahUkuran();
     this.stopObservasi = pasangObservasiPanggung(container, (aktif) => {
       this.loopAktif = aktif;
-      if (aktif && this.rafId === null) {
+      if (aktif && this.loopSiapMulai && this.rafId === null) {
         this.loop();
       } else if (!aktif && this.rafId !== null) {
         window.cancelAnimationFrame(this.rafId);
         this.rafId = null;
       }
     });
-    this.loop();
+    this.cancelMulaiLoop = jalankanLoopSetelahSiap(
+      this.renderer,
+      this.scene,
+      this.camera,
+      () => !this.abortCtrl.signal.aborted && Boolean(this.renderer),
+      () => {
+        this.loopSiapMulai = true;
+        if (this.loopAktif && this.rafId === null) {
+          this.loop();
+        }
+      },
+    );
   }
 
   public muatBenda(benda: BendaPusaka | SpesimenBedahTwin): void {
@@ -547,6 +565,9 @@ export class DigitalTwinStage {
 
   public destroy(): void {
     this.loopAktif = false;
+    this.abortCtrl.abort();
+    this.cancelMulaiLoop?.();
+    this.cancelMulaiLoop = null;
     this.stopObservasi?.();
     this.stopObservasi = null;
     if (this.rafId !== null) window.cancelAnimationFrame(this.rafId);

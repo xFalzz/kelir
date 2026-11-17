@@ -97,6 +97,75 @@ const PRESET_ETALASE: Record<string, PresetKameraEtalase> = {
 
 const snapshotCache = new Map<string, Record<string, string>>();
 const pendingRenders = new Map<string, Promise<Record<string, string>>>();
+let scrollTrackerTerpasang = false;
+let lastUserScrollMs = 0;
+let cacheContactShadowTex: THREE.CanvasTexture | null = null;
+
+function pasangPelacakScroll(): void {
+  if (scrollTrackerTerpasang || typeof window === 'undefined') return;
+  scrollTrackerTerpasang = true;
+  const markScroll = (): void => {
+    lastUserScrollMs = performance.now();
+  };
+  window.addEventListener('wheel', markScroll, { passive: true });
+  window.addEventListener('scroll', markScroll, { passive: true });
+  window.addEventListener('touchmove', markScroll, { passive: true });
+}
+
+async function tungguScrollTenangDanBingkai(idleMs = 95, maxWaitMs = 900): Promise<void> {
+  if (typeof window === 'undefined') return;
+  const mulai = performance.now();
+  await new Promise<void>((resolve) => window.requestAnimationFrame(() => resolve()));
+  while (
+    performance.now() - lastUserScrollMs < idleMs &&
+    performance.now() - mulai < maxWaitMs
+  ) {
+    await new Promise<void>((resolve) => window.requestAnimationFrame(() => resolve()));
+  }
+}
+
+function getContactShadowTexture(): THREE.CanvasTexture | null {
+  if (typeof document === 'undefined') return null;
+  if (cacheContactShadowTex) return cacheContactShadowTex;
+  const size = 128;
+  const c = document.createElement('canvas');
+  c.width = size;
+  c.height = size;
+  const ctx = c.getContext('2d');
+  if (!ctx) return null;
+  const r = size / 2;
+  const g = ctx.createRadialGradient(r, r, 6, r, r, r);
+  g.addColorStop(0, 'rgba(0, 0, 0, 0.42)');
+  g.addColorStop(0.55, 'rgba(0, 0, 0, 0.16)');
+  g.addColorStop(1, 'rgba(0, 0, 0, 0)');
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, size, size);
+  cacheContactShadowTex = new THREE.CanvasTexture(c);
+  cacheContactShadowTex.colorSpace = THREE.SRGBColorSpace;
+  return cacheContactShadowTex;
+}
+
+function encodeSnapshotUrl(canvas: HTMLCanvasElement): Promise<string> {
+  return new Promise((resolve) => {
+    if (typeof canvas.toBlob === 'function') {
+      canvas.toBlob(
+        (blob) => {
+          if (blob) {
+            resolve(URL.createObjectURL(blob));
+            return;
+          }
+          const webp = canvas.toDataURL('image/webp', 0.88);
+          resolve(webp.startsWith('data:image/webp') ? webp : canvas.toDataURL('image/png'));
+        },
+        'image/webp',
+        0.88,
+      );
+      return;
+    }
+    const webp = canvas.toDataURL('image/webp', 0.88);
+    resolve(webp.startsWith('data:image/webp') ? webp : canvas.toDataURL('image/png'));
+  });
+}
 
 async function tungguTeksturBudaya(maxWaitMs = 70): Promise<void> {
   const tex = loadBudayaTextures();
@@ -138,10 +207,12 @@ export async function renderEtalaseSnapshots(
   if (ongoing) return ongoing;
 
   const job = (async (): Promise<Record<string, string>> => {
+    pasangPelacakScroll();
+    await tungguScrollTenangDanBingkai(95, 750);
     await tungguTeksturBudaya();
 
-    const width = 480;
-    const height = 312;
+    const width = 416;
+    const height = 270;
     const canvas = document.createElement('canvas');
     canvas.width = width;
     canvas.height = height;
@@ -167,8 +238,7 @@ export async function renderEtalaseSnapshots(
       renderer.toneMapping = THREE.ACESFilmicToneMapping;
       renderer.toneMappingExposure = tema === 'terang' ? 1.24 : 1.32;
       renderer.outputColorSpace = THREE.SRGBColorSpace;
-      renderer.shadowMap.enabled = true;
-      renderer.shadowMap.type = THREE.PCFShadowMap;
+      renderer.shadowMap.enabled = false;
 
       const scene = new THREE.Scene();
       const isTerang = tema === 'terang';
@@ -176,7 +246,7 @@ export async function renderEtalaseSnapshots(
       scene.background = new THREE.Color(bgHex);
       scene.fog = new THREE.FogExp2(bgHex, 0.06);
 
-      // Pencahayaan studio multi-titik kaya pantulan tanpa biaya PMREM cubemap
+      // Pencahayaan studio multi-titik kaya pantulan tanpa biaya PMREM/ShadowMap FBO
       const ambient = new THREE.AmbientLight(
         isTerang ? 0xfff8ef : 0xffe6cc,
         isTerang ? 1.28 : 0.92,
@@ -191,9 +261,6 @@ export async function renderEtalaseSnapshots(
         isTerang ? 2.65 : 3.05,
       );
       keyLight.position.set(3.4, 5.2, 4.1);
-      keyLight.castShadow = true;
-      keyLight.shadow.mapSize.set(512, 512);
-      keyLight.shadow.bias = -0.0006;
 
       const rimLight = new THREE.DirectionalLight(
         isTerang ? 0xf59e0b : 0xf27c4e,
@@ -214,7 +281,7 @@ export async function renderEtalaseSnapshots(
       scene.add(ambient, hemi, keyLight, rimLight, specularKicker, fillLight);
 
       const studioFloor = new THREE.Mesh(
-        new THREE.CircleGeometry(6.5, 40),
+        new THREE.CircleGeometry(6.5, 32),
         new THREE.MeshStandardMaterial({
           color: isTerang ? 0xe8e0d2 : 0x1b1713,
           roughness: 0.88,
@@ -223,21 +290,30 @@ export async function renderEtalaseSnapshots(
       );
       studioFloor.rotation.x = -Math.PI / 2;
       studioFloor.position.y = -1.65;
-      studioFloor.receiveShadow = true;
       scene.add(studioFloor);
+
+      const contactShadow = new THREE.Mesh(
+        new THREE.CircleGeometry(1.58, 28),
+        new THREE.MeshBasicMaterial({
+          map: getContactShadowTexture(),
+          transparent: true,
+          opacity: isTerang ? 0.42 : 0.72,
+          depthWrite: false,
+        }),
+      );
+      contactShadow.rotation.x = -Math.PI / 2;
 
       const plinthGroup = new THREE.Group();
       const plinthDisc = new THREE.Mesh(
-        new THREE.CylinderGeometry(1.18, 1.24, 0.14, 40),
+        new THREE.CylinderGeometry(1.18, 1.24, 0.14, 32),
         new THREE.MeshStandardMaterial({
           color: isTerang ? 0xdfd5c5 : 0x241f19,
           roughness: 0.65,
           metalness: 0.18,
         }),
       );
-      plinthDisc.receiveShadow = true;
       const plinthBrassRing = new THREE.Mesh(
-        new THREE.TorusGeometry(1.19, 0.016, 10, 40),
+        new THREE.TorusGeometry(1.19, 0.016, 10, 32),
         new THREE.MeshStandardMaterial({
           color: 0xd6ad5e,
           metalness: 0.88,
@@ -247,23 +323,17 @@ export async function renderEtalaseSnapshots(
       plinthBrassRing.rotation.x = Math.PI / 2;
       plinthBrassRing.position.y = 0.068;
       plinthGroup.add(plinthDisc, plinthBrassRing);
-      scene.add(plinthGroup);
+      scene.add(contactShadow, plinthGroup);
 
       const camera = new THREE.PerspectiveCamera(34, width / height, 0.1, 40);
 
       for (const [id, preset] of Object.entries(PRESET_ETALASE)) {
+        await tungguScrollTenangDanBingkai(85, 420);
+
         const paket = preset.build();
         const root = paket.group;
         root.rotation.set(...preset.modelRot);
         terapkanExplodeLapisan(root, preset.explodeAmount);
-
-        root.traverse((obj) => {
-          const m = obj as THREE.Mesh;
-          if (m.isMesh) {
-            m.castShadow = true;
-            m.receiveShadow = true;
-          }
-        });
 
         root.updateMatrixWorld(true);
         const box = new THREE.Box3().setFromObject(root);
@@ -276,6 +346,8 @@ export async function renderEtalaseSnapshots(
         plinthGroup.scale.set(plinthScale, 1, plinthScale);
         plinthGroup.position.y = box.min.y - 0.072;
         studioFloor.position.y = plinthGroup.position.y - 0.075;
+        contactShadow.position.y = studioFloor.position.y + 0.005;
+        contactShadow.scale.setScalar(plinthScale * 1.12);
 
         scene.add(root);
         camera.fov = preset.fov;
@@ -284,17 +356,14 @@ export async function renderEtalaseSnapshots(
         camera.lookAt(...preset.lookAt);
 
         renderer.render(scene, camera);
-        const webp = canvas.toDataURL('image/webp', 0.9);
-        hasil[id] = webp.startsWith('data:image/webp') ? webp : canvas.toDataURL('image/png');
+        hasil[id] = await encodeSnapshotUrl(canvas);
 
         scene.remove(root);
         disposeSceneObject(root);
-
-        // Serahkan giliran frame sejenak agar scroll utama bebas patah-patah
-        await new Promise<void>((resolve) => setTimeout(resolve, 0));
       }
 
       disposeSceneObject(studioFloor);
+      disposeSceneObject(contactShadow);
       disposeSceneObject(plinthGroup);
       snapshotCache.set(tema, hasil);
       return hasil;

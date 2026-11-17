@@ -354,29 +354,35 @@
   function mountTwinStage(node: HTMLDivElement) {
     let destroyed = false;
     let ro: ResizeObserver | null = null;
+    let rafId: number | null = null;
 
     void import('../scenes/digitalTwinStage.ts').then(({ DigitalTwinStage }) => {
       if (destroyed) return;
-      twinStage = new DigitalTwinStage(node, tema);
-      twinStage.muatBenda(bendaAktif);
-      twinStage.aturLedakAnatomi(faktorLedak);
-      twinStage.terapkanModeVisual(modeVisualTwin);
-      if (pendingTwinTitikId) {
-        const target = bendaAktif.titikInfo.find((t) => t.id === pendingTwinTitikId);
-        if (target) twinStage.fokusKeTitik(target);
-        pendingTwinTitikId = null;
-      }
-      twinStage.onProyeksiPin((pins) => {
-        twinPins = pins;
-      });
+      rafId = window.requestAnimationFrame(() => {
+        rafId = null;
+        if (destroyed) return;
+        twinStage = new DigitalTwinStage(node, tema);
+        twinStage.muatBenda(bendaAktif);
+        twinStage.aturLedakAnatomi(faktorLedak);
+        twinStage.terapkanModeVisual(modeVisualTwin);
+        if (pendingTwinTitikId) {
+          const target = bendaAktif.titikInfo.find((t) => t.id === pendingTwinTitikId);
+          if (target) twinStage.fokusKeTitik(target);
+          pendingTwinTitikId = null;
+        }
+        twinStage.onProyeksiPin((pins) => {
+          twinPins = pins;
+        });
 
-      ro = new ResizeObserver(() => twinStage?.ubahUkuran());
-      ro.observe(node);
+        ro = new ResizeObserver(() => twinStage?.ubahUkuran());
+        ro.observe(node);
+      });
     });
 
     return {
       destroy() {
         destroyed = true;
+        if (rafId !== null) window.cancelAnimationFrame(rafId);
         ro?.disconnect();
         twinStage?.destroy();
         twinStage = null;
@@ -387,24 +393,30 @@
   function mountCoverflowStage(node: HTMLDivElement) {
     let destroyed = false;
     let ro: ResizeObserver | null = null;
+    let rafId: number | null = null;
 
     void import('../scenes/coverflowStage.ts').then(({ CoverflowStage }) => {
       if (destroyed) return;
-      coverflowStage = new CoverflowStage(node, tema, coverflowIdx);
-      coverflowStage.onSelectIndex((idx) => {
-        pilihIndeksCoverflow(idx);
-      });
-      coverflowStage.onSwipeStep((delta) => {
-        geserCoverflow(delta);
-      });
+      rafId = window.requestAnimationFrame(() => {
+        rafId = null;
+        if (destroyed) return;
+        coverflowStage = new CoverflowStage(node, tema, coverflowIdx);
+        coverflowStage.onSelectIndex((idx) => {
+          pilihIndeksCoverflow(idx);
+        });
+        coverflowStage.onSwipeStep((delta) => {
+          geserCoverflow(delta);
+        });
 
-      ro = new ResizeObserver(() => coverflowStage?.ubahUkuran());
-      ro.observe(node);
+        ro = new ResizeObserver(() => coverflowStage?.ubahUkuran());
+        ro.observe(node);
+      });
     });
 
     return {
       destroy() {
         destroyed = true;
+        if (rafId !== null) window.cancelAnimationFrame(rafId);
         ro?.disconnect();
         coverflowStage?.destroy();
         coverflowStage = null;
@@ -415,20 +427,26 @@
   function mountWayangStage(node: HTMLDivElement) {
     let destroyed = false;
     let ro: ResizeObserver | null = null;
+    let rafId: number | null = null;
 
     void import('../scenes/wayangStage.ts').then(({ WayangStage }) => {
       if (destroyed) return;
-      wayangStage = new WayangStage(node);
-      wayangStage.aturPosisiTokoh(posRama, posKidang);
-      wayangStage.aturMoodCahaya(moodPanggungWayang);
+      rafId = window.requestAnimationFrame(() => {
+        rafId = null;
+        if (destroyed) return;
+        wayangStage = new WayangStage(node);
+        wayangStage.aturPosisiTokoh(posRama, posKidang);
+        wayangStage.aturMoodCahaya(moodPanggungWayang);
 
-      ro = new ResizeObserver(() => wayangStage?.ubahUkuran());
-      ro.observe(node);
+        ro = new ResizeObserver(() => wayangStage?.ubahUkuran());
+        ro.observe(node);
+      });
     });
 
     return {
       destroy() {
         destroyed = true;
+        if (rafId !== null) window.cancelAnimationFrame(rafId);
         ro?.disconnect();
         wayangStage?.destroy();
         wayangStage = null;
@@ -439,18 +457,24 @@
   function mountOrbStage(node: HTMLDivElement) {
     let destroyed = false;
     let ro: ResizeObserver | null = null;
+    let rafId: number | null = null;
 
     void import('../scenes/pamomongOrbStage.ts').then(({ PamomongOrbStage }) => {
       if (destroyed) return;
-      orbStage = new PamomongOrbStage(node, tema);
+      rafId = window.requestAnimationFrame(() => {
+        rafId = null;
+        if (destroyed) return;
+        orbStage = new PamomongOrbStage(node, tema);
 
-      ro = new ResizeObserver(() => orbStage?.ubahUkuran());
-      ro.observe(node);
+        ro = new ResizeObserver(() => orbStage?.ubahUkuran());
+        ro.observe(node);
+      });
     });
 
     return {
       destroy() {
         destroyed = true;
+        if (rafId !== null) window.cancelAnimationFrame(rafId);
         ro?.disconnect();
         orbStage?.destroy();
         orbStage = null;
@@ -1020,23 +1044,41 @@
     };
     window.addEventListener('popstate', onPopState);
 
-    // Preload malas modul 3D & UI sub-halaman ketika idle agar perpindahan halaman bebas jeda
-    const muatSubPanggungIdle = () => {
-      pastikanKomponenHalaman('twin');
-      pastikanKomponenHalaman('koleksi');
-      pastikanModalSuluk();
-      pastikanSearchModal();
-      void import('../scenes/digitalTwinStage.ts');
-      void import('../scenes/coverflowStage.ts');
-      void import('../scenes/sulukShowcaseStage.ts');
-      void import('../scenes/wayangStage.ts');
-      void import('../scenes/pamomongOrbStage.ts');
+    // Preload malas berjeda satu per satu saat idle agar scroll Beranda tetap mulus tanpa lonjakan parse
+    let prefetchDibatalkan = false;
+    let stepPrefetchTimer: number | null = null;
+    const antreanPrefetch: Array<() => void> = [
+      () => pastikanKomponenHalaman('twin'),
+      () => void import('../scenes/digitalTwinStage.ts'),
+      () => pastikanKomponenHalaman('koleksi'),
+      () => void import('../scenes/coverflowStage.ts'),
+      () => pastikanModalSuluk(),
+      () => void import('../scenes/sulukShowcaseStage.ts'),
+      () => void import('../scenes/wayangStage.ts'),
+      () => void import('../scenes/pamomongOrbStage.ts'),
+      () => pastikanSearchModal(),
+    ];
+    let idxPrefetch = 0;
+
+    const jadwalkanLangkahPrefetch = () => {
+      if (prefetchDibatalkan || idxPrefetch >= antreanPrefetch.length) return;
+      const idleCb = (
+        window as unknown as {
+          requestIdleCallback?: (cb: () => void, opts?: { timeout: number }) => void;
+        }
+      ).requestIdleCallback;
+      const jalankanSatu = () => {
+        if (prefetchDibatalkan || idxPrefetch >= antreanPrefetch.length) return;
+        antreanPrefetch[idxPrefetch++]();
+        if (idxPrefetch < antreanPrefetch.length) {
+          stepPrefetchTimer = window.setTimeout(jadwalkanLangkahPrefetch, 210);
+        }
+      };
+      if (idleCb) idleCb(jalankanSatu, { timeout: 1400 });
+      else jalankanSatu();
     };
-    const prefetchTimer = window.setTimeout(() => {
-      const idleCb = (window as unknown as { requestIdleCallback?: (cb: () => void, opts?: { timeout: number }) => void }).requestIdleCallback;
-      if (idleCb) idleCb(muatSubPanggungIdle, { timeout: 1600 });
-      else muatSubPanggungIdle();
-    }, 950);
+
+    const prefetchTimer = window.setTimeout(jadwalkanLangkahPrefetch, 2200);
 
     const reduceMotion =
       typeof window !== 'undefined' &&
@@ -1059,7 +1101,9 @@
     }
 
     return () => {
+      prefetchDibatalkan = true;
       window.clearTimeout(prefetchTimer);
+      if (stepPrefetchTimer !== null) window.clearTimeout(stepPrefetchTimer);
       window.removeEventListener('popstate', onPopState);
       smoothScrollCtrl?.destroy();
       smoothScrollCtrl = null;

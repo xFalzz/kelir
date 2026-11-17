@@ -4,6 +4,7 @@ import {
   disposeSceneObject,
   hitungFovResponsif,
   isMobileGpuProfile,
+  jalankanLoopSetelahSiap,
   loadBudayaTextures,
   pasangObservasiPanggung,
 } from './threeHelpers.ts';
@@ -124,7 +125,10 @@ export class WayangStage {
   private progresPanah = 0;
   private rafId: number | null = null;
   private loopAktif = true;
+  private loopSiapMulai = false;
+  private destroyed = false;
   private stopObservasi: (() => void) | null = null;
+  private cancelMulaiLoop: (() => void) | null = null;
 
   constructor(container: HTMLElement) {
     this.container = container;
@@ -140,14 +144,25 @@ export class WayangStage {
     this.ubahUkuran();
     this.stopObservasi = pasangObservasiPanggung(container, (aktif) => {
       this.loopAktif = aktif;
-      if (aktif && this.rafId === null) {
+      if (aktif && this.loopSiapMulai && this.rafId === null) {
         this.loop();
       } else if (!aktif && this.rafId !== null) {
         window.cancelAnimationFrame(this.rafId);
         this.rafId = null;
       }
     });
-    this.loop();
+    this.cancelMulaiLoop = jalankanLoopSetelahSiap(
+      this.renderer,
+      this.scene,
+      this.camera,
+      () => !this.destroyed && Boolean(this.renderer),
+      () => {
+        this.loopSiapMulai = true;
+        if (this.loopAktif && this.rafId === null) {
+          this.loop();
+        }
+      },
+    );
   }
 
   private bangunPanggungKelir(): void {
@@ -449,7 +464,10 @@ export class WayangStage {
   };
 
   public destroy(): void {
+    this.destroyed = true;
     this.loopAktif = false;
+    this.cancelMulaiLoop?.();
+    this.cancelMulaiLoop = null;
     this.stopObservasi?.();
     this.stopObservasi = null;
     if (this.rafId !== null) window.cancelAnimationFrame(this.rafId);

@@ -87,7 +87,7 @@
           }
         }
       },
-      { rootMargin: '650px 0px' },
+      { rootMargin: '180px 0px' },
     );
     io.observe(node);
     return () => io.disconnect();

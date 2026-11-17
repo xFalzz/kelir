@@ -5,8 +5,12 @@ import {
   createSafeWebGLRenderer,
   disposeSceneObject,
   hitungFovResponsif,
+  jalankanLoopSetelahSiap,
   pasangObservasiPanggung,
 } from './threeHelpers.ts';
+
+let cacheKulitAstrolabeCanvas: { diff: HTMLCanvasElement; bump: HTMLCanvasElement } | null = null;
+let cacheSkalaCincinCanvas: HTMLCanvasElement | null = null;
 
 function buatTeksturKulitAstrolabe(): {
   map: THREE.CanvasTexture;
@@ -14,83 +18,92 @@ function buatTeksturKulitAstrolabe(): {
 } | null {
   if (typeof document === 'undefined') return null;
 
-  const w = 1024;
-  const h = 1024;
-  const diffCanvas = document.createElement('canvas');
-  diffCanvas.width = w;
-  diffCanvas.height = h;
-  const dCtx = diffCanvas.getContext('2d');
+  if (!cacheKulitAstrolabeCanvas) {
+    const w = 1024;
+    const h = 1024;
+    const outW = 512;
+    const outH = 512;
+    const diffCanvas = document.createElement('canvas');
+    diffCanvas.width = outW;
+    diffCanvas.height = outH;
+    const dCtx = diffCanvas.getContext('2d');
 
-  const bumpCanvas = document.createElement('canvas');
-  bumpCanvas.width = w;
-  bumpCanvas.height = h;
-  const bCtx = bumpCanvas.getContext('2d');
-  if (!dCtx || !bCtx) return null;
+    const bumpCanvas = document.createElement('canvas');
+    bumpCanvas.width = outW;
+    bumpCanvas.height = outH;
+    const bCtx = bumpCanvas.getContext('2d');
+    if (!dCtx || !bCtx) return null;
 
-  // Anodized dark obsidian-graphite brushed titanium base
-  const baseGrad = dCtx.createLinearGradient(0, 0, 0, h);
-  baseGrad.addColorStop(0, '#2a2e38');
-  baseGrad.addColorStop(0.24, '#1b1e25');
-  baseGrad.addColorStop(0.5, '#13151a');
-  baseGrad.addColorStop(0.76, '#1c1f27');
-  baseGrad.addColorStop(1, '#2a2e38');
-  dCtx.fillStyle = baseGrad;
-  dCtx.fillRect(0, 0, w, h);
+    dCtx.scale(outW / w, outH / h);
+    bCtx.scale(outW / w, outH / h);
 
-  bCtx.fillStyle = '#808080';
-  bCtx.fillRect(0, 0, w, h);
+    // Anodized dark obsidian-graphite brushed titanium base
+    const baseGrad = dCtx.createLinearGradient(0, 0, 0, h);
+    baseGrad.addColorStop(0, '#2a2e38');
+    baseGrad.addColorStop(0.24, '#1b1e25');
+    baseGrad.addColorStop(0.5, '#13151a');
+    baseGrad.addColorStop(0.76, '#1c1f27');
+    baseGrad.addColorStop(1, '#2a2e38');
+    dCtx.fillStyle = baseGrad;
+    dCtx.fillRect(0, 0, w, h);
 
-  // Alur bubut presisi horizontal (lathe toolmarks)
-  for (let y = 0; y < h; y += 3) {
-    const shade = (Math.sin(y * 0.45) + 1) * 0.5;
-    dCtx.fillStyle = shade > 0.5 ? 'rgba(255,255,255,0.018)' : 'rgba(0,0,0,0.035)';
-    dCtx.fillRect(0, y, w, 1);
+    bCtx.fillStyle = '#808080';
+    bCtx.fillRect(0, 0, w, h);
 
-    bCtx.fillStyle = shade > 0.5 ? '#8a8a8a' : '#767676';
-    bCtx.fillRect(0, y, w, 1);
+    // Alur bubut presisi horizontal (lathe toolmarks)
+    for (let y = 0; y < h; y += 4) {
+      const shade = (Math.sin(y * 0.45) + 1) * 0.5;
+      dCtx.fillStyle = shade > 0.5 ? 'rgba(255,255,255,0.018)' : 'rgba(0,0,0,0.035)';
+      dCtx.fillRect(0, y, w, 1);
+
+      bCtx.fillStyle = shade > 0.5 ? '#8a8a8a' : '#767676';
+      bCtx.fillRect(0, y, w, 1);
+    }
+
+    // Sambungan panel meridian halus (8 sektor presisi)
+    for (let i = 0; i < 8; i++) {
+      const x = Math.round((i * w) / 8);
+      dCtx.fillStyle = 'rgba(8, 9, 12, 0.72)';
+      dCtx.fillRect(x - 1, 90, 2, h - 180);
+      dCtx.fillStyle = 'rgba(218, 178, 96, 0.28)';
+      dCtx.fillRect(x + 2, 160, 1, h - 320);
+
+      bCtx.fillStyle = '#383838';
+      bCtx.fillRect(x - 2, 90, 4, h - 180);
+    }
+
+    // Sabuk kalibrasi vernier ekuator (derajat & indeks S1-S7)
+    const eqY = 512;
+    dCtx.fillStyle = 'rgba(12, 13, 17, 0.86)';
+    dCtx.fillRect(0, eqY - 34, w, 68);
+    bCtx.fillStyle = '#484848';
+    bCtx.fillRect(0, eqY - 34, w, 68);
+
+    // Garis tepi perunggu ganda
+    dCtx.fillStyle = '#d4a148';
+    dCtx.fillRect(0, eqY - 34, w, 2);
+    dCtx.fillRect(0, eqY + 32, w, 2);
+
+    for (let deg = 0; deg < 120; deg++) {
+      const x = (deg * w) / 120;
+      const isMajor = deg % 10 === 0;
+      const isMid = deg % 5 === 0;
+      const tickH = isMajor ? 24 : isMid ? 16 : 9;
+      dCtx.fillStyle = isMajor ? '#f0713c' : isMid ? '#e5bc68' : 'rgba(235, 226, 210, 0.45)';
+      dCtx.fillRect(x, eqY - tickH / 2, isMajor ? 3 : 1.5, tickH);
+
+      bCtx.fillStyle = isMajor ? '#d8d8d8' : '#a6a6a6';
+      bCtx.fillRect(x, eqY - tickH / 2, 2, tickH);
+    }
+
+    cacheKulitAstrolabeCanvas = { diff: diffCanvas, bump: bumpCanvas };
   }
 
-  // Sambungan panel meridian halus (8 sektor presisi)
-  for (let i = 0; i < 8; i++) {
-    const x = Math.round((i * w) / 8);
-    dCtx.fillStyle = 'rgba(8, 9, 12, 0.72)';
-    dCtx.fillRect(x - 1, 90, 2, h - 180);
-    dCtx.fillStyle = 'rgba(218, 178, 96, 0.28)';
-    dCtx.fillRect(x + 2, 160, 1, h - 320);
-
-    bCtx.fillStyle = '#383838';
-    bCtx.fillRect(x - 2, 90, 4, h - 180);
-  }
-
-  // Sabuk kalibrasi vernier ekuator (derajat & indeks S1-S7)
-  const eqY = 512;
-  dCtx.fillStyle = 'rgba(12, 13, 17, 0.86)';
-  dCtx.fillRect(0, eqY - 34, w, 68);
-  bCtx.fillStyle = '#484848';
-  bCtx.fillRect(0, eqY - 34, w, 68);
-
-  // Garis tepi perunggu ganda
-  dCtx.fillStyle = '#d4a148';
-  dCtx.fillRect(0, eqY - 34, w, 2);
-  dCtx.fillRect(0, eqY + 32, w, 2);
-
-  for (let deg = 0; deg < 120; deg++) {
-    const x = (deg * w) / 120;
-    const isMajor = deg % 10 === 0;
-    const isMid = deg % 5 === 0;
-    const tickH = isMajor ? 24 : isMid ? 16 : 9;
-    dCtx.fillStyle = isMajor ? '#f0713c' : isMid ? '#e5bc68' : 'rgba(235, 226, 210, 0.45)';
-    dCtx.fillRect(x, eqY - tickH / 2, isMajor ? 3 : 1.5, tickH);
-
-    bCtx.fillStyle = isMajor ? '#d8d8d8' : '#a6a6a6';
-    bCtx.fillRect(x, eqY - tickH / 2, 2, tickH);
-  }
-
-  const map = new THREE.CanvasTexture(diffCanvas);
+  const map = new THREE.CanvasTexture(cacheKulitAstrolabeCanvas.diff);
   map.colorSpace = THREE.SRGBColorSpace;
   map.wrapS = THREE.RepeatWrapping;
 
-  const bumpMap = new THREE.CanvasTexture(bumpCanvas);
+  const bumpMap = new THREE.CanvasTexture(cacheKulitAstrolabeCanvas.bump);
   bumpMap.wrapS = THREE.RepeatWrapping;
 
   return { map, bumpMap };
@@ -98,37 +111,44 @@ function buatTeksturKulitAstrolabe(): {
 
 function buatTeksturSkalaCincin(): THREE.CanvasTexture | null {
   if (typeof document === 'undefined') return null;
-  const w = 1024;
-  const h = 128;
-  const canvas = document.createElement('canvas');
-  canvas.width = w;
-  canvas.height = h;
-  const ctx = canvas.getContext('2d');
-  if (!ctx) return null;
+  if (!cacheSkalaCincinCanvas) {
+    const w = 1024;
+    const h = 128;
+    const outW = 512;
+    const outH = 64;
+    const canvas = document.createElement('canvas');
+    canvas.width = outW;
+    canvas.height = outH;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return null;
 
-  const grad = ctx.createLinearGradient(0, 0, 0, h);
-  grad.addColorStop(0, '#443d35');
-  grad.addColorStop(0.5, '#25211c');
-  grad.addColorStop(1, '#3b352d');
-  ctx.fillStyle = grad;
-  ctx.fillRect(0, 0, w, h);
+    ctx.scale(outW / w, outH / h);
 
-  // Lis perunggu atas & bawah
-  ctx.fillStyle = '#dfb15b';
-  ctx.fillRect(0, 4, w, 5);
-  ctx.fillRect(0, h - 9, w, 5);
+    const grad = ctx.createLinearGradient(0, 0, 0, h);
+    grad.addColorStop(0, '#443d35');
+    grad.addColorStop(0.5, '#25211c');
+    grad.addColorStop(1, '#3b352d');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, w, h);
 
-  // Skala presisi 180 takik kompas astrolabe
-  for (let i = 0; i < 180; i++) {
-    const x = (i * w) / 180;
-    const major = i % 15 === 0;
-    const mid = i % 5 === 0;
-    const tickLen = major ? 42 : mid ? 26 : 14;
-    ctx.fillStyle = major ? '#f06d3c' : mid ? '#e7c272' : 'rgba(244, 238, 226, 0.48)';
-    ctx.fillRect(x, (h - tickLen) / 2, major ? 3 : 1.5, tickLen);
+    // Lis perunggu atas & bawah
+    ctx.fillStyle = '#dfb15b';
+    ctx.fillRect(0, 4, w, 5);
+    ctx.fillRect(0, h - 9, w, 5);
+
+    // Skala presisi 180 takik kompas astrolabe
+    for (let i = 0; i < 180; i++) {
+      const x = (i * w) / 180;
+      const major = i % 15 === 0;
+      const mid = i % 5 === 0;
+      const tickLen = major ? 42 : mid ? 26 : 14;
+      ctx.fillStyle = major ? '#f06d3c' : mid ? '#e7c272' : 'rgba(244, 238, 226, 0.48)';
+      ctx.fillRect(x, (h - tickLen) / 2, major ? 3 : 1.5, tickLen);
+    }
+    cacheSkalaCincinCanvas = canvas;
   }
 
-  const tex = new THREE.CanvasTexture(canvas);
+  const tex = new THREE.CanvasTexture(cacheSkalaCincinCanvas);
   tex.colorSpace = THREE.SRGBColorSpace;
   tex.wrapS = THREE.RepeatWrapping;
   return tex;
@@ -186,7 +206,10 @@ export class PamomongOrbStage {
 
   private rafId: number | null = null;
   private loopAktif = true;
+  private loopSiapMulai = false;
   private stopObservasi: (() => void) | null = null;
+  private abortCtrl = new AbortController();
+  private cancelMulaiLoop: (() => void) | null = null;
   private pointerX = 0;
   private pointerY = 0;
   private energyPulse = 0;
@@ -201,7 +224,10 @@ export class PamomongOrbStage {
     if (!this.renderer) return;
 
     this.camera.position.set(0.24, 0.28, 6.25);
-    void applyStudioHDR(this.renderer, this.scene);
+    void applyStudioHDR(this.renderer, this.scene, {
+      signal: this.abortCtrl.signal,
+      delayMs: 140,
+    });
 
     this.controls = new OrbitControls(this.camera, this.renderer.domElement);
     this.controls.enableZoom = false;
@@ -235,14 +261,25 @@ export class PamomongOrbStage {
     this.ubahUkuran();
     this.stopObservasi = pasangObservasiPanggung(container, (aktif) => {
       this.loopAktif = aktif;
-      if (aktif && this.rafId === null) {
+      if (aktif && this.loopSiapMulai && this.rafId === null) {
         this.loop();
       } else if (!aktif && this.rafId !== null) {
         window.cancelAnimationFrame(this.rafId);
         this.rafId = null;
       }
     });
-    this.loop();
+    this.cancelMulaiLoop = jalankanLoopSetelahSiap(
+      this.renderer,
+      this.scene,
+      this.camera,
+      () => !this.abortCtrl.signal.aborted && Boolean(this.renderer),
+      () => {
+        this.loopSiapMulai = true;
+        if (this.loopAktif && this.rafId === null) {
+          this.loop();
+        }
+      },
+    );
   }
 
   private bangunAstrolabe(): void {
@@ -670,6 +707,9 @@ export class PamomongOrbStage {
 
   public destroy(): void {
     this.loopAktif = false;
+    this.abortCtrl.abort();
+    this.cancelMulaiLoop?.();
+    this.cancelMulaiLoop = null;
     this.stopObservasi?.();
     this.stopObservasi = null;
     if (this.rafId !== null) window.cancelAnimationFrame(this.rafId);
