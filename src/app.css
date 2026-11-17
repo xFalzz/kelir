@@ -129,6 +129,16 @@ body::-webkit-scrollbar,
   display: none;
 }
 
+html.has-modal-open,
+html.has-modal-open body {
+  overflow: hidden !important;
+  overscroll-behavior: none !important;
+}
+
+html.has-modal-open .kelir-scroll-rail:not(.is-modal) {
+  display: none !important;
+}
+
 body {
   margin: 0;
   min-height: 100vh;
@@ -618,6 +628,12 @@ html[data-theme='malam'] .top-nav {
   background: var(--accent-ember);
   border-color: var(--accent-ember);
   color: #ffffff;
+}
+
+.util-pill.is-obsidian {
+  background: var(--pill-cta-bg);
+  border-color: var(--pill-cta-bg);
+  color: var(--pill-cta-fg);
 }
 
 .util-pill.is-wrap {
@@ -3127,14 +3143,14 @@ html[data-theme='malam'] .suluk-aks-line {
 }
 
 .crimson-player-bar {
-  padding: 12px 16px;
+  padding: 11px 15px;
   border-radius: 16px;
-  background: linear-gradient(125deg, #5e1712, #9b2920 55%, #751f17);
-  border: 1px solid rgba(255, 236, 224, 0.2);
+  background: linear-gradient(135deg, #241210, #3d1915 56%, #1d0e0c);
+  border: 1px solid rgba(253, 230, 138, 0.22);
   color: #ffffff;
   display: grid;
-  gap: 10px;
-  box-shadow: 0 18px 42px rgba(94, 23, 18, 0.35);
+  gap: 9px;
+  box-shadow: 0 18px 42px rgba(24, 12, 10, 0.34);
 }
 
 .suluk-progress-track {
@@ -3261,12 +3277,12 @@ html[data-theme='malam'] .suluk-aks-line {
 }
 
 .suluk-voice-strip {
-  padding: 8px 11px;
+  padding: 7px 11px;
   border-radius: 10px;
-  background: rgba(12, 8, 6, 0.26);
-  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(12, 8, 6, 0.32);
+  border: 1px solid rgba(255, 255, 255, 0.12);
   display: grid;
-  gap: 5px;
+  gap: 3px;
 }
 
 .suluk-voice-head {
@@ -6437,9 +6453,10 @@ html[data-theme='malam'] .kelir-scroll-rail.is-dragging .kelir-scroll-track {
   display: flex;
   justify-content: center;
   align-items: flex-start;
-  padding: clamp(56px, 8vh, 96px) 12px 24px;
+  padding: clamp(48px, 7vh, 84px) 12px 24px;
   background: rgba(10, 11, 14, 0.56);
   backdrop-filter: blur(12px);
+  overscroll-behavior: none;
 }
 
 .search-backdrop-dismiss {
@@ -6458,12 +6475,12 @@ html[data-theme='malam'] .kelir-scroll-rail.is-dragging .kelir-scroll-track {
   min-width: 0;
   box-sizing: border-box;
   overflow: hidden;
-  max-height: min(78vh, 680px);
+  max-height: min(82vh, 700px);
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  padding: 18px;
-  border-radius: 22px;
+  gap: 10px;
+  padding: 16px;
+  border-radius: 20px;
   background: var(--bg-card);
   border: 1px solid var(--border-strong);
   box-shadow: 0 24px 64px rgba(0, 0, 0, 0.34);
@@ -6471,7 +6488,7 @@ html[data-theme='malam'] .kelir-scroll-rail.is-dragging .kelir-scroll-track {
 
 .search-modal-head {
   display: flex;
-  gap: 10px;
+  gap: 8px;
   align-items: center;
   min-width: 0;
   max-width: 100%;
@@ -6483,17 +6500,17 @@ html[data-theme='malam'] .kelir-scroll-rail.is-dragging .kelir-scroll-track {
   max-width: 100%;
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 10px 14px;
+  gap: 9px;
+  padding: 9px 13px;
   border-radius: 999px;
   background: var(--bg-surface);
-  border: 1px solid var(--border-hairline);
+  border: 1px solid var(--border-strong);
 }
 
 .search-ico-svg {
   width: 16px;
   height: 16px;
-  color: var(--accent-ember);
+  color: var(--text-secondary);
   flex-shrink: 0;
 }
 
@@ -6506,7 +6523,42 @@ html[data-theme='malam'] .kelir-scroll-rail.is-dragging .kelir-scroll-track {
   background: transparent;
   color: var(--text-primary);
   font-family: var(--font-body);
-  font-size: 0.94rem;
+  font-size: 0.92rem;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.search-modal-input::-webkit-search-cancel-button,
+.search-modal-input::-webkit-search-decoration {
+  -webkit-appearance: none;
+  appearance: none;
+  display: none;
+}
+
+.search-clear-btn {
+  border: 0;
+  background: var(--surface-subtle);
+  color: var(--text-secondary);
+  width: 22px;
+  height: 22px;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.search-clear-btn:hover {
+  color: var(--text-primary);
+  background: var(--border-hairline);
+}
+
+.search-utility-deck {
+  display: grid;
+  gap: 7px;
 }
 
 .jejak-passport-bar {
@@ -6514,19 +6566,27 @@ html[data-theme='malam'] .kelir-scroll-rail.is-dragging .kelir-scroll-track {
   flex-wrap: wrap;
   justify-content: space-between;
   align-items: center;
-  gap: 8px 14px;
-  padding: 9px 14px;
-  border-radius: 12px;
+  gap: 6px 12px;
+  padding: 7px 12px;
+  border-radius: 11px;
   background: var(--bg-surface);
   border: 1px solid var(--border-hairline);
+}
+
+.jejak-passport-left {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 12px;
+  min-width: 0;
 }
 
 .jejak-metrics {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 6px;
   font-family: var(--font-mono);
-  font-size: 0.72rem;
+  font-size: 0.7rem;
   color: var(--text-secondary);
 }
 
@@ -6537,7 +6597,10 @@ html[data-theme='malam'] .kelir-scroll-rail.is-dragging .kelir-scroll-track {
 }
 
 .search-results-list {
+  flex: 1 1 auto;
+  min-height: 0;
   overflow-y: auto;
+  overscroll-behavior: contain;
   display: grid;
   gap: 8px;
   padding-right: 4px;
@@ -6945,35 +7008,26 @@ html[data-theme='malam'] .kelir-scroll-rail.is-dragging .kelir-scroll-track {
   color: var(--accent-ember);
 }
 
-.karawitan-creator-chip {
+.karawitan-meta-ribbon {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 6px;
-  padding: 8px 11px;
+  gap: 5px 8px;
+  padding: 7px 10px;
   border-radius: 10px;
   background: var(--bg-surface);
   border: 1px solid var(--border-hairline);
-  font-size: 0.78rem;
+  font-size: 0.76rem;
   color: var(--text-secondary);
 }
 
-.karawitan-creator-chip strong {
+.karawitan-meta-ribbon strong {
   color: var(--text-primary);
   font-weight: 600;
 }
 
-.karawitan-mood-guide {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 5px;
-  font-size: 0.77rem;
-  color: var(--text-secondary);
-}
-
-.karawitan-mood-guide strong {
+.karawitan-meta-ribbon .karawitan-mood-accent {
   color: var(--accent-ember);
-  font-weight: 600;
 }
 
 .karawitan-mood-tabs {
@@ -7023,16 +7077,17 @@ html[data-theme='malam'] .kelir-scroll-rail.is-dragging .kelir-scroll-track {
 }
 
 .karawitan-philosophy-box {
-  padding: 10px 12px;
-  border-radius: 12px;
+  padding: 9px 11px;
+  border-radius: 10px;
   background: var(--bg-surface);
-  border-left: 3px solid var(--accent-ember);
+  border: 1px solid var(--border-hairline);
+  border-left: 2px solid var(--border-strong);
 }
 
 .karawitan-philosophy-box p {
-  margin: 6px 0 0;
-  font-size: 0.84rem;
-  line-height: 1.54;
+  margin: 5px 0 0;
+  font-size: 0.82rem;
+  line-height: 1.5;
   color: var(--text-primary);
 }
 
@@ -7278,8 +7333,8 @@ html[data-theme='malam'] .kelir-scroll-rail.is-dragging .kelir-scroll-track {
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  padding: 8px 12px;
-  border-radius: 12px;
+  padding: 6px 10px;
+  border-radius: 11px;
   border: 1px solid var(--border-hairline);
   background: var(--surface-subtle);
 }
@@ -7295,12 +7350,12 @@ html[data-theme='malam'] .kelir-scroll-rail.is-dragging .kelir-scroll-track {
 .cert-name-input {
   flex: 1 1 140px;
   min-width: 0;
-  padding: 7px 10px;
+  padding: 6px 11px;
   border-radius: 999px;
-  border: 1px solid var(--border-strong);
+  border: 1px solid var(--border-hairline);
   background: var(--bg-card);
   color: var(--text-primary);
-  font-size: 0.8rem;
+  font-size: 0.78rem;
 }
 
 .search-a11y-group {
@@ -7309,11 +7364,18 @@ html[data-theme='malam'] .kelir-scroll-rail.is-dragging .kelir-scroll-track {
   gap: 5px;
 }
 
+.search-a11y-group .util-pill {
+  padding: 3px 9px;
+  font-size: 0.72rem;
+}
+
 .search-footer-bar {
   display: flex;
+  flex-wrap: wrap;
   justify-content: space-between;
   align-items: center;
-  padding-top: 6px;
+  gap: 6px 14px;
+  padding-top: 8px;
   border-top: 1px solid var(--border-hairline);
   color: var(--text-muted);
 }
@@ -7599,6 +7661,7 @@ html[data-theme='malam'] .kelir-scroll-rail.is-dragging .kelir-scroll-track {
   padding: clamp(16px, 3vh, 32px) clamp(12px, 3vw, 24px);
   background: rgba(10, 11, 14, 0.58);
   backdrop-filter: blur(12px);
+  overscroll-behavior: none;
 }
 
 .legal-modal-card {
@@ -7611,11 +7674,11 @@ html[data-theme='malam'] .kelir-scroll-rail.is-dragging .kelir-scroll-track {
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  border-radius: 22px;
+  border-radius: 20px;
   background: var(--bg-card);
   color: var(--text-primary);
   border: 1px solid var(--border-strong);
-  box-shadow: 0 28px 72px rgba(0, 0, 0, 0.38);
+  box-shadow: 0 28px 72px rgba(0, 0, 0, 0.36);
 }
 
 html[data-theme='malam'] .legal-modal-card {
@@ -7623,12 +7686,12 @@ html[data-theme='malam'] .legal-modal-card {
 }
 
 .legal-modal-head {
-  padding: 20px 22px 14px;
+  padding: 18px 22px 14px;
   border-bottom: 1px solid var(--border-hairline);
   background: var(--bg-surface);
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 12px;
 }
 
 .legal-modal-head-top {
@@ -7639,9 +7702,9 @@ html[data-theme='malam'] .legal-modal-card {
 }
 
 .legal-modal-title {
-  margin: 6px 0 0;
+  margin: 4px 0 0;
   font-family: var(--font-display);
-  font-size: clamp(1.22rem, 2.2vw, 1.62rem);
+  font-size: clamp(1.2rem, 2.1vw, 1.54rem);
   font-weight: 700;
   line-height: 1.18;
   color: var(--text-primary);
@@ -7652,43 +7715,57 @@ html[data-theme='malam'] .legal-modal-card {
   white-space: nowrap;
 }
 
-.legal-tabs-row {
+.legal-tabs-bar {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px 12px;
+}
+
+.legal-tabs-row {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  padding: 3px;
+  border-radius: 999px;
+  background: var(--surface-subtle);
+  border: 1px solid var(--border-hairline);
 }
 
 .legal-tab-btn {
   display: inline-flex;
   align-items: center;
-  gap: 7px;
-  padding: 7px 14px;
+  gap: 6px;
+  padding: 6px 13px;
   border-radius: 999px;
-  border: 1px solid var(--border-hairline);
-  background: var(--bg-card);
+  border: 0;
+  background: transparent;
   color: var(--text-secondary);
   font-family: var(--font-body);
-  font-size: 0.84rem;
+  font-size: 0.81rem;
   font-weight: 600;
   cursor: pointer;
-  transition: background-color 0.18s ease, border-color 0.18s ease, color 0.18s ease;
+  transition: background-color 0.18s ease, color 0.18s ease;
 }
 
 .legal-tab-btn:hover {
-  border-color: var(--border-strong);
   color: var(--text-primary);
 }
 
 .legal-tab-btn.is-active {
-  background: var(--accent-ember);
-  border-color: var(--accent-ember);
-  color: #fff;
+  background: var(--pill-cta-bg);
+  color: var(--pill-cta-fg);
 }
 
 .legal-tab-num {
   font-family: var(--font-mono);
-  font-size: 0.72rem;
-  opacity: 0.84;
+  font-size: 0.7rem;
+  opacity: 0.72;
+}
+
+.legal-version-tag {
+  opacity: 0.8;
 }
 
 .legal-modal-body {
@@ -7696,56 +7773,45 @@ html[data-theme='malam'] .legal-modal-card {
   min-height: 0;
   overflow-y: auto;
   overscroll-behavior: contain;
-  padding: 18px 22px 22px;
+  padding: 16px 22px 20px;
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 13px;
 }
 
-.legal-intro-band {
-  padding: 14px 16px;
-  border-radius: 14px;
-  background: var(--bg-surface);
-  border: 1px solid var(--border-hairline);
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
+.legal-lead-copy {
+  margin: 0;
+  font-size: 0.89rem;
+  line-height: 1.54;
+  color: var(--text-secondary);
 }
 
-.legal-intro-meta {
+.legal-maintainer-line {
   display: flex;
   flex-wrap: wrap;
   justify-content: space-between;
   align-items: center;
-  gap: 8px 14px;
-}
-
-.legal-intro-copy {
-  margin: 0;
-  font-size: 0.9rem;
-  line-height: 1.58;
-  color: var(--text-secondary);
+  gap: 6px 14px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-hairline);
 }
 
 .legal-clauses-list {
   display: grid;
-  gap: 11px;
+  gap: 10px;
 }
 
 .legal-clause-card {
-  padding: 15px 17px;
-  border-radius: 14px;
+  padding: 13px 16px;
+  border-radius: 13px;
   background: var(--bg-surface);
   border: 1px solid var(--border-hairline);
-  border-left: 3px solid var(--accent-ember);
+  border-left: 2px solid var(--border-strong);
   display: flex;
   flex-direction: column;
-  gap: 8px;
-}
-
-.legal-clause-card.is-compact {
-  border-left-width: 2px;
-  padding: 13px 15px;
+  gap: 6px;
 }
 
 .legal-clause-head {
@@ -7757,7 +7823,7 @@ html[data-theme='malam'] .legal-modal-card {
 
 .legal-clause-num {
   font-family: var(--font-mono);
-  font-size: 0.68rem;
+  font-size: 0.67rem;
   font-weight: 700;
   letter-spacing: 0.08em;
   color: var(--accent-ember);
@@ -7766,16 +7832,16 @@ html[data-theme='malam'] .legal-modal-card {
 .legal-clause-head h3 {
   margin: 0;
   font-family: var(--font-display);
-  font-size: 1rem;
+  font-size: 0.96rem;
   font-weight: 600;
-  line-height: 1.3;
+  line-height: 1.28;
   color: var(--text-primary);
 }
 
 .legal-clause-card p {
   margin: 0;
-  font-size: 0.88rem;
-  line-height: 1.6;
+  font-size: 0.85rem;
+  line-height: 1.54;
   color: var(--text-secondary);
 }
 
@@ -7783,47 +7849,32 @@ html[data-theme='malam'] .legal-modal-card {
   margin: 2px 0 0;
   padding-left: 18px;
   display: grid;
-  gap: 6px;
-  font-size: 0.85rem;
-  line-height: 1.52;
+  gap: 4px;
+  font-size: 0.82rem;
+  line-height: 1.48;
   color: var(--text-secondary);
-}
-
-.legal-contact-hero {
-  padding: 11px 15px;
-  border-radius: 12px;
-  border: 1px solid var(--ember-border);
-  background: var(--ember-soft);
-}
-
-.legal-contact-hero-head {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: space-between;
-  align-items: center;
-  gap: 8px 14px;
 }
 
 .legal-contact-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 12px;
+  gap: 11px;
 }
 
 .legal-contact-card {
-  padding: 15px;
+  padding: 14px;
   border-radius: 14px;
   background: var(--bg-surface);
   border: 1px solid var(--border-hairline);
   display: flex;
   flex-direction: column;
-  gap: 9px;
+  gap: 8px;
   min-width: 0;
   transition: border-color 0.18s ease, transform 0.16s var(--ease-expo);
 }
 
 .legal-contact-card:hover {
-  border-color: var(--ember-border);
+  border-color: var(--border-strong);
   transform: translateY(-2px);
 }
 
@@ -7835,25 +7886,25 @@ html[data-theme='malam'] .legal-modal-card {
 }
 
 .legal-contact-ico {
-  width: 28px;
-  height: 28px;
+  width: 26px;
+  height: 26px;
   border-radius: 8px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  background: var(--ember-soft);
-  color: var(--accent-ember);
+  background: var(--surface-subtle);
+  color: var(--text-primary);
   flex-shrink: 0;
 }
 
 .legal-contact-ico svg {
-  width: 16px;
-  height: 16px;
+  width: 15px;
+  height: 15px;
 }
 
 .legal-contact-value {
   font-family: var(--font-mono);
-  font-size: 0.82rem;
+  font-size: 0.81rem;
   font-weight: 700;
   color: var(--text-primary);
   text-decoration: none;
@@ -7869,8 +7920,8 @@ html[data-theme='malam'] .legal-modal-card {
 
 .legal-contact-desc {
   margin: 0;
-  font-size: 0.81rem;
-  line-height: 1.5;
+  font-size: 0.79rem;
+  line-height: 1.46;
   color: var(--text-secondary);
   flex: 1 1 auto;
 }
@@ -7878,7 +7929,7 @@ html[data-theme='malam'] .legal-modal-card {
 .legal-contact-actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 7px;
+  gap: 6px;
   margin-top: 2px;
 }
 
@@ -7888,21 +7939,46 @@ html[data-theme='malam'] .legal-modal-card {
   align-items: center;
 }
 
-.legal-topics-grid {
+.legal-copy-btn.is-copied {
+  border-color: var(--accent-ember);
+  color: var(--accent-ember);
+}
+
+.legal-topics-strip {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border-hairline);
+}
+
+.legal-topic-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.legal-topic-item h3 {
+  font-size: 0.86rem;
+}
+
+.legal-topic-item p {
+  margin: 0;
+  font-size: 0.77rem;
+  line-height: 1.45;
+  color: var(--text-secondary);
 }
 
 .legal-modal-foot {
-  padding: 12px 22px;
+  padding: 11px 22px;
   border-top: 1px solid var(--border-hairline);
   background: var(--bg-surface);
   display: flex;
   flex-wrap: wrap;
   justify-content: space-between;
   align-items: center;
-  gap: 10px;
+  gap: 8px 12px;
 }
 
 .legal-foot-quick {
@@ -7914,7 +7990,7 @@ html[data-theme='malam'] .legal-modal-card {
 
 @media (max-width: 820px) {
   .legal-contact-grid,
-  .legal-topics-grid {
+  .legal-topics-strip {
     grid-template-columns: 1fr;
   }
 }
@@ -7929,15 +8005,19 @@ html[data-theme='malam'] .legal-modal-card {
   }
   .legal-modal-head {
     padding: 14px 14px 12px;
-    gap: 10px;
+    gap: 9px;
+  }
+  .legal-tabs-row {
+    width: 100%;
+    border-radius: 14px;
   }
   .legal-modal-body {
-    padding: 14px;
+    padding: 13px 14px 16px;
     gap: 11px;
   }
   .legal-tab-btn {
-    padding: 6px 11px;
-    font-size: 0.78rem;
+    padding: 5px 10px;
+    font-size: 0.76rem;
   }
   .legal-modal-foot {
     padding: 10px 14px;

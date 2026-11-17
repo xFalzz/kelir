@@ -40,28 +40,49 @@ export function langkahLerpEksponensial(
   return current + (target - current) * faktor;
 }
 
-function dapatDigulirInternal(target: EventTarget | null, deltaY: number): boolean {
-  let node = target instanceof HTMLElement ? target : null;
-  if (node instanceof HTMLCanvasElement && node.closest('[data-wheel-native="true"]')) {
+/** Mengembalikan true jika terdapat pop-up modal aktif sehingga halaman latar terkunci. */
+export function apakahPopupModalAktif(): boolean {
+  if (typeof document === 'undefined') return false;
+  return (
+    document.documentElement.classList.contains('has-modal-open') ||
+    Boolean(document.querySelector('[aria-modal="true"]'))
+  );
+}
+
+/**
+ * Mengizinkan scroll atau drag native hanya untuk kanvas 3D atau kontainer gulir internal
+ * yang masih memiliki sisa ruang gulir ke arah pergerakan wheel.
+ */
+export function apakahTargetGulirInternal(target: EventTarget | null, deltaY = 0): boolean {
+  if (typeof HTMLElement === 'undefined' || typeof Element === 'undefined' || !target) {
+    return false;
+  }
+  let node = target instanceof HTMLElement ? target : target instanceof Element ? target.parentElement : null;
+  if (
+    node &&
+    (node.closest('[data-wheel-native="true"]') || node.closest('.suluk-webgl-host'))
+  ) {
     return true;
   }
   while (node && node !== document.body && node !== document.documentElement) {
-    if (node.getAttribute('aria-modal') === 'true') {
-      return true;
-    }
     if (node.scrollHeight > node.clientHeight + 1) {
-      const keBawah = deltaY > 0;
-      const masihAdaRuang = keBawah
-        ? node.scrollTop + node.clientHeight < node.scrollHeight - 1
-        : node.scrollTop > 1;
-      if (masihAdaRuang) {
-        const overflowY = window.getComputedStyle(node).overflowY;
-        if (overflowY === 'auto' || overflowY === 'scroll') return true;
+      const overflowY = window.getComputedStyle(node).overflowY;
+      if (overflowY === 'auto' || overflowY === 'scroll') {
+        if (Math.abs(deltaY) < 0.01) return true;
+        const keBawah = deltaY > 0;
+        const masihAdaRuang = keBawah
+          ? node.scrollTop + node.clientHeight < node.scrollHeight - 1
+          : node.scrollTop > 1;
+        if (masihAdaRuang) return true;
       }
     }
     node = node.parentElement;
   }
   return false;
+}
+
+function dapatDigulirInternal(target: EventTarget | null, deltaY: number): boolean {
+  return apakahTargetGulirInternal(target, deltaY);
 }
 
 /**
@@ -126,8 +147,22 @@ export function pasangSmoothScroll(): SmoothScrollController {
 
   const onWheel = (e: WheelEvent): void => {
     if (e.ctrlKey || e.metaKey || e.defaultPrevented || Math.abs(e.deltaY) < 0.01) return;
-    if (prefersReducedMotion()) return;
+    const modalAktif = apakahPopupModalAktif();
+    const diDalamPopover =
+      e.target instanceof Element &&
+      Boolean(e.target.closest('.karawitan-filosofi-card, .pwa-install-toast'));
+
     if (dapatDigulirInternal(e.target, e.deltaY)) return;
+
+    if (modalAktif || diDalamPopover) {
+      e.preventDefault();
+      stopRaf();
+      currentY = window.scrollY;
+      targetY = window.scrollY;
+      return;
+    }
+
+    if (prefersReducedMotion()) return;
 
     e.preventDefault();
     if (rafId === null) {

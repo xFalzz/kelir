@@ -38,16 +38,38 @@
     totalH: number;
     isModal: boolean;
   } {
-    const modal = document.querySelector<HTMLElement>('.modal-suluk-backdrop');
-    if (modal && modal.scrollHeight > modal.clientHeight + 24) {
-      return {
-        target: modal,
-        cur: modal.scrollTop,
-        max: Math.max(0, modal.scrollHeight - modal.clientHeight),
-        viewH: modal.clientHeight,
-        totalH: modal.scrollHeight,
-        isModal: true,
-      };
+    const modalSuluk = document.querySelector<HTMLElement>('.modal-suluk-backdrop');
+    if (modalSuluk) {
+      if (modalSuluk.scrollHeight > modalSuluk.clientHeight + 24) {
+        return {
+          target: modalSuluk,
+          cur: modalSuluk.scrollTop,
+          max: Math.max(0, modalSuluk.scrollHeight - modalSuluk.clientHeight),
+          viewH: modalSuluk.clientHeight,
+          totalH: modalSuluk.scrollHeight,
+          isModal: true,
+        };
+      }
+      return { target: null, cur: 0, max: 0, viewH: 1, totalH: 1, isModal: true };
+    }
+    const modalAktif =
+      document.documentElement.classList.contains('has-modal-open') ||
+      Boolean(document.querySelector('[aria-modal="true"]'));
+    if (modalAktif) {
+      const modalBody = document.querySelector<HTMLElement>(
+        '.legal-modal-body, .search-results-list',
+      );
+      if (modalBody && modalBody.scrollHeight > modalBody.clientHeight + 24) {
+        return {
+          target: modalBody,
+          cur: modalBody.scrollTop,
+          max: Math.max(0, modalBody.scrollHeight - modalBody.clientHeight),
+          viewH: modalBody.clientHeight,
+          totalH: modalBody.scrollHeight,
+          isModal: true,
+        };
+      }
+      return { target: null, cur: 0, max: 0, viewH: 1, totalH: 1, isModal: true };
     }
     const doc = document.documentElement;
     return {
@@ -65,6 +87,13 @@
     const rect = railTrackEl.getBoundingClientRect();
     const m = getActiveScrollMetrics();
     if (m.max <= 0) return;
+    if (
+      !m.target &&
+      (document.documentElement.classList.contains('has-modal-open') ||
+        Boolean(document.querySelector('[aria-modal="true"]')))
+    ) {
+      return;
+    }
 
     const thumbPx = rect.height * thumbRatio;
     const usablePx = Math.max(rect.height - thumbPx, 1);
@@ -119,6 +148,11 @@
 
     const ro = new ResizeObserver(() => syncScroll());
     ro.observe(document.body);
+    const moModal = new MutationObserver(() => syncScroll());
+    moModal.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['class'],
+    });
 
     const applyCursorClass = (active: boolean) => {
       document.documentElement.classList.toggle('has-kelir-cursor', active);
@@ -340,6 +374,7 @@
       if (rippleTimer) clearTimeout(rippleTimer);
       applyCursorClass(false);
       ro.disconnect();
+      moModal.disconnect();
       window.removeEventListener('scroll', syncScroll, { capture: true });
       window.removeEventListener('resize', syncScroll);
       mqHover.removeEventListener('change', evaluateCursorCap);

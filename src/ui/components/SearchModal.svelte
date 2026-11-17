@@ -147,10 +147,24 @@
             placeholder={tI18n(bahasa, 'search.placeholder')}
             data-testid="search-modal-input"
           />
+          {#if kueri.trim().length > 0}
+            <button
+              type="button"
+              class="search-clear-btn"
+              onclick={() => {
+                kueri = '';
+                indeksSorot = 0;
+                inputEl?.focus();
+              }}
+              aria-label="Hapus kueri"
+            >
+              ✕
+            </button>
+          {/if}
         </div>
         <button
           type="button"
-          class="util-pill"
+          class="util-pill search-close-pill"
           onclick={onClose}
           data-testid="search-modal-close"
         >
@@ -158,81 +172,84 @@
         </button>
       </div>
 
-      <!-- Paspor Jejak Kurasi -->
-      <div class="jejak-passport-bar" data-testid="jejak-kurasi-bar">
-        <span class="eyebrow-mono">{tI18n(bahasa, 'search.passportLabel')}</span>
-        <div class="jejak-metrics">
-          <span>
-            {tI18n(bahasa, 'search.exploredSpec', {
-              done: jejak.spesimenDiteliti.length,
-              total: 7,
-            })}
-          </span>
-          <span>·</span>
-          <span>
-            {tI18n(bahasa, 'search.heardSuluk', {
-              done: jejak.sulukDidengar.length,
-              total: 7,
-            })}
-          </span>
-          <span>·</span>
-          <span>
-            {tI18n(bahasa, 'search.favoritesMetric', {
-              done: (jejak.favoritIds ?? []).length,
-              total: 7,
-            })}
-          </span>
-          <span>·</span>
-          <span>
-            {tI18n(bahasa, 'search.quizBest', {
-              done: jejak.skorKuisTertinggi,
-              total: BANK_KUIS_S1_S7.length,
-            })}
-          </span>
-        </div>
-      </div>
+      <!-- Baris Ringkas Jejak Kurasi & Skala Keterbacaan + Piagam -->
+      <div class="search-utility-deck">
+        <div class="jejak-passport-bar" data-testid="jejak-kurasi-bar">
+          <div class="jejak-passport-left">
+            <span class="eyebrow-mono">{tI18n(bahasa, 'search.passportLabel')}</span>
+            <div class="jejak-metrics">
+              <span>
+                {tI18n(bahasa, 'search.exploredSpec', {
+                  done: jejak.spesimenDiteliti.length,
+                  total: 7,
+                })}
+              </span>
+              <span>·</span>
+              <span>
+                {tI18n(bahasa, 'search.heardSuluk', {
+                  done: jejak.sulukDidengar.length,
+                  total: 7,
+                })}
+              </span>
+              <span>·</span>
+              <span>
+                {tI18n(bahasa, 'search.favoritesMetric', {
+                  done: (jejak.favoritIds ?? []).length,
+                  total: 7,
+                })}
+              </span>
+              <span>·</span>
+              <span>
+                {tI18n(bahasa, 'search.quizBest', {
+                  done: jejak.skorKuisTertinggi,
+                  total: BANK_KUIS_S1_S7.length,
+                })}
+              </span>
+            </div>
+          </div>
 
-      <!-- Cetak Piagam Kurator Lokal & Kontrol Keterbacaan -->
-      <div class="cert-export-bar">
-        <div class="cert-input-group">
-          <input
-            type="text"
-            maxlength="42"
-            class="cert-name-input"
-            bind:value={namaPiagam}
-            placeholder={tI18n(bahasa, 'search.certNamePlaceholder')}
-            data-testid="cert-name-input"
-          />
-          <button
-            type="button"
-            class="util-pill"
-            onclick={() => void unduhPiagam()}
-            data-testid="btn-download-cert"
-          >
-            {tI18n(bahasa, 'search.certDownload')}
-          </button>
+          <div class="search-a11y-group">
+            <span class="eyebrow-mono">{tI18n(bahasa, 'search.fontScaleLabel')}</span>
+            <button
+              type="button"
+              class="util-pill"
+              class:is-obsidian={skalaTeks === 'normal'}
+              onclick={() => onUbahSkalaTeks('normal')}
+              data-testid="btn-scale-normal"
+            >
+              A
+            </button>
+            <button
+              type="button"
+              class="util-pill"
+              class:is-obsidian={skalaTeks === 'besar'}
+              onclick={() => onUbahSkalaTeks('besar')}
+              data-testid="btn-scale-large"
+            >
+              A+
+            </button>
+          </div>
         </div>
 
-        <div class="search-a11y-group">
-          <span class="eyebrow-mono">{tI18n(bahasa, 'search.fontScaleLabel')}</span>
-          <button
-            type="button"
-            class="util-pill"
-            class:is-active={skalaTeks === 'normal'}
-            onclick={() => onUbahSkalaTeks('normal')}
-            data-testid="btn-scale-normal"
-          >
-            A
-          </button>
-          <button
-            type="button"
-            class="util-pill"
-            class:is-active={skalaTeks === 'besar'}
-            onclick={() => onUbahSkalaTeks('besar')}
-            data-testid="btn-scale-large"
-          >
-            A+
-          </button>
+        <div class="cert-export-bar">
+          <div class="cert-input-group">
+            <input
+              type="text"
+              maxlength="42"
+              class="cert-name-input"
+              bind:value={namaPiagam}
+              placeholder={tI18n(bahasa, 'search.certNamePlaceholder')}
+              data-testid="cert-name-input"
+            />
+            <button
+              type="button"
+              class="util-pill is-obsidian"
+              onclick={() => void unduhPiagam()}
+              data-testid="btn-download-cert"
+            >
+              {tI18n(bahasa, 'search.certDownload')}
+            </button>
+          </div>
         </div>
       </div>
 
@@ -244,7 +261,7 @@
             role="tab"
             aria-selected={kategoriAktif === kat}
             class="util-pill"
-            class:is-active={kategoriAktif === kat}
+            class:is-obsidian={kategoriAktif === kat}
             onclick={() => {
               kategoriAktif = kat;
               indeksSorot = 0;

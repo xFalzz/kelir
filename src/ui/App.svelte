@@ -43,7 +43,11 @@
     type PwaInstallPromptEvent,
   } from '../lib/pwa.ts';
   import { sinkronkanSeoHalaman, sinkronkanTemaBrowser } from '../lib/seoGeo.ts';
-  import { pasangSmoothScroll, type SmoothScrollController } from '../lib/smoothScroll.ts';
+  import {
+    apakahTargetGulirInternal,
+    pasangSmoothScroll,
+    type SmoothScrollController,
+  } from '../lib/smoothScroll.ts';
   import {
     base64AudioKeBlobUrl,
     hentikanWebSpeech,
@@ -294,6 +298,35 @@
     if (searchModalBuka) {
       pastikanSearchModal();
     }
+  });
+
+  const popupModalAktif = $derived(modalSulukBuka || searchModalBuka || legalModalBuka);
+
+  $effect(() => {
+    if (typeof document === 'undefined') return;
+    const htmlEl = document.documentElement;
+    const bodyEl = document.body;
+    htmlEl.classList.toggle('has-modal-open', popupModalAktif);
+    bodyEl.classList.toggle('has-modal-open', popupModalAktif);
+
+    if (!popupModalAktif) {
+      void tick().then(() => smoothScrollCtrl?.sync());
+      return;
+    }
+
+    const blokirTouchLatar = (e: TouchEvent): void => {
+      if (e.touches.length > 1) return;
+      if (!apakahTargetGulirInternal(e.target, 0) && e.cancelable) {
+        e.preventDefault();
+      }
+    };
+
+    window.addEventListener('touchmove', blokirTouchLatar, { passive: false });
+    return () => {
+      window.removeEventListener('touchmove', blokirTouchLatar);
+      htmlEl.classList.remove('has-modal-open');
+      bodyEl.classList.remove('has-modal-open');
+    };
   });
 
   // Hand Tracker Webcam State (Global Utility)

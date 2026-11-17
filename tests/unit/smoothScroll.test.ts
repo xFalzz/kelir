@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { langkahLerpEksponensial, normalisasiDeltaWheel } from '../../src/lib/smoothScroll.ts';
+import {
+  apakahPopupModalAktif,
+  apakahTargetGulirInternal,
+  langkahLerpEksponensial,
+  normalisasiDeltaWheel,
+} from '../../src/lib/smoothScroll.ts';
 
 describe('Utilitas Smooth Scroll KELIR', () => {
   it('menormalisasi deltaMode pixel, line, dan page secara konsisten serta membatasi lonjakan ekstrem', () => {
@@ -17,5 +22,10 @@ describe('Utilitas Smooth Scroll KELIR', () => {
     }
     expect(pos).toBeGreaterThan(595);
     expect(pos).toBeLessThanOrEqual(600);
+  });
+
+  it('aman saat mengevaluasi kunci scroll pop-up pada lingkungan non-DOM / target kosong', () => {
+    expect(apakahPopupModalAktif()).toBe(false);
+    expect(apakahTargetGulirInternal(null, 120)).toBe(false);
   });
 });

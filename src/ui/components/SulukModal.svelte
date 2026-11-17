@@ -568,9 +568,11 @@
             <span></span><span></span><span></span><span></span>
           </div>
           <div style="min-width: 0;">
-            <div class="crimson-track-name">{ambilTeks(track.nama, bahasa)}</div>
+            <div class="crimson-track-name">
+              {tI18n(bahasa, 'sulukModal.lineLabel', { larik: sulukLarikAktif + 1, max: track.sulukLarik.length })}
+            </div>
             <div class="crimson-track-meta">
-              {track.larasPathet} · {tI18n(bahasa, 'sulukModal.lineLabel', { larik: sulukLarikAktif + 1, max: track.sulukLarik.length })}: “{cuplikanLarikAktif.slice(0, 42)}{cuplikanLarikAktif.length > 42 ? '…' : ''}”
+              “{cuplikanLarikAktif.slice(0, 52)}{cuplikanLarikAktif.length > 52 ? '…' : ''}”
             </div>
           </div>
         </div>

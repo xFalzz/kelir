@@ -79,15 +79,15 @@
           </button>
         </div>
 
-        <div class="karawitan-creator-chip">
-          <span>{tI18n(bahasa, 'karawitan.creatorLabel')}:</span>
-          <strong>{infoAktif.pencipta}</strong>
+        <div class="karawitan-meta-ribbon">
+          <span>
+            {tI18n(bahasa, 'karawitan.creatorLabel')}: <strong>{infoAktif.pencipta}</strong>
+          </span>
+          <span aria-hidden="true">·</span>
+          <span>
+            {tI18n(bahasa, 'karawitan.moodLabel')}: <strong class="karawitan-mood-accent">{infoAktif.cocokUntuk}</strong>
+          </span>
           <span class="source-badge">{gendingAktif.sumber.join(', ')}</span>
-        </div>
-
-        <div class="karawitan-mood-guide">
-          <span>{tI18n(bahasa, 'karawitan.moodLabel')}:</span>
-          <strong>{infoAktif.cocokUntuk}</strong>
         </div>
 
         <div class="karawitan-philosophy-box">
@@ -101,7 +101,7 @@
             role="tab"
             aria-selected={filterSuasana === 'semua'}
             class="util-pill"
-            class:is-active={filterSuasana === 'semua'}
+            class:is-obsidian={filterSuasana === 'semua'}
             onclick={() => (filterSuasana = 'semua')}
             data-testid="karawitan-mood-semua"
           >
@@ -113,7 +113,7 @@
               role="tab"
               aria-selected={filterSuasana === s.id}
               class="util-pill"
-              class:is-active={filterSuasana === s.id}
+              class:is-obsidian={filterSuasana === s.id}
               onclick={() => (filterSuasana = s.id)}
               data-testid="karawitan-mood-{s.id}"
             >
@@ -129,7 +129,7 @@
               role="tab"
               aria-selected={statusRt.gendingId === g.id}
               class="util-pill karawitan-track-btn"
-              class:is-active={statusRt.gendingId === g.id}
+              class:is-obsidian={statusRt.gendingId === g.id}
               onclick={() => onPilihGending(g.id)}
               data-testid="karawitan-gending-{g.id}"
             >

@@ -733,9 +733,23 @@ test.describe('Kelir Multi-Page Spasial 3D — Verifikasi 5 Halaman & Realisme 3
     await expect(page.locator('.preloader-curtain')).toHaveAttribute('data-preloader-done', 'true', {
       timeout: 10000,
     });
+    await page.evaluate(() => window.scrollTo({ top: 720, behavior: 'instant' }));
+    const scrollBeforeSearch = await page.evaluate(() => window.scrollY);
+    expect(scrollBeforeSearch).toBeGreaterThan(200);
+
     await page.getByTestId('btn-search-modal').click();
     await expect(page.getByTestId('search-modal')).toBeVisible();
     await expect(page.getByTestId('jejak-kurasi-bar')).toBeVisible();
+    expect(
+      await page.evaluate(() => document.documentElement.classList.contains('has-modal-open')),
+    ).toBe(true);
+
+    // Gulir di atas backdrop modal pencarian harus mengunci halaman latar
+    await page.mouse.move(14, 14);
+    await page.mouse.wheel(0, -520);
+    await page.mouse.wheel(0, 520);
+    await page.waitForTimeout(120);
+    expect(await page.evaluate(() => window.scrollY)).toBe(scrollBeforeSearch);
 
     await page.getByTestId('search-modal-input').fill('umpak');
     await page.waitForTimeout(150);
@@ -1002,12 +1016,21 @@ test.describe('Kelir Multi-Page Spasial 3D — Verifikasi 5 Halaman & Realisme 3
 
       const syaratLink = page.getByTestId('footer-link-syarat');
       await syaratLink.scrollIntoViewIfNeeded();
+      await page.waitForTimeout(80);
+      const scrollBeforeLegal = await page.evaluate(() => window.scrollY);
       await syaratLink.click();
 
       const legalModal = page.getByTestId('legal-info-modal');
       await expect(legalModal).toBeVisible();
       await expect(legalModal).toContainText('PASAL 01');
       await expect(legalModal).toContainText('Syarat & Ketentuan');
+
+      // Kunci scroll background: wheel pada backdrop maupun header tidak boleh menggeser halaman utama
+      await page.mouse.move(10, 10);
+      await page.mouse.wheel(0, -640);
+      await page.mouse.wheel(0, 640);
+      await page.waitForTimeout(120);
+      expect(await page.evaluate(() => window.scrollY)).toBe(scrollBeforeLegal);
 
       await page.getByTestId('legal-tab-privasi').click();
       await expect(legalModal).toContainText('PRIVASI 02');

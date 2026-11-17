@@ -104,7 +104,7 @@
           <button
             bind:this={closeBtnEl}
             type="button"
-            class="util-pill is-active legal-close-btn"
+            class="util-pill legal-close-btn"
             onclick={onClose}
             data-testid="legal-modal-close"
           >
@@ -112,39 +112,34 @@
           </button>
         </div>
 
-        <div class="legal-tabs-row" role="tablist" aria-label={ambilTeks(METADATA_LEGAL.eyebrow, bahasa)}>
-          {#each DAFTAR_TAB as tab, i}
-            <button
-              type="button"
-              role="tab"
-              aria-selected={tabAktif === tab}
-              class="legal-tab-btn"
-              class:is-active={tabAktif === tab}
-              onclick={() => onPilihTab(tab)}
-              data-testid="legal-tab-{tab}"
-            >
-              <span class="legal-tab-num">0{i + 1}</span>
-              <span>{ambilTeks(METADATA_LEGAL.tabLabel[tab], bahasa)}</span>
-            </button>
-          {/each}
+        <div class="legal-tabs-bar">
+          <div class="legal-tabs-row" role="tablist" aria-label={ambilTeks(METADATA_LEGAL.eyebrow, bahasa)}>
+            {#each DAFTAR_TAB as tab, i}
+              <button
+                type="button"
+                role="tab"
+                aria-selected={tabAktif === tab}
+                class="legal-tab-btn"
+                class:is-active={tabAktif === tab}
+                onclick={() => onPilihTab(tab)}
+                data-testid="legal-tab-{tab}"
+              >
+                <span class="legal-tab-num">0{i + 1}</span>
+                <span>{ambilTeks(METADATA_LEGAL.tabLabel[tab], bahasa)}</span>
+              </button>
+            {/each}
+          </div>
+          <span class="eyebrow-mono legal-version-tag">{ambilTeks(METADATA_LEGAL.tanggalBerlaku, bahasa)}</span>
         </div>
       </header>
 
       <div class="legal-modal-body" bind:this={bodyEl} tabindex="-1">
-        <div class="legal-intro-band">
-          <div class="legal-intro-meta">
-            <span class="source-badge is-accent">{ambilTeks(ringkasanAktif.lencana, bahasa)}</span>
-            <span class="eyebrow-mono">{ambilTeks(METADATA_LEGAL.tanggalBerlaku, bahasa)}</span>
-          </div>
-          <p class="legal-intro-copy">{ambilTeks(ringkasanAktif.pengantar, bahasa)}</p>
-        </div>
+        <p class="legal-lead-copy">{ambilTeks(ringkasanAktif.pengantar, bahasa)}</p>
 
         {#if tabAktif === 'kontak'}
-          <div class="legal-contact-hero">
-            <div class="legal-contact-hero-head">
-              <span class="source-badge">{ambilTeks(KONTAK_META_TEKS.roleBadge, bahasa)}</span>
-              <span class="eyebrow-mono">{ambilTeks(KONTAK_META_TEKS.slaCatatan, bahasa)}</span>
-            </div>
+          <div class="legal-maintainer-line">
+            <span class="source-badge">{ambilTeks(KONTAK_META_TEKS.roleBadge, bahasa)}</span>
+            <span class="eyebrow-mono">{ambilTeks(KONTAK_META_TEKS.slaCatatan, bahasa)}</span>
           </div>
 
           <div class="legal-contact-grid">
@@ -189,7 +184,7 @@
                 <div class="legal-contact-actions">
                   <a
                     href={kanal.tautan}
-                    class="util-pill is-active legal-action-pill"
+                    class="util-pill legal-action-pill is-obsidian"
                     target={kanal.eksternal ? '_blank' : undefined}
                     rel={kanal.eksternal ? 'noopener noreferrer' : undefined}
                   >
@@ -201,6 +196,7 @@
                     <button
                       type="button"
                       class="util-pill legal-copy-btn"
+                      class:is-copied={idTersalin === kanal.id}
                       onclick={() => void salinNilaiKontak(kanal.id, kanal.nilai)}
                       data-testid="legal-copy-{kanal.id}"
                     >
@@ -214,9 +210,9 @@
             {/each}
           </div>
 
-          <div class="legal-topics-grid">
+          <div class="legal-topics-strip">
             {#each TOPIK_KORESPONDENSI as topik}
-              <div class="legal-clause-card is-compact">
+              <div class="legal-topic-item">
                 <div class="legal-clause-head">
                   <span class="legal-clause-num">{topik.kode}</span>
                   <h3>{ambilTeks(topik.judul, bahasa)}</h3>
@@ -250,6 +246,7 @@
       <footer class="legal-modal-foot">
         <span class="eyebrow-mono">{ambilTeks(KONTAK_META_TEKS.footerCredit, bahasa)}</span>
         <div class="legal-foot-quick">
+          <span class="source-badge">{ambilTeks(ringkasanAktif.lencana, bahasa)}</span>
           {#if tabAktif !== 'kontak'}
             <button
               type="button"
@@ -259,13 +256,6 @@
               {ambilTeks(METADATA_LEGAL.tabLabel.kontak, bahasa)} →
             </button>
           {/if}
-          <button
-            type="button"
-            class="util-pill is-active"
-            onclick={onClose}
-          >
-            {ambilTeks(KONTAK_META_TEKS.tutupModal, bahasa)}
-          </button>
         </div>
       </footer>
     </section>
