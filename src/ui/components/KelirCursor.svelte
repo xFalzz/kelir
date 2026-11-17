@@ -10,7 +10,7 @@
   let enabled = $state(false);
   let visible = $state(false);
   let pressed = $state(false);
-  let cursorMode: 'default' | 'interactive' | 'drag' | 'canvas' = $state('default');
+  let cursorMode: 'default' | 'interactive' | 'drag' | 'canvas' | 'text' = $state('default');
   let rippleActive = $state(false);
 
   let nibEl: HTMLDivElement | undefined = $state();
@@ -83,6 +83,8 @@
     if (typeof window === 'undefined') return;
 
     const mqHover = window.matchMedia('(hover: hover) and (pointer: fine)');
+    const mqCoarse = window.matchMedia('(pointer: coarse)');
+    const mqNarrow = window.matchMedia('(max-width: 768px)');
     const mqReduced = window.matchMedia('(prefers-reduced-motion: reduce)');
 
     let scrollTimer: ReturnType<typeof setTimeout> | null = null;
@@ -123,11 +125,14 @@
     };
 
     const evaluateCursorCap = () => {
-      enabled = mqHover.matches && !mqReduced.matches;
+      enabled = mqHover.matches && !mqCoarse.matches && !mqNarrow.matches && !mqReduced.matches;
+      if (!enabled) visible = false;
       applyCursorClass(enabled && visible);
     };
     evaluateCursorCap();
     mqHover.addEventListener('change', evaluateCursorCap);
+    mqCoarse.addEventListener('change', evaluateCursorCap);
+    mqNarrow.addEventListener('change', evaluateCursorCap);
     mqReduced.addEventListener('change', evaluateCursorCap);
 
     let targetX = window.innerWidth * 0.5;
@@ -136,13 +141,14 @@
     let ringY = targetY;
     let auraX = targetX;
     let auraY = targetY;
+    let smoothVelAngle = 0;
+    let smoothStretch = 0;
     const trailPts = [
       { x: targetX, y: targetY },
       { x: targetX, y: targetY },
       { x: targetX, y: targetY },
       { x: targetX, y: targetY },
     ];
-    let ringAngle = 0;
     let rafId: number | null = null;
     let lastMs = 0;
     let lastHoverTarget: EventTarget | null = null;
@@ -157,7 +163,13 @@
         cursorMode = 'default';
         return;
       }
-      if (target.closest('.kelir-scroll-rail')) {
+      if (
+        target.closest(
+          'input:not([type="range"]):not([type="checkbox"]):not([type="radio"]):not([type="button"]):not([type="submit"]), textarea, [contenteditable="true"]',
+        )
+      ) {
+        cursorMode = 'text';
+      } else if (target.closest('.kelir-scroll-rail')) {
         cursorMode = 'drag';
       } else if (
         target.closest(
@@ -183,9 +195,10 @@
       const dt = lastMs > 0 ? Math.min(Math.max((now - lastMs) / 1000, 0.001), 0.05) : 1 / 60;
       lastMs = now;
 
-      const ringFactor = 1 - Math.exp(-16 * dt);
-      const auraFactor = 1 - Math.exp(-9 * dt);
-      const trailRates = [24, 18, 13, 9.5];
+      const ringFactor = 1 - Math.exp(-18 * dt);
+      const auraFactor = 1 - Math.exp(-9.5 * dt);
+      const stretchFactor = 1 - Math.exp(-15 * dt);
+      const trailRates = [26, 20, 15, 11];
 
       const dxRing = targetX - ringX;
       const dyRing = targetY - ringY;
@@ -205,10 +218,20 @@
       }
 
       const vel = Math.hypot(dxRing, dyRing);
-      ringAngle = (ringAngle + (24 + Math.min(vel * 0.65, 140)) * dt) % 360;
+      if (vel > 1.2) {
+        smoothVelAngle = (Math.atan2(dyRing, dxRing) * 180) / Math.PI;
+      }
+      const targetStretch = cursorMode === 'default' ? Math.min(vel * 0.0042, 0.22) : 0;
+      smoothStretch += (targetStretch - smoothStretch) * stretchFactor;
 
       if (ringEl) {
-        ringEl.style.transform = `translate3d(${ringX.toFixed(2)}px, ${ringY.toFixed(2)}px, 0) rotate(${ringAngle.toFixed(1)}deg)`;
+        if (smoothStretch > 0.005) {
+          const sx = (1 + smoothStretch).toFixed(3);
+          const sy = (1 - smoothStretch * 0.42).toFixed(3);
+          ringEl.style.transform = `translate3d(${ringX.toFixed(2)}px, ${ringY.toFixed(2)}px, 0) rotate(${smoothVelAngle.toFixed(1)}deg) scale(${sx}, ${sy})`;
+        } else {
+          ringEl.style.transform = `translate3d(${ringX.toFixed(2)}px, ${ringY.toFixed(2)}px, 0)`;
+        }
       }
       if (auraEl) {
         auraEl.style.transform = `translate3d(${auraX.toFixed(2)}px, ${auraY.toFixed(2)}px, 0)`;
@@ -219,12 +242,14 @@
         const node = tNodes[i];
         if (!node) continue;
         const dist = Math.hypot(trailPts[i].x - targetX, trailPts[i].y - targetY);
-        const alpha = Math.min(0.85, dist * 0.04);
+        const alpha =
+          cursorMode === 'text' ? 0 : Math.min(0.46 - i * 0.07, Math.max(0, (dist - 3) * 0.024));
         node.style.transform = `translate3d(${trailPts[i].x.toFixed(2)}px, ${trailPts[i].y.toFixed(2)}px, 0) scale(${(1 - i * 0.16).toFixed(2)})`;
         node.style.opacity = alpha.toFixed(2);
       }
 
-      if (Math.hypot(targetX - trailPts[3].x, targetY - trailPts[3].y) > 0.35 || pressed) {
+      const remaining = Math.hypot(targetX - trailPts[3].x, targetY - trailPts[3].y);
+      if (remaining > 0.28 || smoothStretch > 0.006 || pressed) {
         rafId = window.requestAnimationFrame(tick);
       } else {
         rafId = null;
@@ -261,6 +286,7 @@
 
     const onPointerDown = (e: PointerEvent) => {
       if (!enabled || e.pointerType !== 'mouse') return;
+      updateMode(e.target);
       visible = true;
       pressed = true;
       targetX = e.clientX;
@@ -268,16 +294,16 @@
       if (nibEl) {
         nibEl.style.transform = `translate3d(${targetX.toFixed(1)}px, ${targetY.toFixed(1)}px, 0)`;
       }
-      if (rippleEl) {
+      if (cursorMode !== 'text' && rippleEl) {
         rippleEl.style.transform = `translate3d(${e.clientX}px, ${e.clientY}px, 0)`;
-      }
-      rippleActive = false;
-      void rippleEl?.offsetWidth;
-      rippleActive = true;
-      if (rippleTimer) clearTimeout(rippleTimer);
-      rippleTimer = setTimeout(() => {
         rippleActive = false;
-      }, 520);
+        void rippleEl.offsetWidth;
+        rippleActive = true;
+        if (rippleTimer) clearTimeout(rippleTimer);
+        rippleTimer = setTimeout(() => {
+          rippleActive = false;
+        }, 560);
+      }
       ensureLoop();
     };
 
@@ -293,10 +319,19 @@
       applyCursorClass(false);
     };
 
+    const onTouchStart = () => {
+      visible = false;
+      pressed = false;
+      isDraggingRail = false;
+      applyCursorClass(false);
+    };
+
     window.addEventListener('pointermove', onPointerMove, { passive: true });
     window.addEventListener('pointerdown', onPointerDown, { passive: true });
     window.addEventListener('pointerup', onPointerUp, { passive: true });
     window.addEventListener('pointercancel', onPointerUp, { passive: true });
+    window.addEventListener('touchstart', onTouchStart, { passive: true });
+    window.addEventListener('blur', onMouseLeave);
     document.addEventListener('mouseleave', onMouseLeave);
 
     return () => {
@@ -308,11 +343,15 @@
       window.removeEventListener('scroll', syncScroll, { capture: true });
       window.removeEventListener('resize', syncScroll);
       mqHover.removeEventListener('change', evaluateCursorCap);
+      mqCoarse.removeEventListener('change', evaluateCursorCap);
+      mqNarrow.removeEventListener('change', evaluateCursorCap);
       mqReduced.removeEventListener('change', evaluateCursorCap);
       window.removeEventListener('pointermove', onPointerMove);
       window.removeEventListener('pointerdown', onPointerDown);
       window.removeEventListener('pointerup', onPointerUp);
       window.removeEventListener('pointercancel', onPointerUp);
+      window.removeEventListener('touchstart', onTouchStart);
+      window.removeEventListener('blur', onMouseLeave);
       document.removeEventListener('mouseleave', onMouseLeave);
     };
   });
@@ -354,7 +393,7 @@
   </div>
 {/if}
 
-<!-- Kursor Tematik KELIR: Pahat Gunungan Emas, 4 Kunang-Kunang Blencong & Cakra Pawukon -->
+<!-- Kursor Tematik KELIR: Pahat Kaligrafi Halus, Lensa Orbital Adaptif & Denyar Harmonik -->
 {#if enabled}
   <div
     class="kelir-cursor-layer"
@@ -372,32 +411,41 @@
     <div class="kelir-cursor-trail" bind:this={trail3}></div>
 
     <div class="kelir-cursor-ring" bind:this={ringEl}>
-      <svg class="kelir-cakra-svg" viewBox="0 0 64 64" fill="none">
-        <circle cx="32" cy="32" r="24" stroke="currentColor" stroke-width="1.15" stroke-dasharray="5 4" />
-        <circle cx="32" cy="32" r="16" stroke="currentColor" stroke-width="0.7" stroke-opacity="0.45" />
-        <path
-          d="M32 3 L34 9 L30 9 Z M32 61 L34 55 L30 55 Z M3 32 L9 30 L9 34 Z M61 32 L55 30 L55 34 Z"
-          fill="currentColor"
-        />
-      </svg>
+      <div class="kelir-ring-core">
+        <span class="kelir-ring-lens"></span>
+        <span class="kelir-ring-drag-chevrons">
+          <svg viewBox="0 0 12 12" fill="none"><path d="M7.5 2.5L4 6l3.5 3.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <svg viewBox="0 0 12 12" fill="none"><path d="M4.5 2.5L8 6l-3.5 3.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </span>
+        <svg class="kelir-cakra-svg" viewBox="0 0 56 56" fill="none">
+          <circle cx="28" cy="28" r="24" stroke="currentColor" stroke-width="1" stroke-dasharray="22 8 6 8" stroke-linecap="round" />
+          <circle cx="28" cy="28" r="18" stroke="currentColor" stroke-width="0.7" stroke-opacity="0.45" />
+          <circle cx="28" cy="4" r="1.4" fill="currentColor" />
+          <circle cx="28" cy="52" r="1.4" fill="currentColor" />
+        </svg>
+      </div>
     </div>
 
     <div class="kelir-cursor-nib" bind:this={nibEl}>
-      <svg class="kelir-nib-svg" viewBox="0 0 24 24" fill="none">
+      <svg class="kelir-nib-svg" viewBox="0 0 22 22" fill="none">
         <path
-          d="M2 2 L19 10.5 L11.8 12.6 L9.5 19.5 Z"
-          class="kelir-nib-body"
-          stroke-width="1.4"
+          d="M2 2 L16.2 9.2 L10.2 11.4 L8 17.4 Z"
+          class="kelir-nib-halo"
+          stroke-width="2.6"
           stroke-linejoin="round"
         />
-        <circle cx="9.2" cy="9.2" r="1.7" class="kelir-nib-jewel" />
+        <path
+          d="M2 2 L16.2 9.2 L10.2 11.4 L8 17.4 Z"
+          class="kelir-nib-body"
+          stroke-width="1.15"
+          stroke-linejoin="round"
+        />
+        <circle cx="7.8" cy="7.8" r="1.35" class="kelir-nib-jewel" />
       </svg>
       {#if cursorMode === 'drag'}
-        <span class="kelir-cursor-glyph">GESER &#8596;</span>
+        <span class="kelir-cursor-glyph">GESER</span>
       {:else if cursorMode === 'canvas'}
         <span class="kelir-cursor-glyph">3D ORBIT</span>
-      {:else if cursorMode === 'interactive'}
-        <span class="kelir-cursor-glyph is-dot">&#10022;</span>
       {/if}
     </div>
 

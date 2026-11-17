@@ -5901,7 +5901,8 @@ html[data-theme='malam'] .pwa-install-toast {
   .page-portal-card,
   .carakan-card,
   .source-ledger-row,
-  .pwa-install-toast {
+  .pwa-install-toast,
+  .kelir-cakra-svg {
     animation: none !important;
     transition: none !important;
     transform: none !important;
@@ -5910,12 +5911,13 @@ html[data-theme='malam'] .pwa-install-toast {
 }
 
 /* ==========================================================================
-   KELIR Floating Capsule Scrollbar & Kursor Tematik Pahat Gunungan-Cakra
+   KELIR Floating Capsule Scrollbar & Kursor Tematik Pahat Kaligrafi-Orbital
    ========================================================================== */
 html.has-kelir-cursor,
 html.has-kelir-cursor body,
 html.has-kelir-cursor button,
 html.has-kelir-cursor a,
+html.has-kelir-cursor select,
 html.has-kelir-cursor [role='button'],
 html.has-kelir-cursor [role='option'],
 html.has-kelir-cursor input[type='range'],
@@ -5923,8 +5925,7 @@ html.has-kelir-cursor canvas {
   cursor: none !important;
 }
 
-html.has-kelir-cursor input[type='text'],
-html.has-kelir-cursor input[type='search'],
+html.has-kelir-cursor input:not([type='range']):not([type='checkbox']):not([type='radio']):not([type='button']):not([type='submit']),
 html.has-kelir-cursor textarea {
   cursor: text !important;
 }
@@ -6076,126 +6077,256 @@ html[data-theme='malam'] .kelir-scroll-rail.is-dragging .kelir-scroll-track {
   pointer-events: none;
   overflow: hidden;
   opacity: 0;
-  transition: opacity 0.2s ease;
+  transition: opacity 0.22s ease;
 }
 
 .kelir-cursor-layer.is-visible {
   opacity: 1;
 }
 
+@media (max-width: 768px), (hover: none), (pointer: coarse) {
+  .kelir-cursor-layer {
+    display: none !important;
+  }
+}
+
 .kelir-cursor-aura {
   position: fixed;
   top: 0;
   left: 0;
-  width: 170px;
-  height: 170px;
-  margin: -85px 0 0 -85px;
+  width: 144px;
+  height: 144px;
+  margin: -72px 0 0 -72px;
   border-radius: 50%;
   background: radial-gradient(
     circle,
-    rgba(209, 73, 27, 0.14) 0%,
-    rgba(154, 108, 29, 0.06) 44%,
-    transparent 74%
+    rgba(209, 73, 27, 0.05) 0%,
+    rgba(154, 108, 29, 0.025) 42%,
+    transparent 68%
   );
-  will-change: transform;
+  will-change: transform, opacity;
+  transition: opacity 0.25s ease;
 }
 
 .kelir-cursor-layer[data-theme='malam'] .kelir-cursor-aura {
+  width: 164px;
+  height: 164px;
+  margin: -82px 0 0 -82px;
   background: radial-gradient(
     circle,
-    rgba(240, 109, 60, 0.22) 0%,
-    rgba(224, 179, 90, 0.09) 46%,
-    transparent 74%
+    rgba(240, 109, 60, 0.13) 0%,
+    rgba(224, 179, 90, 0.045) 45%,
+    transparent 70%
   );
+}
+
+.kelir-cursor-layer[data-mode='text'] .kelir-cursor-aura {
+  opacity: 0.25;
 }
 
 .kelir-cursor-trail {
   position: fixed;
   top: 0;
   left: 0;
-  width: 7px;
-  height: 7px;
-  margin: -3.5px 0 0 -3.5px;
-  border-radius: 1.5px;
-  background: linear-gradient(135deg, var(--accent-gold), var(--accent-ember));
-  transform: rotate(45deg);
+  width: 4.5px;
+  height: 4.5px;
+  margin: -2.25px 0 0 -2.25px;
+  border-radius: 999px;
+  background: radial-gradient(circle, var(--accent-gold) 0%, var(--accent-ember) 100%);
   opacity: 0;
   will-change: transform, opacity;
-  box-shadow: 0 0 8px var(--ember-border);
+  box-shadow: 0 0 6px var(--ember-border);
 }
 
 .kelir-cursor-ring {
   position: fixed;
   top: 0;
   left: 0;
-  width: 56px;
-  height: 56px;
-  margin: -28px 0 0 -28px;
-  color: var(--accent-gold);
+  width: 0;
+  height: 0;
   will-change: transform;
-  opacity: 0.78;
-  transition: color 0.22s ease, opacity 0.22s ease;
+}
+
+.kelir-ring-core {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  margin: -15px 0 0 -15px;
+  color: rgba(154, 108, 29, 0.65);
+  transition:
+    width 0.28s var(--ease-expo),
+    height 0.28s var(--ease-expo),
+    margin 0.28s var(--ease-expo),
+    color 0.22s ease,
+    transform 0.24s var(--ease-expo),
+    opacity 0.18s ease;
+}
+
+.kelir-cursor-layer[data-theme='malam'] .kelir-ring-core {
+  color: rgba(224, 179, 90, 0.72);
+}
+
+.kelir-ring-lens {
+  position: absolute;
+  inset: 0;
+  border-radius: 999px;
+  border: 1.15px solid currentColor;
+  background: transparent;
+  box-shadow: 0 0 0 0 transparent;
+  transition:
+    border-radius 0.28s var(--ease-expo),
+    border-color 0.22s ease,
+    border-width 0.2s ease,
+    background-color 0.24s ease,
+    box-shadow 0.28s ease,
+    opacity 0.2s ease;
+}
+
+.kelir-ring-drag-chevrons {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  padding: 0 7px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  opacity: 0;
+  transform: scale(0.75);
+  transition: opacity 0.2s ease, transform 0.24s var(--ease-expo);
+}
+
+.kelir-ring-drag-chevrons svg {
+  width: 11px;
+  height: 11px;
 }
 
 .kelir-cakra-svg {
-  width: 100%;
-  height: 100%;
-  display: block;
-  transform: scale(0.76);
-  transition: transform 0.28s var(--ease-expo);
+  position: absolute;
+  inset: -4px;
+  width: calc(100% + 8px);
+  height: calc(100% + 8px);
+  opacity: 0;
+  transform: scale(0.72);
+  transition: opacity 0.24s ease, transform 0.3s var(--ease-expo);
 }
 
-.kelir-cursor-layer[data-mode='interactive'] .kelir-cursor-ring {
+@keyframes kelirGimbalSpin {
+  from {
+    transform: scale(1) rotate(0deg);
+  }
+  to {
+    transform: scale(1) rotate(360deg);
+  }
+}
+
+.kelir-cursor-layer[data-mode='interactive'] .kelir-ring-core {
+  width: 42px;
+  height: 42px;
+  margin: -21px 0 0 -21px;
   color: var(--accent-ember);
-  opacity: 0.96;
 }
 
-.kelir-cursor-layer[data-mode='interactive'] .kelir-cakra-svg {
-  transform: scale(1.04);
+.kelir-cursor-layer[data-mode='interactive'] .kelir-ring-lens {
+  border-width: 1.35px;
+  background: rgba(209, 73, 27, 0.06);
+  box-shadow: 0 0 18px rgba(209, 73, 27, 0.14);
 }
 
-.kelir-cursor-layer[data-mode='drag'] .kelir-cursor-ring {
+.kelir-cursor-layer[data-theme='malam'][data-mode='interactive'] .kelir-ring-lens {
+  background: rgba(240, 109, 60, 0.12);
+  box-shadow: 0 0 22px rgba(240, 109, 60, 0.22);
+}
+
+.kelir-cursor-layer[data-mode='drag'] .kelir-ring-core {
+  width: 62px;
+  height: 28px;
+  margin: -14px 0 0 -31px;
   color: var(--accent-ember);
-  opacity: 0.95;
 }
 
-.kelir-cursor-layer[data-mode='drag'] .kelir-cakra-svg {
-  transform: scale(1.06, 0.78);
+.kelir-cursor-layer[data-mode='drag'] .kelir-ring-lens {
+  border-width: 1.35px;
+  background: rgba(252, 250, 245, 0.65);
+  backdrop-filter: blur(6px);
+  box-shadow: 0 6px 18px rgba(20, 21, 24, 0.1);
 }
 
-.kelir-cursor-layer[data-mode='canvas'] .kelir-cursor-ring {
+.kelir-cursor-layer[data-theme='malam'][data-mode='drag'] .kelir-ring-lens {
+  background: rgba(26, 22, 18, 0.68);
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.38);
+}
+
+.kelir-cursor-layer[data-mode='drag'] .kelir-ring-drag-chevrons {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.kelir-cursor-layer[data-mode='canvas'] .kelir-ring-core {
+  width: 46px;
+  height: 46px;
+  margin: -23px 0 0 -23px;
   color: var(--accent-gold);
-  opacity: 0.92;
+}
+
+.kelir-cursor-layer[data-mode='canvas'] .kelir-ring-lens {
+  opacity: 0.35;
 }
 
 .kelir-cursor-layer[data-mode='canvas'] .kelir-cakra-svg {
-  transform: scale(1.16);
+  opacity: 1;
+  animation: kelirGimbalSpin 9s linear infinite;
 }
 
-.kelir-cursor-layer.is-pressed .kelir-cakra-svg {
-  transform: scale(0.6);
+.kelir-cursor-layer[data-mode='text'] .kelir-ring-core,
+.kelir-cursor-layer[data-mode='text'] .kelir-cursor-nib {
+  opacity: 0;
+  transform: scale(0.55);
+}
+
+.kelir-cursor-layer.is-pressed .kelir-ring-core {
+  transform: scale(0.78);
+}
+
+.kelir-cursor-layer[data-mode='drag'].is-pressed .kelir-ring-core {
+  transform: scale(0.9, 0.86);
 }
 
 .kelir-cursor-nib {
   position: fixed;
   top: 0;
   left: 0;
-  width: 24px;
-  height: 24px;
-  margin: -2px 0 0 -2px;
-  will-change: transform;
+  width: 22px;
+  height: 22px;
+  margin: -1.5px 0 0 -1.5px;
+  will-change: transform, opacity;
+  transition: opacity 0.16s ease, transform 0.16s var(--ease-expo);
 }
 
 .kelir-nib-svg {
-  width: 22px;
-  height: 22px;
+  width: 20px;
+  height: 20px;
   display: block;
-  filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.28));
+  overflow: visible;
+  filter: drop-shadow(0 2px 6px rgba(18, 19, 22, 0.24));
   transition: transform 0.16s var(--ease-expo);
+}
+
+.kelir-cursor-layer[data-mode='drag'] .kelir-nib-svg {
+  transform: scale(0.65);
+  opacity: 0.72;
 }
 
 .kelir-cursor-layer.is-pressed .kelir-nib-svg {
   transform: scale(0.84) rotate(-6deg);
+}
+
+.kelir-nib-halo {
+  fill: none;
+  stroke: var(--pill-cta-fg);
+  stroke-opacity: 0.72;
 }
 
 .kelir-nib-body {
@@ -6209,24 +6340,20 @@ html[data-theme='malam'] .kelir-scroll-rail.is-dragging .kelir-scroll-track {
 
 .kelir-cursor-glyph {
   position: absolute;
-  left: 24px;
-  top: 14px;
+  left: 22px;
+  top: 16px;
   font-family: var(--font-mono);
-  font-size: 0.58rem;
+  font-size: 0.56rem;
   font-weight: 700;
-  letter-spacing: 0.08em;
-  padding: 2px 7px;
+  letter-spacing: 0.09em;
+  padding: 2px 8px;
   border-radius: 999px;
   background: var(--bg-pill);
   border: 1px solid var(--ember-border);
   color: var(--text-primary);
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.16);
+  backdrop-filter: blur(8px);
+  box-shadow: 0 6px 16px rgba(18, 19, 22, 0.14);
   white-space: nowrap;
-}
-
-.kelir-cursor-glyph.is-dot {
-  color: var(--accent-ember);
-  padding: 1px 5px;
 }
 
 .kelir-cursor-ripple {
@@ -6239,29 +6366,51 @@ html[data-theme='malam'] .kelir-scroll-rail.is-dragging .kelir-scroll-track {
   pointer-events: none;
 }
 
-.kelir-cursor-ripple::before {
+.kelir-cursor-ripple::before,
+.kelir-cursor-ripple::after {
   content: '';
-  display: block;
-  width: 100%;
-  height: 100%;
+  position: absolute;
+  inset: 0;
   border-radius: 50%;
-  border: 1.5px solid var(--accent-ember);
   opacity: 0;
-  transform: scale(0.3);
+  transform: scale(0.25);
+}
+
+.kelir-cursor-ripple::before {
+  border: 1.5px solid var(--accent-ember);
+}
+
+.kelir-cursor-ripple::after {
+  border: 1px solid var(--accent-gold);
 }
 
 .kelir-cursor-ripple.is-active::before {
-  animation: kelirRipple 0.52s var(--ease-expo) forwards;
+  animation: kelirRippleInner 0.44s var(--ease-expo) forwards;
 }
 
-@keyframes kelirRipple {
+.kelir-cursor-ripple.is-active::after {
+  animation: kelirRippleOuter 0.6s var(--ease-expo) 0.05s forwards;
+}
+
+@keyframes kelirRippleInner {
   0% {
-    opacity: 0.85;
+    opacity: 0.88;
+    transform: scale(0.26);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.45);
+  }
+}
+
+@keyframes kelirRippleOuter {
+  0% {
+    opacity: 0.58;
     transform: scale(0.32);
   }
   100% {
     opacity: 0;
-    transform: scale(1.75);
+    transform: scale(2.05);
   }
 }
 

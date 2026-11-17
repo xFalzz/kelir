@@ -125,6 +125,7 @@ test.describe('Kelir Multi-Page Spasial 3D — Verifikasi 5 Halaman & Realisme 3
       await expect(page.locator('.kelir-cursor-nib')).toBeVisible();
       await expect(page.locator('.kelir-cursor-layer')).toHaveAttribute('data-mode', 'drag');
       await expect(page.locator('.kelir-cursor-layer')).toHaveClass(/is-visible/);
+      await page.screenshot({ path: `${ARTIFACT_DIR}/mp-25-cursor-drag.png` });
       await page.mouse.wheel(0, 260);
       await page.waitForTimeout(380);
       const afterWheelX = await page.evaluate(
@@ -143,6 +144,15 @@ test.describe('Kelir Multi-Page Spasial 3D — Verifikasi 5 Halaman & Realisme 3
         () => document.querySelector('.etalase-ribbon')?.scrollLeft ?? 0,
       );
       expect(afterDragX).toBeGreaterThan(afterWheelX + 80);
+
+      // Verifikasi mode interactive kursor saat mengarah ke tombol navigasi atas
+      const ctaBox = await page.getByTestId('cta-nav-twin').boundingBox();
+      if (ctaBox) {
+        await page.mouse.move(ctaBox.x + ctaBox.width / 2, ctaBox.y + ctaBox.height / 2);
+        await page.waitForTimeout(160);
+        await expect(page.locator('.kelir-cursor-layer')).toHaveAttribute('data-mode', 'interactive');
+        await page.screenshot({ path: `${ARTIFACT_DIR}/mp-24-cursor-interactive.png` });
+      }
 
       // Kembalikan ke awal pita untuk foto bersih
       await page.evaluate(() => {
