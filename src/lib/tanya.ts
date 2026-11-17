@@ -14,6 +14,8 @@ import {
 } from '../content/pusaka.ts';
 import {
   BATAS_KARAKTER_TANYA,
+  apakahAdaSinyalArsipS1S7,
+  apakahTopikBudayaIndonesia,
   auditDanBersihkanOutputAI,
   bersihkanInputPengguna,
   deteksiSeranganAtauLuarTopik,
@@ -41,7 +43,7 @@ export interface HasilTanya {
   sumber: KodeSumber[];
   mode: ModePenyediaPamomong;
   modelNama: typeof MODEL_AI_PAMOMONG;
-  statusGrounding: 'terbukti' | 'ringkasan-benda' | 'luar-korpus';
+  statusGrounding: 'terbukti' | 'eksplorasi-nusantara' | 'ringkasan-benda' | 'luar-korpus';
   skorKeyakinan: number;
   kataKunciCocok: string[];
   latensiMs: number;
@@ -329,7 +331,7 @@ const KATA_DOMAIN_BUDAYA = new Set([
   'joglo', 'pendopo', 'pendhapa', 'saka', 'tumpang', 'sari', 'umpak', 'purus', 'pasak', 'tajug', 'brunjung', 'gempa', 'seismic', 'earthquake', 'earthquakes', 'lindhu', 'joinery', 'nails', 'nail',
   'wayang', 'ringgit', 'blencong', 'kelir', 'cempurit', 'tuding', 'tatahan', 'sunggingan', 'ramayana', 'rama', 'shinta', 'sita', 'marica', 'kidang', 'kijang', 'aranya', 'kanda', 'gendewa', 'guwawijaya', 'puppet', 'shadow', 'deer',
   'hanacaraka', 'aksara', 'carakan', 'unicode', 'a980', 'sandhangan', 'pasangan', 'nglegena', 'suluk', 'dalang', 'dhalang', 'pakeliran', 'sabetan', 'keprak',
-  'unesco', 'sonobudoyo', 'perpusnas', 'kemdikbud', 'manunggaling', 'memayu', 'nusantara', 'jawa', 'javanese', 'pusaka', 'blade', 'bronze', 'script',
+  'sonobudoyo', 'perpusnas', 'kemdikbud', 'manunggaling', 'memayu', 'hayuning', 'bawana', 'sangkan', 'paraning', 'dumadi', 'blade', 'bronze',
 ]);
 
 /**
@@ -349,7 +351,7 @@ export function jawabDariKurasiLokal(
   if (!pemeriksaan.aman && pemeriksaan.kategori !== 'kosong') {
     return {
       jawaban: pesanPenolakanKeamanan(pemeriksaan.kategori, bahasa),
-      sumber: benda.sumber,
+      sumber: [],
       mode: 'bm25-kurasi-lokal',
       modelNama: MODEL_AI_PAMOMONG,
       statusGrounding: 'luar-korpus',
@@ -357,7 +359,7 @@ export function jawabDariKurasiLokal(
       kataKunciCocok: [],
       latensiMs: selesai(),
       butirBukti: [],
-      rujukan: bangunDaftarRujukan(benda.sumber),
+      rujukan: [],
     };
   }
 
@@ -441,16 +443,41 @@ export function jawabDariKurasiLokal(
   const hasDomainToken =
     tokensDasar.some((t) => KATA_DOMAIN_BUDAYA.has(t)) ||
     semuaToken.some((t) => KATA_DOMAIN_BUDAYA.has(t));
+  const adaSinyalArsipS1S7 = hasDomainToken || apakahAdaSinyalArsipS1S7(pertanyaan);
+  const infoNusantara = apakahTopikBudayaIndonesia(pertanyaan);
   const topHit = terperingkat[0];
   const lolosValidasiKorpus =
     Boolean(topHit) &&
     topHit.skor >= AMBANG_ABSTAIN_BM25 &&
-    (hasDomainToken || (topHit.cocok.length >= 2 && topHit.skor >= 1.8));
+    (adaSinyalArsipS1S7 || (!infoNusantara.relevanBudaya && topHit.cocok.length >= 2 && topHit.skor >= 2.2));
 
   if (!lolosValidasiKorpus) {
+    if (infoNusantara.relevanBudaya) {
+      const pesanEksplorasi = ambilTeks(
+        {
+          id: 'Topik budaya Nusantara ini berada di luar enam spesimen inti arsip luring S1–S7. Jalankan melalui server aktif Gemini 3.8 Live untuk memperoleh kajian mendalam mengenai tradisi, sejarah, dan makna budayanya secara akurat tanpa mencatut rujukan S1–S7.',
+          en: 'This Indonesian cultural topic extends beyond the six offline S1–S7 museum specimens. Connect to active Gemini 3.8 Live synthesis to explore its regional history, artistry, and philosophy accurately without fabricated S1–S7 citations.',
+          jw: 'Topik kabudayan Nuswantara punika dumunung ing njaba nem koleksi inti arsip luring S1–S7. Lumantar layanan aktif Gemini 3.8 Live, Pamomong badhe njlentrehaken sejarah, kagunan, saha maknanipun kanthi cetha tanpa ngarang rujukan S1–S7.',
+        },
+        bahasa,
+      );
+      return {
+        jawaban: pesanEksplorasi,
+        sumber: [],
+        mode: 'bm25-kurasi-lokal',
+        modelNama: MODEL_AI_PAMOMONG,
+        statusGrounding: 'eksplorasi-nusantara',
+        skorKeyakinan: 86,
+        kataKunciCocok: infoNusantara.kataKunciTerdeteksi,
+        latensiMs: selesai(),
+        butirBukti: [],
+        rujukan: [],
+      };
+    }
+
     return {
       jawaban: pesanPenolakanKeamanan('luar-topik', bahasa),
-      sumber: benda.sumber,
+      sumber: [],
       mode: 'bm25-kurasi-lokal',
       modelNama: MODEL_AI_PAMOMONG,
       statusGrounding: 'luar-korpus',
@@ -458,7 +485,7 @@ export function jawabDariKurasiLokal(
       kataKunciCocok: [],
       latensiMs: selesai(),
       butirBukti: [],
-      rujukan: bangunDaftarRujukan(benda.sumber),
+      rujukan: [],
     };
   }
 
@@ -533,7 +560,7 @@ export async function tanyakanKeAsisten(
       if (data && typeof data.jawaban === 'string' && Array.isArray(data.butirBukti)) {
         const audited = auditDanBersihkanOutputAI(data.jawaban, {
           minKarakter: 18,
-          maxKarakter: 1100,
+          maxKarakter: 1450,
           wajibJangkarBudaya: data.statusGrounding !== 'luar-korpus',
         });
         if (audited) {

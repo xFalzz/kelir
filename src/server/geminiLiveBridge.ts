@@ -122,6 +122,7 @@ export async function panggilGemini38Live(opts: OpsiPanggilLive): Promise<HasilP
   const voiceName = opts.voiceName || 'Charon';
   const pcmChunks: Buffer[] = [];
   let transcript = '';
+  let directText = '';
   let closed = false;
   let sessionRef: LiveSessionLike | null = null;
 
@@ -150,8 +151,9 @@ export async function panggilGemini38Live(opts: OpsiPanggilLive): Promise<HasilP
         reject(err);
       } else {
         const wavBase64 = opts.includeWavAudio ? pcm24kMonoKeWavBase64(pcmChunks) : null;
+        const rawText = transcript.trim() ? transcript : directText;
         resolve({
-          transcript: transcript.replace(/\s+/g, ' ').replace(/\u2014/g, ', ').trim(),
+          transcript: rawText.replace(/\s+/g, ' ').replace(/\u2014/g, ', ').trim(),
           wavBase64,
           mimeType: wavBase64 ? 'audio/wav' : null,
         });
@@ -159,7 +161,7 @@ export async function panggilGemini38Live(opts: OpsiPanggilLive): Promise<HasilP
     };
 
     const timer = setTimeout(() => {
-      if (transcript.trim().length > 10 || (opts.includeWavAudio && pcmChunks.length > 2)) {
+      if (transcript.trim().length > 10 || directText.trim().length > 10 || (opts.includeWavAudio && pcmChunks.length > 2)) {
         finish();
       } else {
         finish(new Error('Gemini 3.8 Live timeout'));
@@ -183,10 +185,14 @@ export async function panggilGemini38Live(opts: OpsiPanggilLive): Promise<HasilP
         },
         callbacks: {
           onmessage: (msg) => {
-            if (opts.includeWavAudio && msg.serverContent?.modelTurn?.parts) {
+            if (msg.serverContent?.modelTurn?.parts) {
               for (const part of msg.serverContent.modelTurn.parts) {
-                if (part.inlineData?.data) {
+                if (opts.includeWavAudio && part.inlineData?.data) {
                   pcmChunks.push(Buffer.from(part.inlineData.data, 'base64'));
+                }
+                const partAny = part as { text?: string; thought?: boolean };
+                if (typeof partAny.text === 'string' && !partAny.thought) {
+                  directText += partAny.text;
                 }
               }
             }
@@ -203,7 +209,7 @@ export async function panggilGemini38Live(opts: OpsiPanggilLive): Promise<HasilP
           onclose: () => {
             closed = true;
             if (!settled) {
-              if (transcript || (opts.includeWavAudio && pcmChunks.length > 0)) {
+              if (transcript || directText || (opts.includeWavAudio && pcmChunks.length > 0)) {
                 finish();
               } else {
                 finish(new Error('Gemini 3.8 Live closed before completion'));

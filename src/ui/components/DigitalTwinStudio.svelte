@@ -594,9 +594,13 @@
                 >
                   {partAiResult.statusGrounding === 'luar-korpus'
                     ? tI18n(bahasa, 'kawruh.statusAbstain')
-                    : partAiResult.mode === 'gemini-3.8-live'
-                      ? tI18n(bahasa, 'kawruh.statusGemini')
-                      : tI18n(bahasa, 'kawruh.statusVerified')}
+                    : partAiResult.statusGrounding === 'eksplorasi-nusantara'
+                      ? partAiResult.mode === 'gemini-3.8-live'
+                        ? tI18n(bahasa, 'kawruh.statusNusantaraGemini')
+                        : tI18n(bahasa, 'kawruh.statusNusantaraOffline')
+                      : partAiResult.mode === 'gemini-3.8-live'
+                        ? tI18n(bahasa, 'kawruh.statusGemini')
+                        : tI18n(bahasa, 'kawruh.statusVerified')}
                 </span>
                 <span class="rag-model-pill">{partAiResult.modelNama}</span>
               </div>

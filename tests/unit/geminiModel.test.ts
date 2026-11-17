@@ -145,4 +145,67 @@ describe('Integrasi Otomatis Model Unlimited Gemini 3.8 Live (gemini-3.8-live)',
     expect(resAks.jawaban).toMatch(/[\uA980-\uA9DF]/);
     expect(resAks.jawaban).toContain('S1');
   });
+
+  it('membuka eksplorasi budaya seluruh Indonesia melalui gemini-3.8-live tanpa memalsukan sitasi S1–S7', async () => {
+    const topikIndonesia = [
+      {
+        q: 'Apa makna filosofi Tari Saman dari Aceh?',
+        reply: 'Tari Saman berasal dari masyarakat Gayo di Aceh dan melambangkan kekompakan, kebersamaan, serta dakwah nilai luhur.',
+      },
+      {
+        q: 'Jelaskan keunikan arsitektur Rumah Gadang Minangkabau dan atap gonjongnya',
+        reply: 'Rumah Gadang adalah rumah adat masyarakat Minangkabau di Sumatera Barat dengan atap gonjong melengkung dan struktur tiang tahan getaran gempa.',
+      },
+      {
+        q: 'Bagaimana fungsi alat musik Sasando dari Nusa Tenggara Timur?',
+        reply: 'Sasando merupakan alat musik petik tradisional Pulau Rote, Nusa Tenggara Timur, yang memakai daun lontar sebagai resonator suara khas Nusantara.',
+      },
+    ];
+
+    for (const item of topikIndonesia) {
+      const lokal = jawabDariKurasiLokal('keris', item.q, 'id');
+      expect(lokal.statusGrounding).toBe('eksplorasi-nusantara');
+      expect(lokal.sumber).toEqual([]);
+      expect(lokal.butirBukti).toEqual([]);
+
+      let capturedSys = '';
+      const liveFake: LiveClientLike = {
+        live: {
+          connect: vi.fn(async (params) => {
+            capturedSys = JSON.stringify(params.config?.systemInstruction ?? '');
+            return {
+              sendRealtimeInput: () => {
+                queueMicrotask(() => {
+                  params.callbacks.onmessage?.({
+                    serverContent: {
+                      outputTranscription: { text: item.reply },
+                      turnComplete: true,
+                    },
+                  } as never);
+                });
+              },
+              close: vi.fn(),
+            };
+          }),
+        },
+      };
+
+      const res = await jawabDenganGemini38Flash({
+        bendaId: 'keris',
+        pertanyaan: item.q,
+        bahasa: 'id',
+        apiKey: 'test-key-local',
+        liveClientFactory: () => liveFake,
+      });
+
+      expect(res.mode).toBe('gemini-3.8-live');
+      expect(res.modelNama).toBe('gemini-3.8-live');
+      expect(res.statusGrounding).toBe('eksplorasi-nusantara');
+      expect(res.sumber).toEqual([]);
+      expect(res.butirBukti).toEqual([]);
+      expect(res.skorKeyakinan).toBeGreaterThanOrEqual(90);
+      expect(res.jawaban).toBe(item.reply);
+      expect(capturedSys).toContain('Nusantara');
+    }
+  });
 });

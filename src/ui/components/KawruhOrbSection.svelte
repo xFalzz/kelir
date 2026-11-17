@@ -294,11 +294,15 @@
   let statusLabel = $derived(
     jawabanPamomong.statusGrounding === 'luar-korpus'
       ? tI18n(bahasa, 'kawruh.statusAbstain')
-      : jawabanPamomong.mode === 'gemini-3.8-live'
-        ? tI18n(bahasa, 'kawruh.statusGemini')
-        : jawabanPamomong.statusGrounding === 'terbukti'
-          ? tI18n(bahasa, 'kawruh.statusVerified')
-          : tI18n(bahasa, 'kawruh.statusSummary'),
+      : jawabanPamomong.statusGrounding === 'eksplorasi-nusantara'
+        ? jawabanPamomong.mode === 'gemini-3.8-live'
+          ? tI18n(bahasa, 'kawruh.statusNusantaraGemini')
+          : tI18n(bahasa, 'kawruh.statusNusantaraOffline')
+        : jawabanPamomong.mode === 'gemini-3.8-live'
+          ? tI18n(bahasa, 'kawruh.statusGemini')
+          : jawabanPamomong.statusGrounding === 'terbukti'
+            ? tI18n(bahasa, 'kawruh.statusVerified')
+            : tI18n(bahasa, 'kawruh.statusSummary'),
   );
 </script>
 
@@ -395,6 +399,14 @@
               {teksContoh}
             </button>
           {/each}
+          <button
+            type="button"
+            class="util-pill is-wrap"
+            onclick={() => onPilihContohPertanyaan(tI18n(bahasa, 'kawruh.nusantaraExampleQuery'))}
+            data-testid="btn-nusantara-example"
+          >
+            {tI18n(bahasa, 'kawruh.nusantaraExampleQuery')}
+          </button>
           <button
             type="button"
             class="util-pill is-wrap"
