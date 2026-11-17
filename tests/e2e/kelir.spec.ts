@@ -394,6 +394,34 @@ test.describe('Kelir Multi-Page Spasial 3D — Verifikasi 5 Halaman & Realisme 3
     await inputAksara.fill('kelir');
     await expect(page.getByTestId('output-aksara')).toContainText('ꦏꦼꦭꦶꦂ');
 
+    // Verifikasi 6 jenis Aksara Jawa (Sandhangan, Pasangan, Swara/Rekaan, Murda, Angka/Pada, Nglegena) & Pakem Lengkap
+    await page.getByTestId('aksara-pakem-lengkap').click();
+    await inputAksara.fill('Kraton Surakarta.');
+    await expect(page.getByTestId('output-aksara')).toContainText('꧋');
+    await expect(page.getByTestId('output-aksara')).toContainText('ꦯꦸꦫꦏꦂꦠ꧉');
+
+    await page.getByTestId('aksara-cat-sandhangan').click();
+    await expect(page.getByTestId('aksara-grid')).toContainText('Wulu (i)');
+    await expect(page.getByTestId('aksara-grid')).toContainText('Cakra (-r-)');
+    await page.getByTestId('aksara-card-snd-pepet').click();
+    await expect(page.getByTestId('aksara-inspector')).toContainText('U+A9BC');
+
+    await page.screenshot({ path: `${ARTIFACT_DIR}/mp-21-aksara-ragam.png` });
+
+    for (const [catId, expected] of [
+      ['pasangan', 'Pasangan Ka'],
+      ['swara-rekaan', 'Swara I'],
+      ['murda', 'Sa Murda'],
+      ['angka-pada', 'Pada Adeg-Adeg'],
+      ['nglegena', 'Kelir'],
+    ] as const) {
+      await page.getByTestId(`aksara-cat-${catId}`).click();
+      await expect(page.getByTestId('aksara-grid')).toContainText(expected);
+    }
+    await page.getByTestId('aksara-insert-btn').click();
+    await expect(inputAksara).toHaveValue(/Hana/i);
+    await page.getByTestId('aksara-pakem-standar').click();
+
     // Verifikasi Halaman 05 & Pamomong RAG lengkap dalam Bahasa Inggris (i18next)
     await page.getByTestId('lang-switcher-btn').click();
     await page.getByTestId('lang-en').click();

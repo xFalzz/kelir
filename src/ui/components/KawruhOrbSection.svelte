@@ -11,7 +11,17 @@
     type KodeSumber,
     type SpesimenBedahId,
   } from '../../content/pusaka.ts';
-  import { DAFTAR_CARAKAN, type KartuCarakan } from '../../lib/aksara.ts';
+  import {
+    DAFTAR_CARAKAN,
+    KATEGORI_AKSARA_LIST,
+    KATALOG_AKSARA_LENGKAP,
+    ambilAksaraPerKategori,
+    latinKeAksaraJawa,
+    type ItemAksaraLengkap,
+    type KartuCarakan,
+    type KategoriAksara,
+    type PakemTransliterasi,
+  } from '../../lib/aksara.ts';
   import { audioBudaya } from '../../lib/audioBudaya.ts';
   import {
     BANK_KUIS_S1_S7,
@@ -78,6 +88,67 @@
 
   let aksaraTersalin = $state(false);
   let copyTimer: ReturnType<typeof setTimeout> | null = null;
+  let kategoriAksaraAktif = $state<KategoriAksara>('nglegena');
+  let itemAksaraAktifId = $state<string>('ngl-ka');
+  let pakemAksara = $state<PakemTransliterasi>('standar');
+
+  const CONTOH_CEPAT_AKSARA = [
+    { label: 'Kelir Wayang', teks: 'Kelir wayang pusaka jawa.', pakem: 'standar' as const },
+    { label: 'Kraton Surakarta', teks: 'Kraton Surakarta.', pakem: 'lengkap-murda' as const },
+    { label: 'Khidmat & Falsafah', teks: 'Khidmat lan falsafah zaman.', pakem: 'lengkap-murda' as const },
+    { label: 'Keris Luk 5', teks: 'Keris luk 5 pandhawa.', pakem: 'lengkap-murda' as const },
+    { label: 'Indonesia', teks: 'Indonesia nusantara.', pakem: 'lengkap-murda' as const },
+  ];
+
+  let aksaraTampil = $derived(
+    pakemAksara === 'lengkap-murda'
+      ? latinKeAksaraJawa(inputAksaraLatin, { pakem: 'lengkap-murda' })
+      : aksaraTerkonversi,
+  );
+
+  let kategoriInfoAktif = $derived(
+    KATEGORI_AKSARA_LIST.find((k) => k.id === kategoriAksaraAktif) ?? KATEGORI_AKSARA_LIST[0],
+  );
+
+  let daftarItemAksaraAktif = $derived(ambilAksaraPerKategori(kategoriAksaraAktif));
+
+  let itemAksaraAktif = $derived(
+    KATALOG_AKSARA_LENGKAP.find((it) => it.id === itemAksaraAktifId) ??
+      daftarItemAksaraAktif[0] ??
+      KATALOG_AKSARA_LENGKAP[0],
+  );
+
+  function pilihKategoriAksara(kat: KategoriAksara): void {
+    kategoriAksaraAktif = kat;
+    const pertama = ambilAksaraPerKategori(kat)[0];
+    if (pertama) pilihItemAksara(pertama);
+  }
+
+  function pilihItemAksara(item: ItemAksaraLengkap): void {
+    itemAksaraAktifId = item.id;
+    if (item.kategori === 'nglegena') {
+      const cocok = DAFTAR_CARAKAN.find(
+        (c) => `ngl-${c.latin.toLowerCase()}` === item.id,
+      );
+      if (cocok) onPilihCarakan(cocok);
+    }
+  }
+
+  function sisipkanContohAksara(item: ItemAksaraLengkap): void {
+    const sisip = item.sisipTeks.trim();
+    if (!sisip) return;
+    if (
+      item.kategori === 'murda' ||
+      item.kategori === 'swara-rekaan' ||
+      item.id === 'snd-pa-cerek' ||
+      item.id === 'snd-nga-lelet' ||
+      item.id === 'pad-adeg'
+    ) {
+      pakemAksara = 'lengkap-murda';
+    }
+    const dasar = inputAksaraLatin.trim();
+    inputAksaraLatin = dasar ? `${dasar.replace(/\.$/, '')} ${sisip}` : sisip;
+  }
   let answerBoxEl: HTMLDivElement | undefined = $state();
   let justUpdated = $state(false);
   let wasBusy = false;
@@ -278,7 +349,7 @@
   }
 
   async function salinAksara(): Promise<void> {
-    const teks = aksaraTerkonversi || 'ꦏꦼꦭꦶꦂ';
+    const teks = aksaraTampil || 'ꦏꦼꦭꦶꦂ';
     try {
       await navigator.clipboard?.writeText(teks);
       aksaraTersalin = true;
@@ -1013,35 +1084,67 @@
 </section>
 
 <section id="aksara" class="band-section" style="padding-top: 20px;" aria-label={tI18n(bahasa, 'kawruh.aksaraH2')}>
-  <div class="band-header">
+  <div class="band-header aksara-band-head">
     <div>
       <span class="eyebrow-mono">{tI18n(bahasa, 'kawruh.aksaraEyebrow')}</span>
       <h2 class="display-h2">
         {tI18n(bahasa, 'kawruh.aksaraH2')}
       </h2>
     </div>
-    <div style="font-size: 0.9rem; color: var(--text-secondary);">
-      {tI18n(bahasa, 'kawruh.selectedSample')} <strong>{kartuCarakanTerpilih.contohKata}</strong> =
-      <span style="font-family: var(--font-jawa); font-size: 1.3rem;" lang="jv">
-        {kartuCarakanTerpilih.contohAksara}
-      </span>
-      ({ambilTeks(kartuCarakanTerpilih.artiContoh, bahasa)})
+    <div class="aksara-pakem-switch" role="group" aria-label={tI18n(bahasa, 'kawruh.aksaraPakemLabel')}>
+      <span class="aksara-pakem-label">{tI18n(bahasa, 'kawruh.aksaraPakemLabel')}</span>
+      <div class="aksara-pakem-btns">
+        <button
+          type="button"
+          class="util-pill"
+          class:is-active={pakemAksara === 'standar'}
+          onclick={() => (pakemAksara = 'standar')}
+          data-testid="aksara-pakem-standar"
+        >
+          {tI18n(bahasa, 'kawruh.aksaraPakemStandar')}
+        </button>
+        <button
+          type="button"
+          class="util-pill"
+          class:is-active={pakemAksara === 'lengkap-murda'}
+          onclick={() => (pakemAksara = 'lengkap-murda')}
+          data-testid="aksara-pakem-lengkap"
+        >
+          {tI18n(bahasa, 'kawruh.aksaraPakemLengkap')}
+        </button>
+      </div>
     </div>
   </div>
 
-  <div style="display: grid; gap: 14px;">
+  <div class="aksara-converter-card">
+    <div class="aksara-quick-row">
+      <span class="aksara-quick-label">{tI18n(bahasa, 'kawruh.aksaraQuickLabel')}</span>
+      {#each CONTOH_CEPAT_AKSARA as pr}
+        <button
+          type="button"
+          class="aksara-quick-chip"
+          onclick={() => {
+            pakemAksara = pr.pakem;
+            inputAksaraLatin = pr.teks;
+          }}
+        >
+          {pr.label}
+        </button>
+      {/each}
+    </div>
+
     <label for="input-latin-aksara" class="sr-only">{tI18n(bahasa, 'kawruh.aksaraPlaceholder')}</label>
     <input
       id="input-latin-aksara"
       type="text"
       bind:value={inputAksaraLatin}
       placeholder={tI18n(bahasa, 'kawruh.aksaraPlaceholder')}
-      style="width: 100%; padding: 15px 18px; border-radius: 14px; border: 1px solid var(--border-strong); background: var(--bg-card); color: var(--text-primary); font-size: 1rem;"
+      class="aksara-latin-input"
       data-testid="input-aksara"
     />
     <div class="aksara-preview-shell">
       <div class="aksara-preview-output" lang="jv" data-testid="output-aksara">
-        {aksaraTerkonversi || 'ꦏꦼꦭꦶꦂ'}
+        {aksaraTampil || 'ꦏꦼꦭꦶꦂ'}
       </div>
       <button
         type="button"
@@ -1054,17 +1157,77 @@
     </div>
   </div>
 
-  <div class="aksara-grid">
-    {#each DAFTAR_CARAKAN as c, i}
+  <!-- Navigasi 6 Jenis Aksara Jawa (Nglegena, Sandhangan, Pasangan, Swara/Rekaan, Murda, Angka/Pada) -->
+  <div class="aksara-cat-tabs" role="tablist" aria-label={tI18n(bahasa, 'kawruh.aksaraCatAria')}>
+    {#each KATEGORI_AKSARA_LIST as kat}
+      <button
+        type="button"
+        role="tab"
+        aria-selected={kategoriAksaraAktif === kat.id}
+        class="aksara-cat-btn"
+        class:is-active={kategoriAksaraAktif === kat.id}
+        onclick={() => pilihKategoriAksara(kat.id)}
+        data-testid="aksara-cat-{kat.id}"
+      >
+        <span class="aksara-cat-code">{kat.kode}</span>
+        <strong class="aksara-cat-name">{ambilTeks(kat.label, bahasa)}</strong>
+      </button>
+    {/each}
+  </div>
+
+  <p class="aksara-cat-desc">{ambilTeks(kategoriInfoAktif.ringkasan, bahasa)}</p>
+
+  <!-- Panel Inspeksi Detail Aksara Terpilih -->
+  <div class="aksara-inspector-card" data-testid="aksara-inspector">
+    <div class="aksara-insp-glyph-box">
+      <span class="aksara-insp-glyph" lang="jv">{itemAksaraAktif.aksara}</span>
+      <span class="aksara-insp-unicode">{itemAksaraAktif.kodeUnicode}</span>
+    </div>
+    <div class="aksara-insp-body">
+      <div class="aksara-insp-meta">
+        <span class="source-badge">{ambilTeks(itemAksaraAktif.subKelompok, bahasa)}</span>
+        <span class="aksara-insp-lafal">
+          {tI18n(bahasa, 'kawruh.aksaraLafalLabel')}: <strong>{itemAksaraAktif.lafal}</strong>
+        </span>
+      </div>
+      <h3 class="aksara-insp-title">{itemAksaraAktif.nama}</h3>
+      <p class="aksara-insp-fn">{ambilTeks(itemAksaraAktif.fungsi, bahasa)}</p>
+      <div class="aksara-insp-foot">
+        <div class="aksara-insp-example">
+          <span class="eyebrow-mono">{tI18n(bahasa, 'kawruh.aksaraContohLabel')}:</span>
+          <strong>{itemAksaraAktif.contohKata}</strong>
+          <span aria-hidden="true">=</span>
+          <span class="aksara-insp-sample-script" lang="jv">{itemAksaraAktif.contohAksara}</span>
+          <span class="aksara-insp-meaning">({ambilTeks(itemAksaraAktif.artiContoh, bahasa)})</span>
+        </div>
+        <button
+          type="button"
+          class="util-pill aksara-insert-btn"
+          onclick={() => sisipkanContohAksara(itemAksaraAktif)}
+          data-testid="aksara-insert-btn"
+        >
+          {tI18n(bahasa, 'kawruh.aksaraInsertSample')}
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="aksara-grid" data-testid="aksara-grid">
+    {#each daftarItemAksaraAktif as item (item.id)}
       <button
         type="button"
         class="carakan-card"
-        use:pasangReveal={i}
-        onclick={() => onPilihCarakan(c)}
+        class:is-selected={itemAksaraAktif.id === item.id}
+        onclick={() => pilihItemAksara(item)}
+        data-testid="aksara-card-{item.id}"
       >
-        <span class="carakan-glyph" lang="jv">{c.aksara}</span>
-        <strong style="font-size: 0.9rem;">{c.latin}</strong>
-        <div style="font-size: 0.72rem; color: var(--text-muted); margin-top: 2px;">{c.contohKata}</div>
+        <div class="carakan-card-top">
+          <span class="carakan-subtag">{ambilTeks(item.subKelompok, bahasa)}</span>
+          <span class="carakan-uni">{item.kodeUnicode.split(' ')[0]}</span>
+        </div>
+        <span class="carakan-glyph" lang="jv">{item.aksara}</span>
+        <strong class="carakan-name">{item.nama}</strong>
+        <div class="carakan-sample">{item.contohKata}</div>
       </button>
     {/each}
   </div>
