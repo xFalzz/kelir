@@ -567,9 +567,12 @@ test.describe('Kelir Multi-Page Spasial 3D — Verifikasi 5 Halaman & Realisme 3
       });
       await page.mouse.move(120, 420);
       await page.mouse.wheel(0, 420);
-      await page.waitForTimeout(450);
-      const y = await page.evaluate(() => window.scrollY);
-      expect(y, `Smooth scroll aktif pada halaman ${hal}`).toBeGreaterThan(220);
+      await expect
+        .poll(() => page.evaluate(() => window.scrollY), {
+          message: `Smooth scroll aktif pada halaman ${hal}`,
+          timeout: 2200,
+        })
+        .toBeGreaterThan(220);
     }
 
     await page.goto('/?hal=twin');
@@ -931,6 +934,68 @@ test.describe('Kelir Multi-Page Spasial 3D — Verifikasi 5 Halaman & Realisme 3
         expect(searchMobBox.x + searchMobBox.width).toBeLessThanOrEqual(mobVp.width);
       }
       await page.getByTestId('search-modal-close').click();
+    }
+
+    // 7. Verifikasi Pop-up Syarat & Ketentuan, Kebijakan Privasi & Hubungi Kami (Desktop & Mobile)
+    for (const vp of [
+      { width: 1440, height: 900, takeShot: true },
+      { width: 320, height: 568, takeShot: false },
+    ]) {
+      await page.setViewportSize({ width: vp.width, height: vp.height });
+      await page.goto('/?hal=beranda');
+      await expect(page.locator('.preloader-curtain')).toHaveAttribute('data-preloader-done', 'true', {
+        timeout: 10000,
+      });
+
+      const syaratLink = page.getByTestId('footer-link-syarat');
+      await syaratLink.scrollIntoViewIfNeeded();
+      await syaratLink.click();
+
+      const legalModal = page.getByTestId('legal-info-modal');
+      await expect(legalModal).toBeVisible();
+      await expect(legalModal).toContainText('PASAL 01');
+      await expect(legalModal).toContainText('Syarat & Ketentuan');
+
+      await page.getByTestId('legal-tab-privasi').click();
+      await expect(legalModal).toContainText('PRIVASI 02');
+      await expect(legalModal).toContainText('MediaPipe');
+
+      await page.getByTestId('legal-tab-kontak').click();
+      await expect(page.getByTestId('legal-link-email')).toHaveText('nawfalirfan005@gmail.com');
+      await expect(page.getByTestId('legal-link-email')).toHaveAttribute(
+        'href',
+        /^mailto:nawfalirfan005@gmail\.com/,
+      );
+      await expect(page.getByTestId('legal-link-website')).toHaveText('https://nawfal.vercel.app');
+      await expect(page.getByTestId('legal-link-website')).toHaveAttribute(
+        'href',
+        'https://nawfal.vercel.app',
+      );
+      await expect(page.getByTestId('legal-link-instagram')).toHaveText('@nawfaljr__');
+      await expect(page.getByTestId('legal-link-instagram')).toHaveAttribute(
+        'href',
+        'https://www.instagram.com/nawfaljr__/',
+      );
+
+      const modalCardRect = await page.evaluate(() => {
+        const card = document.querySelector('.legal-modal-card');
+        if (!card) return null;
+        const r = card.getBoundingClientRect();
+        return { left: r.left, right: r.right, width: r.width, winW: window.innerWidth };
+      });
+      expect(modalCardRect).not.toBeNull();
+      if (modalCardRect) {
+        expect(modalCardRect.left).toBeGreaterThanOrEqual(-1);
+        expect(modalCardRect.right).toBeLessThanOrEqual(modalCardRect.winW + 1);
+      }
+
+      if (vp.takeShot) {
+        await page.waitForTimeout(160);
+        await page.screenshot({ path: `${ARTIFACT_DIR}/mp-19-legal-kontak-modal.png` });
+      }
+
+      await page.getByTestId('legal-modal-close').click();
+      await expect(legalModal).toHaveCount(0);
     }
 
     expect(errors).toEqual([]);

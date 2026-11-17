@@ -20,6 +20,7 @@
     type TitikInfoPusaka,
   } from '../content/pusaka.ts';
   import { DAFTAR_CARAKAN, latinKeAksaraJawa, type KartuCarakan } from '../lib/aksara.ts';
+  import type { TabLegalModal } from '../content/legalInfo.ts';
   import type { LangkahRuteTur } from '../lib/aiStudio.ts';
   import { audioBudaya } from '../lib/audioBudaya.ts';
   import { mintaSuaraDalangBabak } from '../lib/dalangVoice.ts';
@@ -131,6 +132,8 @@
 
   // Pencarian Global, Paspor Jejak Kurasi & Skala Keterbacaan
   let searchModalBuka = $state(false);
+  let legalModalBuka = $state(false);
+  let legalModalTab: TabLegalModal = $state('syarat');
   let jejakKurasi: JejakKurasi = $state(jejakKurasiKosong());
   let skalaTeks: 'normal' | 'besar' = $state('normal');
 
@@ -149,6 +152,7 @@
   type KawruhOrbSectionType = typeof import('./components/KawruhOrbSection.svelte').default;
   type SulukModalType = typeof import('./components/SulukModal.svelte').default;
   type SearchModalType = typeof import('./components/SearchModal.svelte').default;
+  type LegalModalType = typeof import('./components/LegalInfoModal.svelte').default;
   type TanyaModuleType = typeof import('../lib/tanya.ts');
 
   let DigitalTwinStudioComp: DigitalTwinStudioType | null = $state(null);
@@ -156,6 +160,7 @@
   let KawruhOrbSectionComp: KawruhOrbSectionType | null = $state(null);
   let SulukModalComp: SulukModalType | null = $state(null);
   let SearchModalComp: SearchModalType | null = $state(null);
+  let LegalModalComp: LegalModalType | null = $state(null);
   let tanyaModulCache: TanyaModuleType | null = null;
   let tanyaModulPromise: Promise<TanyaModuleType> | null = null;
   let sudahTanyaPamomongManual = false;
@@ -200,6 +205,18 @@
     if (!SearchModalComp) {
       void import('./components/SearchModal.svelte').then((m) => (SearchModalComp = m.default));
     }
+  }
+
+  function pastikanLegalModal(): void {
+    if (!LegalModalComp) {
+      void import('./components/LegalInfoModal.svelte').then((m) => (LegalModalComp = m.default));
+    }
+  }
+
+  function bukaLegalModal(tab: TabLegalModal = 'syarat'): void {
+    legalModalTab = tab;
+    legalModalBuka = true;
+    pastikanLegalModal();
   }
 
   function buatJawabanPamomongAwal(benda: BendaPusaka, nextLang: BahasaAktif): HasilTanya {
@@ -1140,6 +1157,7 @@
       return;
     }
     if (e.key === 'Escape') {
+      if (legalModalBuka) legalModalBuka = false;
       if (searchModalBuka) searchModalBuka = false;
       if (modalSulukBuka) modalSulukBuka = false;
       if (langMenuBuka) langMenuBuka = false;
@@ -1932,6 +1950,8 @@
   {daftarHalaman}
   onPindahHalaman={(id) => pindahHalaman(id as HalamanId)}
   onPilihPusaka={pilihPusaka}
+  onBukaLegal={bukaLegalModal}
+  onPreloadLegal={pastikanLegalModal}
 />
 
 <!-- =========================================================================
@@ -1988,6 +2008,18 @@
     onUbahSkalaTeks={aturSkalaTeks}
     onClose={() => (searchModalBuka = false)}
     onEksekusiAksi={eksekusiAksiPencarian}
+    onBukaLegal={bukaLegalModal}
+  />
+{/if}
+
+{#if legalModalBuka && LegalModalComp}
+  <LegalModalComp
+    {bahasa}
+    {tema}
+    terbuka={legalModalBuka}
+    tabAktif={legalModalTab}
+    onPilihTab={(tab) => (legalModalTab = tab)}
+    onClose={() => (legalModalBuka = false)}
   />
 {/if}
 

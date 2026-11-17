@@ -13,9 +13,18 @@
     daftarHalaman: HalamanSummary[];
     onPindahHalaman: (id: string) => void;
     onPilihPusaka: (id: BendaPusaka['id'], bukaTwin?: boolean) => void;
+    onBukaLegal?: (tab: 'syarat' | 'privasi' | 'kontak') => void;
+    onPreloadLegal?: () => void;
   }
 
-  let { bahasa, daftarHalaman, onPindahHalaman, onPilihPusaka }: Props = $props();
+  let {
+    bahasa,
+    daftarHalaman,
+    onPindahHalaman,
+    onPilihPusaka,
+    onBukaLegal,
+    onPreloadLegal,
+  }: Props = $props();
 </script>
 
 <footer class="site-footer">
@@ -64,6 +73,37 @@
       <div style="font-size: 0.84rem; color: var(--text-secondary); line-height: 1.55;">
         {tI18n(bahasa, 'footer.privacyCopy')}
       </div>
+      {#if onBukaLegal}
+        <nav class="footer-legal-links" aria-label={tI18n(bahasa, 'footer.legalBarAria')}>
+          <button
+            type="button"
+            class="footer-legal-btn"
+            onpointerenter={() => onPreloadLegal?.()}
+            onclick={() => onBukaLegal('syarat')}
+            data-testid="footer-link-syarat"
+          >
+            {tI18n(bahasa, 'footer.termsBtn')}
+          </button>
+          <button
+            type="button"
+            class="footer-legal-btn"
+            onpointerenter={() => onPreloadLegal?.()}
+            onclick={() => onBukaLegal('privasi')}
+            data-testid="footer-link-privasi"
+          >
+            {tI18n(bahasa, 'footer.privacyBtn')}
+          </button>
+          <button
+            type="button"
+            class="footer-legal-btn is-accent"
+            onpointerenter={() => onPreloadLegal?.()}
+            onclick={() => onBukaLegal('kontak')}
+            data-testid="footer-link-kontak"
+          >
+            {tI18n(bahasa, 'footer.contactBtn')}
+          </button>
+        </nav>
+      {/if}
     </div>
   </div>
 

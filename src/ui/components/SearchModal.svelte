@@ -21,6 +21,7 @@
     onUbahSkalaTeks: (skala: 'normal' | 'besar') => void;
     onClose: () => void;
     onEksekusiAksi: (aksi: AksiNavigasiPencarian) => void;
+    onBukaLegal?: (tab: 'syarat' | 'privasi' | 'kontak') => void;
   }
 
   let {
@@ -32,6 +33,7 @@
     onUbahSkalaTeks,
     onClose,
     onEksekusiAksi,
+    onBukaLegal,
   }: Props = $props();
 
   let kueri = $state('');
@@ -293,6 +295,42 @@
 
       <div class="search-footer-bar">
         <span class="eyebrow-mono">{tI18n(bahasa, 'search.shortcutsHint')}</span>
+        {#if onBukaLegal}
+          <div class="search-footer-legal">
+            <button
+              type="button"
+              class="footer-page-link"
+              onclick={() => {
+                onClose();
+                onBukaLegal('syarat');
+              }}
+            >
+              {tI18n(bahasa, 'footer.termsBtn')}
+            </button>
+            <span>·</span>
+            <button
+              type="button"
+              class="footer-page-link"
+              onclick={() => {
+                onClose();
+                onBukaLegal('privasi');
+              }}
+            >
+              {tI18n(bahasa, 'footer.privacyBtn')}
+            </button>
+            <span>·</span>
+            <button
+              type="button"
+              class="footer-page-link"
+              onclick={() => {
+                onClose();
+                onBukaLegal('kontak');
+              }}
+            >
+              {tI18n(bahasa, 'footer.contactBtn')}
+            </button>
+          </div>
+        {/if}
       </div>
     </div>
   </div>
