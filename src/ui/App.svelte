@@ -36,6 +36,12 @@
     type JejakKurasi,
   } from '../lib/pencarianArsip.ts';
   import { canUseHoverPointer, pasangReveal } from '../lib/revealAnim.ts';
+  import {
+    cekIosSafari,
+    cekModeStandalone,
+    picuInstalasiPwa,
+    type PwaInstallPromptEvent,
+  } from '../lib/pwa.ts';
   import { sinkronkanSeoHalaman, sinkronkanTemaBrowser } from '../lib/seoGeo.ts';
   import { pasangSmoothScroll, type SmoothScrollController } from '../lib/smoothScroll.ts';
   import {
@@ -136,6 +142,27 @@
   let legalModalTab: TabLegalModal = $state('syarat');
   let jejakKurasi: JejakKurasi = $state(jejakKurasiKosong());
   let skalaTeks: 'normal' | 'besar' = $state('normal');
+
+  // Progressive Web App (PWA) Install State
+  let deferredInstallPrompt: PwaInstallPromptEvent | null = $state(null);
+  let pwaTerpasang = $state(false);
+  let pwaIosSafari = $state(false);
+  let pwaPanduanTerbuka = $state(false);
+  let pwaBannerDismissed = $state(false);
+
+  async function pasangAplikasiPwa(): Promise<void> {
+    if (pwaTerpasang) return;
+    if (deferredInstallPrompt) {
+      const outcome = await picuInstalasiPwa(deferredInstallPrompt);
+      deferredInstallPrompt = null;
+      if (outcome === 'accepted') {
+        pwaTerpasang = true;
+        pwaPanduanTerbuka = false;
+      }
+      return;
+    }
+    pwaPanduanTerbuka = !pwaPanduanTerbuka;
+  }
 
   function aturSkalaTeks(skala: 'normal' | 'besar'): void {
     skalaTeks = skala;
@@ -1061,6 +1088,20 @@
     };
     window.addEventListener('popstate', onPopState);
 
+    pwaTerpasang = cekModeStandalone();
+    pwaIosSafari = cekIosSafari();
+    const onBeforeInstallPrompt = (e: Event) => {
+      e.preventDefault();
+      deferredInstallPrompt = e as PwaInstallPromptEvent;
+    };
+    const onAppInstalled = () => {
+      pwaTerpasang = true;
+      deferredInstallPrompt = null;
+      pwaPanduanTerbuka = false;
+    };
+    window.addEventListener('beforeinstallprompt', onBeforeInstallPrompt);
+    window.addEventListener('appinstalled', onAppInstalled);
+
     // Preload malas berjeda satu per satu saat idle agar scroll Beranda tetap mulus tanpa lonjakan parse
     let prefetchDibatalkan = false;
     let stepPrefetchTimer: number | null = null;
@@ -1122,6 +1163,8 @@
       window.clearTimeout(prefetchTimer);
       if (stepPrefetchTimer !== null) window.clearTimeout(stepPrefetchTimer);
       window.removeEventListener('popstate', onPopState);
+      window.removeEventListener('beforeinstallprompt', onBeforeInstallPrompt);
+      window.removeEventListener('appinstalled', onAppInstalled);
       smoothScrollCtrl?.destroy();
       smoothScrollCtrl = null;
     };
@@ -1278,13 +1321,39 @@
 
     <button
       type="button"
-      class="util-pill"
+      class="util-pill nav-icon-pill"
       class:is-active={audioAktif}
       onclick={toggleAudio}
       data-testid="toggle-audio"
       aria-pressed={audioAktif}
+      aria-label={audioAktif ? tI18n(bahasa, 'nav.suaraOn') : tI18n(bahasa, 'nav.suaraOff')}
     >
-      {audioAktif ? tI18n(bahasa, 'nav.suaraOn') : tI18n(bahasa, 'nav.suaraOff')}
+      <svg class="nav-ctrl-ico" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+        <path
+          d="M2.8 6.4v3.2h2.6l3.4 2.7V3.7L5.4 6.4H2.8z"
+          stroke="currentColor"
+          stroke-width="1.35"
+          stroke-linejoin="round"
+        />
+        {#if audioAktif}
+          <path
+            d="M11.1 5.6a3.5 3.5 0 0 1 0 4.8M12.9 3.9a5.8 5.8 0 0 1 0 8.2"
+            stroke="currentColor"
+            stroke-width="1.35"
+            stroke-linecap="round"
+          />
+        {:else}
+          <path
+            d="M11 6l3 4m0-4l-3 4"
+            stroke="currentColor"
+            stroke-width="1.35"
+            stroke-linecap="round"
+          />
+        {/if}
+      </svg>
+      <span class="nav-ctrl-label">
+        {audioAktif ? tI18n(bahasa, 'nav.suaraOn') : tI18n(bahasa, 'nav.suaraOff')}
+      </span>
     </button>
 
     <button
@@ -1354,12 +1423,34 @@
 
     <button
       type="button"
-      class="util-pill"
+      class="util-pill nav-icon-pill"
       onclick={toggleTema}
       data-testid="toggle-tema"
       aria-label={tI18n(bahasa, 'nav.temaAria')}
     >
-      {tema === 'malam' ? tI18n(bahasa, 'nav.temaMalam') : tI18n(bahasa, 'nav.temaTerang')}
+      {#if tema === 'malam'}
+        <svg class="nav-ctrl-ico" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+          <path
+            d="M12.6 9.8A5.1 5.1 0 0 1 6.2 3.4a5.3 5.3 0 1 0 6.4 6.4z"
+            stroke="currentColor"
+            stroke-width="1.35"
+            stroke-linejoin="round"
+          />
+        </svg>
+      {:else}
+        <svg class="nav-ctrl-ico" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+          <circle cx="8" cy="8" r="3" stroke="currentColor" stroke-width="1.35" />
+          <path
+            d="M8 1.8v1.4M8 12.8v1.4M1.8 8h1.4M12.8 8h1.4M3.6 3.6l1 1M11.4 11.4l1 1M12.4 3.6l-1 1M4.6 11.4l-1 1"
+            stroke="currentColor"
+            stroke-width="1.3"
+            stroke-linecap="round"
+          />
+        </svg>
+      {/if}
+      <span class="nav-ctrl-label">
+        {tema === 'malam' ? tI18n(bahasa, 'nav.temaMalam') : tI18n(bahasa, 'nav.temaTerang')}
+      </span>
     </button>
 
     <button
@@ -1373,17 +1464,70 @@
   </div>
 </header>
 
-<!-- Bar Navigasi Halaman Kompak untuk Layar Mobile/Tablet -->
+<!-- Bar Navigasi Halaman Kompak Ikonik untuk Layar Mobile/Tablet -->
 <nav class="mobile-page-dock" aria-label={tI18n(bahasa, 'nav.quickNavAria')}>
   {#each daftarHalaman as hal}
     <button
       type="button"
       class="mobile-page-btn"
       class:is-active={halamanAktif === hal.id}
+      aria-current={halamanAktif === hal.id ? 'page' : undefined}
       onclick={() => pindahHalaman(hal.id)}
+      data-testid="mobile-dock-{hal.id}"
     >
-      <span>{hal.nomor}</span>
-      <span>{hal.label}</span>
+      <svg class="mobile-dock-ico" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+        {#if hal.id === 'beranda'}
+          <path
+            d="M3 9.2 10 3.5l7 5.7v6.6a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9.2z"
+            stroke="currentColor"
+            stroke-width="1.65"
+            stroke-linejoin="round"
+          />
+          <path d="M8 16.8v-4.6h4v4.6" stroke="currentColor" stroke-width="1.65" stroke-linejoin="round" />
+        {:else if hal.id === 'twin'}
+          <path
+            d="M10 2.6 16.4 6.2v7.6L10 17.4l-6.4-3.6V6.2L10 2.6z"
+            stroke="currentColor"
+            stroke-width="1.65"
+            stroke-linejoin="round"
+          />
+          <path
+            d="M3.6 6.2 10 9.8l6.4-3.6M10 9.8v7.6"
+            stroke="currentColor"
+            stroke-width="1.5"
+            stroke-linejoin="round"
+          />
+        {:else if hal.id === 'koleksi'}
+          <rect
+            x="5.2"
+            y="4"
+            width="9.6"
+            height="12"
+            rx="1.8"
+            stroke="currentColor"
+            stroke-width="1.65"
+          />
+          <path
+            d="M2.6 6.2v7.6M17.4 6.2v7.6"
+            stroke="currentColor"
+            stroke-width="1.55"
+            stroke-linecap="round"
+          />
+        {:else if hal.id === 'pakeliran'}
+          <path
+            d="M10 2.7 15.8 11.4 13.3 17H6.7L4.2 11.4 10 2.7z"
+            stroke="currentColor"
+            stroke-width="1.65"
+            stroke-linejoin="round"
+          />
+          <circle cx="10" cy="10.2" r="1.7" fill="currentColor" />
+        {:else}
+          <circle cx="10" cy="10" r="6.6" stroke="currentColor" stroke-width="1.6" />
+          <ellipse cx="10" cy="10" rx="6.6" ry="2.7" transform="rotate(-24 10 10)" stroke="currentColor" stroke-width="1.35" />
+          <circle cx="10" cy="10" r="1.4" fill="currentColor" />
+        {/if}
+      </svg>
+      <span class="mobile-dock-label">{hal.label}</span>
     </button>
   {/each}
 </nav>
@@ -1952,7 +2096,29 @@
   onPilihPusaka={pilihPusaka}
   onBukaLegal={bukaLegalModal}
   onPreloadLegal={pastikanLegalModal}
+  {pwaTerpasang}
+  pwaPromptTersedia={Boolean(deferredInstallPrompt)}
+  {pwaIosSafari}
+  {pwaPanduanTerbuka}
+  onPasangPwa={pasangAplikasiPwa}
 />
+
+{#if deferredInstallPrompt && !pwaTerpasang && !pwaBannerDismissed}
+  <aside class="pwa-install-toast" aria-label={tI18n(bahasa, 'footer.installBannerAria')} data-testid="pwa-install-toast">
+    <div class="pwa-toast-copy">
+      <strong>{tI18n(bahasa, 'footer.installPromptTitle')}</strong>
+      <span>{tI18n(bahasa, 'footer.installPromptDesc')}</span>
+    </div>
+    <div class="pwa-toast-actions">
+      <button type="button" class="pill-cta-crimson pwa-toast-btn" onclick={() => void pasangAplikasiPwa()}>
+        {tI18n(bahasa, 'footer.installPromptBtn')}
+      </button>
+      <button type="button" class="util-pill" onclick={() => (pwaBannerDismissed = true)}>
+        {tI18n(bahasa, 'footer.installCloseBtn')}
+      </button>
+    </div>
+  </aside>
+{/if}
 
 <!-- =========================================================================
      MODAL SULUK LAYAR PENUH 3D PBR & MUSIKOLOGIA KARAWITAN

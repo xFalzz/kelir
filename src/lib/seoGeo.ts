@@ -252,3 +252,11 @@ export function sinkronkanTemaBrowser(tema: 'malam' | 'terang'): void {
   if (typeof document === 'undefined') return;
   setMetaContent('meta[name="theme-color"]', tema === 'malam' ? '#12100e' : '#f6f4ef');
 }
+
+/**
+ * Mengembalikan tahun berjalan untuk footer hak cipta agar selalu mutakhir saat pergantian tahun.
+ */
+export function ambilTahunHakCipta(tanggal: Date = new Date()): number {
+  const th = tanggal.getFullYear();
+  return Number.isFinite(th) && th >= 2025 ? th : 2026;
+}

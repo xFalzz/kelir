@@ -1,0 +1,60 @@
+{
+  "id": "/?hal=beranda",
+  "name": "KELIR · Ruang Pusaka 3D Nusantara",
+  "short_name": "KELIR 3D",
+  "description": "Eksibisi spasial 3D pusaka Nusantara, Digital Twin CAD, panggung Wayang Kulit, Aksara Hanacaraka, dan asisten budaya Pamomong Nusantara.",
+  "start_url": "/?hal=beranda",
+  "scope": "/",
+  "display": "standalone",
+  "display_override": ["standalone", "minimal-ui"],
+  "orientation": "any",
+  "background_color": "#f6f4ef",
+  "theme_color": "#d1491b",
+  "lang": "id",
+  "categories": ["education", "culture", "reference"],
+  "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Digital Twin 3D",
+      "short_name": "Bedah 3D",
+      "url": "/?hal=twin",
+      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Coverflow & Suluk",
+      "short_name": "Suluk 3D",
+      "url": "/?hal=koleksi",
+      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Pamomong Nusantara & Aksara",
+      "short_name": "Pamomong",
+      "url": "/?hal=kawruh",
+      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
+    }
+  ]
+}

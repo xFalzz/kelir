@@ -215,7 +215,7 @@ export function latinKeAksaraJawa(kalimat: string): string {
  */
 export function konversiTeksKeAksaraAman(kalimat: string): string {
   if (!kalimat.trim()) return '';
-  const polaToken = /(\b(?:KELIR|UNESCO|ICH|CAD|PBR|BM25|RAG|Gemini|Flash|Live|Unlimited|WebGL|WebAudio|MediaPipe|Unicode|BPM|HDR|X-Ray|3D|21-Titik)\b|gemini-3\.8-(?:live|flash)|U\+[A-F0-9]+|S\d(?:[–-]S?\d)?|KLR-[A-Z0-9-]+|\d+(?:[.,–-]\d+)?%?|\bms\b)/g;
+  const polaToken = /(©|\b(?:KELIR|UNESCO|ICH|CAD|PBR|BM25|RAG|PWA|Pamomong|WebGL|WebAudio|MediaPipe|Unicode|BPM|HDR|X-Ray|3D|21-Titik)\b|U\+[A-F0-9]+|S\d(?:[–-]S?\d)?|KLR-[A-Z0-9-]+|\d+(?:[.,–-]\d+)?%?|\bms\b)/g;
   const bagian = kalimat.split(polaToken);
   return bagian
     .map((frag) => {

@@ -1003,6 +1003,72 @@ test.describe('Kelir Multi-Page Spasial 3D — Verifikasi 5 Halaman & Realisme 3
       await expect(legalModal).toHaveCount(0);
     }
 
+    // 8. Verifikasi PWA (Manifest, Ikon, Service Worker), Target Sentuh Mobile 44px+ & Footer Hak Cipta Otomatis
+    const tahunKini = String(new Date().getFullYear());
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto('/?hal=beranda');
+    await expect(page.locator('.preloader-curtain')).toHaveAttribute('data-preloader-done', 'true', {
+      timeout: 10000,
+    });
+
+    const manifestResp = await page.request.get('/manifest.webmanifest');
+    expect(manifestResp.status()).toBe(200);
+    const manifestJson = (await manifestResp.json()) as {
+      display: string;
+      icons: Array<{ src: string }>;
+    };
+    expect(manifestJson.display).toBe('standalone');
+    for (const ic of manifestJson.icons) {
+      const iconResp = await page.request.get(ic.src);
+      expect(iconResp.status(), `Ikon PWA ${ic.src}`).toBe(200);
+    }
+    const swResp = await page.request.get('/sw.js');
+    expect(swResp.status()).toBe(200);
+
+    const pwaMetaOk = await page.evaluate(async () => {
+      const hasManifest = Boolean(document.querySelector('link[rel="manifest"]'));
+      const hasAppleIcon = Boolean(document.querySelector('link[rel="apple-touch-icon"]'));
+      let swRegistered = false;
+      if ('serviceWorker' in navigator) {
+        try {
+          const reg = await navigator.serviceWorker.ready;
+          swRegistered = Boolean(reg?.active);
+        } catch {
+          swRegistered = false;
+        }
+      }
+      return { hasManifest, hasAppleIcon, swRegistered };
+    });
+    expect(pwaMetaOk.hasManifest).toBe(true);
+    expect(pwaMetaOk.hasAppleIcon).toBe(true);
+    expect(pwaMetaOk.swRegistered).toBe(true);
+
+    // Pastikan tombol navigasi dock bawah >= 44px dan tidak overflow
+    const dockMetrics = await page.evaluate(() => {
+      const btns = [...document.querySelectorAll('.mobile-page-dock button')];
+      return btns.map((b) => {
+        const r = b.getBoundingClientRect();
+        return { w: Math.round(r.width), h: Math.round(r.height) };
+      });
+    });
+    expect(dockMetrics.length).toBe(5);
+    for (const m of dockMetrics) {
+      expect(m.w).toBeGreaterThanOrEqual(44);
+      expect(m.h).toBeGreaterThanOrEqual(44);
+    }
+
+    const copyrightEl = page.getByTestId('footer-copyright');
+    await copyrightEl.scrollIntoViewIfNeeded();
+    await expect(copyrightEl).toContainText(`© ${tahunKini}`);
+    await expect(copyrightEl).toContainText('KELIR');
+    await expect(copyrightEl).toContainText('Nawfal Irfan');
+
+    const pwaBtn = page.getByTestId('btn-install-pwa');
+    await expect(pwaBtn).toBeVisible();
+    await pwaBtn.click();
+    await expect(page.getByTestId('pwa-install-guide')).toBeVisible();
+    await page.screenshot({ path: `${ARTIFACT_DIR}/mp-20-mobile-footer-pwa.png` });
+
     expect(errors).toEqual([]);
   });
 });

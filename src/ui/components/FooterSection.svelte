@@ -1,6 +1,8 @@
 <script lang="ts">
+  import { onMount } from 'svelte';
   import { DAFTAR_BENDA, ambilTeks, type BahasaAktif, type BendaPusaka } from '../../content/pusaka.ts';
   import { tI18n } from '../../lib/i18n.ts';
+  import { ambilTahunHakCipta } from '../../lib/seoGeo.ts';
 
   interface HalamanSummary {
     id: string;
@@ -15,6 +17,11 @@
     onPilihPusaka: (id: BendaPusaka['id'], bukaTwin?: boolean) => void;
     onBukaLegal?: (tab: 'syarat' | 'privasi' | 'kontak') => void;
     onPreloadLegal?: () => void;
+    pwaTerpasang?: boolean;
+    pwaPromptTersedia?: boolean;
+    pwaIosSafari?: boolean;
+    pwaPanduanTerbuka?: boolean;
+    onPasangPwa?: () => void;
   }
 
   let {
@@ -24,23 +31,47 @@
     onPilihPusaka,
     onBukaLegal,
     onPreloadLegal,
+    pwaTerpasang = false,
+    pwaPromptTersedia = false,
+    pwaIosSafari = false,
+    pwaPanduanTerbuka = false,
+    onPasangPwa,
   }: Props = $props();
+
+  // Tahun hak cipta diperbarui otomatis setiap mount, jeda pergantian hari/tahun, maupun focus ulang tab
+  let tahunHakCipta = $state(ambilTahunHakCipta());
+
+  onMount(() => {
+    const segarkanTahun = () => {
+      const thBaru = ambilTahunHakCipta();
+      if (thBaru !== tahunHakCipta) {
+        tahunHakCipta = thBaru;
+      }
+    };
+    segarkanTahun();
+    const timer = window.setInterval(segarkanTahun, 60_000);
+    document.addEventListener('visibilitychange', segarkanTahun);
+    return () => {
+      window.clearInterval(timer);
+      document.removeEventListener('visibilitychange', segarkanTahun);
+    };
+  });
 </script>
 
 <footer class="site-footer">
   <div class="footer-columns">
-    <div>
-      <div style="font-family: var(--font-display); font-size: 1.85rem; font-weight: 700; line-height: 1.08;">
+    <div class="footer-brand-col">
+      <div class="footer-headline">
         {tI18n(bahasa, 'footer.headline')}
       </div>
-      <p style="color: var(--text-secondary); font-size: 0.88rem; margin-top: 10px; line-height: 1.55;">
+      <p class="footer-lead-copy">
         {tI18n(bahasa, 'footer.lead')}
       </p>
     </div>
 
     <div>
-      <div class="eyebrow-mono" style="margin-bottom: 12px;">{tI18n(bahasa, 'footer.colSpaces')}</div>
-      <div style="display: grid; gap: 8px; font-size: 0.88rem; color: var(--text-secondary);">
+      <div class="eyebrow-mono footer-col-title">{tI18n(bahasa, 'footer.colSpaces')}</div>
+      <div class="footer-link-stack">
         {#each daftarHalaman as hal}
           <button
             type="button"
@@ -54,8 +85,8 @@
     </div>
 
     <div>
-      <div class="eyebrow-mono" style="margin-bottom: 12px;">{tI18n(bahasa, 'footer.colArtifacts')}</div>
-      <div style="display: grid; gap: 8px; font-size: 0.88rem; color: var(--text-secondary);">
+      <div class="eyebrow-mono footer-col-title">{tI18n(bahasa, 'footer.colArtifacts')}</div>
+      <div class="footer-link-stack">
         {#each DAFTAR_BENDA as b}
           <button
             type="button"
@@ -69,8 +100,8 @@
     </div>
 
     <div>
-      <div class="eyebrow-mono" style="margin-bottom: 12px;">{tI18n(bahasa, 'footer.colPrivacy')}</div>
-      <div style="font-size: 0.84rem; color: var(--text-secondary); line-height: 1.55;">
+      <div class="eyebrow-mono footer-col-title">{tI18n(bahasa, 'footer.colPrivacy')}</div>
+      <div class="footer-privacy-copy">
         {tI18n(bahasa, 'footer.privacyCopy')}
       </div>
       {#if onBukaLegal}
@@ -111,6 +142,48 @@
     <span>{tI18n(bahasa, 'footer.colophon1')}</span>
     <span>{tI18n(bahasa, 'footer.colophon2')}</span>
   </div>
+
+  <div class="footer-copyright-row">
+    <span class="footer-copyright-text" data-testid="footer-copyright">
+      {tI18n(bahasa, 'footer.copyright', { year: tahunHakCipta })}
+    </span>
+
+    <div class="footer-pwa-wrap">
+      {#if onPasangPwa}
+        <button
+          type="button"
+          class="footer-pwa-btn"
+          class:is-installed={pwaTerpasang}
+          class:is-ready={pwaPromptTersedia && !pwaTerpasang}
+          onclick={onPasangPwa}
+          disabled={pwaTerpasang}
+          aria-expanded={pwaPanduanTerbuka}
+          data-testid="btn-install-pwa"
+        >
+          <svg class="footer-pwa-ico" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+            <path
+              d="M8 2.2v7.3m0 0L5.3 6.8M8 9.5l2.7-2.7M3 12.2v.6a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1v-.6"
+              stroke="currentColor"
+              stroke-width="1.45"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+          </svg>
+          <span>
+            {pwaTerpasang ? tI18n(bahasa, 'footer.installedApp') : tI18n(bahasa, 'footer.installApp')}
+          </span>
+        </button>
+      {/if}
+    </div>
+  </div>
+
+  {#if pwaPanduanTerbuka && !pwaTerpasang}
+    <div class="footer-pwa-guide" role="status" data-testid="pwa-install-guide">
+      {pwaIosSafari
+        ? tI18n(bahasa, 'footer.installGuideIos')
+        : tI18n(bahasa, 'footer.installGuideChrome')}
+    </div>
+  {/if}
 
   <div class="footer-giant-logo" aria-hidden="true">KELIR</div>
 </footer>
