@@ -6,7 +6,7 @@ export interface SmoothScrollController {
 }
 
 const BATAS_DELTA_PIXEL = 360;
-const STIFFNESS_DEFAULT = 10.5;
+const STIFFNESS_DEFAULT = 14.5;
 const AMBANG_HENTI_PX = 0.35;
 
 /**
@@ -35,7 +35,7 @@ export function langkahLerpEksponensial(
   stiffness: number,
   dtSec: number,
 ): number {
-  const dt = Math.min(Math.max(dtSec, 0.001), 0.05);
+  const dt = Math.min(Math.max(dtSec, 0.001), 0.1);
   const faktor = 1 - Math.exp(-stiffness * dt);
   return current + (target - current) * faktor;
 }
@@ -141,7 +141,7 @@ export function pasangSmoothScroll(): SmoothScrollController {
 
   const ensureRunning = (): void => {
     if (rafId !== null) return;
-    lastFrameMs = 0;
+    lastFrameMs = performance.now();
     rafId = window.requestAnimationFrame(step);
   };
 

@@ -25,9 +25,9 @@ interface SlotCoverflow3D {
   artefakId: CoverflowArtefakId;
   root: THREE.Group;
   artefakPivot: THREE.Group;
-  rimMat: THREE.MeshPhysicalMaterial;
+  rimMat: THREE.MeshStandardMaterial;
   basePlinthMat: THREE.MeshStandardMaterial;
-  velvetMat: THREE.MeshPhysicalMaterial;
+  velvetMat: THREE.MeshStandardMaterial;
   paket: PaketModel3D;
   targetX: number;
   targetY: number;
@@ -167,8 +167,7 @@ export class CoverflowStage {
     this.keySpot.position.set(1.9, 6.8, 6.2);
     this.keySpot.target.position.set(0, 0.1, 2.0);
     this.keySpot.castShadow = true;
-    const shadowRes = isMobileGpuProfile() ? 512 : 1024;
-    this.keySpot.shadow.mapSize.set(shadowRes, shadowRes);
+    this.keySpot.shadow.mapSize.set(512, 512);
     this.keySpot.shadow.bias = -0.0005;
     this.scene.add(this.keySpot, this.keySpot.target);
 
@@ -242,43 +241,41 @@ export class CoverflowStage {
       roughness: 0.52,
       metalness: 0.16,
     });
-    const velvetMat = new THREE.MeshPhysicalMaterial({
+    const velvetMat = new THREE.MeshStandardMaterial({
       color: isDark ? 0x4b1512 : 0x5d1814,
-      roughness: 0.88,
-      sheen: 0.85,
-      sheenColor: new THREE.Color(0xd1491b),
+      roughness: 0.86,
+      metalness: 0.08,
     });
-    const rimMat = new THREE.MeshPhysicalMaterial({
+    const rimMat = new THREE.MeshStandardMaterial({
       color: 0xe0b254,
       emissive: 0x5c3e10,
       emissiveIntensity: 0.06,
-      metalness: 0.92,
-      roughness: 0.19,
-      clearcoat: 0.55,
+      metalness: 0.9,
+      roughness: 0.2,
     });
 
-    const velvetPad = new THREE.Mesh(new THREE.CylinderGeometry(0.92, 0.94, 0.032, 40), velvetMat);
+    const velvetPad = new THREE.Mesh(new THREE.CylinderGeometry(0.92, 0.94, 0.032, 28), velvetMat);
     velvetPad.position.y = -0.742;
     velvetPad.receiveShadow = true;
     velvetPad.userData.coverflowIndex = indeks;
 
-    const alas = new THREE.Mesh(new THREE.CylinderGeometry(1.02, 1.09, 0.125, 40), basePlinthMat);
+    const alas = new THREE.Mesh(new THREE.CylinderGeometry(1.02, 1.09, 0.125, 28), basePlinthMat);
     alas.position.y = -0.82;
     alas.castShadow = true;
     alas.receiveShadow = true;
     alas.userData.coverflowIndex = indeks;
 
-    const tiangPlinth = new THREE.Mesh(new THREE.CylinderGeometry(0.84, 0.97, 0.18, 28), basePlinthMat);
+    const tiangPlinth = new THREE.Mesh(new THREE.CylinderGeometry(0.84, 0.97, 0.18, 22), basePlinthMat);
     tiangPlinth.position.y = -0.975;
     tiangPlinth.castShadow = true;
     tiangPlinth.receiveShadow = true;
     tiangPlinth.userData.coverflowIndex = indeks;
 
-    const cincinLis = new THREE.Mesh(new THREE.TorusGeometry(1.01, 0.022, 14, 48), rimMat);
+    const cincinLis = new THREE.Mesh(new THREE.TorusGeometry(1.01, 0.022, 10, 32), rimMat);
     cincinLis.rotation.x = Math.PI / 2;
     cincinLis.position.y = -0.758;
 
-    const cincinBawah = new THREE.Mesh(new THREE.TorusGeometry(0.96, 0.017, 10, 42), rimMat);
+    const cincinBawah = new THREE.Mesh(new THREE.TorusGeometry(0.96, 0.017, 8, 28), rimMat);
     cincinBawah.rotation.x = Math.PI / 2;
     cincinBawah.position.y = -1.055;
 

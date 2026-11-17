@@ -1,5 +1,4 @@
 import * as THREE from 'three';
-import { loadBudayaTextures } from './threeHelpers.ts';
 
 export interface WayangSriRamaRig {
   root: THREE.Group;
@@ -7,30 +6,68 @@ export interface WayangSriRamaRig {
   lenganKanan: THREE.Group;
   sikuKanan: THREE.Group;
   lenganKiri: THREE.Group;
-  sikuKiri?: THREE.Group;
+  sikuKiri: THREE.Group;
   busur: THREE.Group;
-  anakPanah: THREE.Mesh;
 }
 
-export interface WayangKidangRig {
+export interface KidangKencanaRig {
   root: THREE.Group;
+  badan: THREE.Group;
   leherKepala: THREE.Group;
   kakiDepan: THREE.Group;
-  lututDepan?: THREE.Group;
   kakiBelakang: THREE.Group;
-  lututBelakang?: THREE.Group;
 }
+
+export type WayangKidangRig = KidangKencanaRig;
 
 let cacheSriRamaDiffuse: THREE.CanvasTexture | null = null;
 let cacheSriRamaBump: THREE.CanvasTexture | null = null;
 let cacheDodotDiffuse: THREE.CanvasTexture | null = null;
+let cacheDodotBump: THREE.CanvasTexture | null = null;
 let cacheGununganDiffuse: THREE.CanvasTexture | null = null;
+let cacheGununganBump: THREE.CanvasTexture | null = null;
 let cacheKidangDiffuse: THREE.CanvasTexture | null = null;
+let cacheKidangBump: THREE.CanvasTexture | null = null;
+
+// Cache geometri hasil ekstrusi di level modul agar pemuatan halaman instan tanpa hitung ulang triangulasi
+const cacheExtrudeGeo = new Map<string, THREE.BufferGeometry>();
 
 /**
- * Membuat tekstur kulitan tatahan kerbau berlapis prada emas 1024x1024
- * dengan motif seritan, sembuliyan, dan lubang pahatan kerawang (tatahan).
+ * Menormalkan koordinat UV pada ExtrudeGeometry ke rentang [0..1]
+ * berdasarkan bounding box (X, Y) agar tekstur tidak mengalami clamping di koordinat negatif.
  */
+export function normalisasiUvExtrude(geo: THREE.BufferGeometry, pad = 0.02): void {
+  geo.computeBoundingBox();
+  const bb = geo.boundingBox;
+  const pos = geo.attributes.position as THREE.BufferAttribute | undefined;
+  const uv = geo.attributes.uv as THREE.BufferAttribute | undefined;
+  if (!bb || !pos || !uv) return;
+
+  const spanX = Math.max(bb.max.x - bb.min.x, 1e-4);
+  const spanY = Math.max(bb.max.y - bb.min.y, 1e-4);
+  const scale = 1 - pad * 2;
+
+  for (let i = 0; i < pos.count; i++) {
+    const u = pad + ((pos.getX(i) - bb.min.x) / spanX) * scale;
+    const v = pad + ((pos.getY(i) - bb.min.y) / spanY) * scale;
+    uv.setXY(i, THREE.MathUtils.clamp(u, 0.005, 0.995), THREE.MathUtils.clamp(v, 0.005, 0.995));
+  }
+  uv.needsUpdate = true;
+}
+
+function ambilAtauBuatExtrudeGeo(
+  kunci: string,
+  buat: () => THREE.BufferGeometry,
+): THREE.BufferGeometry {
+  let geo = cacheExtrudeGeo.get(kunci);
+  if (!geo) {
+    geo = buat();
+    cacheExtrudeGeo.set(kunci, geo);
+  }
+  // Kembalikan clone ringan yang berbagi atribut BufferAttribute agar aman saat disposeSceneObject dipanggil
+  return geo.clone();
+}
+
 function getTeksturPradaTatahan(): {
   diffuse: THREE.CanvasTexture | null;
   bump: THREE.CanvasTexture | null;
@@ -40,861 +77,920 @@ function getTeksturPradaTatahan(): {
     return { diffuse: cacheSriRamaDiffuse, bump: cacheSriRamaBump };
   }
 
-  const canvas = document.createElement('canvas');
-  canvas.width = 512;
-  canvas.height = 512;
-  const ctx = canvas.getContext('2d');
+  const size = 256;
+  const cDiff = document.createElement('canvas');
+  cDiff.width = size;
+  cDiff.height = size;
+  const ctx = cDiff.getContext('2d');
 
-  const bumpCanvas = document.createElement('canvas');
-  bumpCanvas.width = 512;
-  bumpCanvas.height = 512;
-  const bctx = bumpCanvas.getContext('2d');
+  const cBump = document.createElement('canvas');
+  cBump.width = size;
+  cBump.height = size;
+  const bCtx = cBump.getContext('2d');
 
-  if (!ctx || !bctx) return { diffuse: null, bump: null };
+  if (!ctx || !bCtx) return { diffuse: null, bump: null };
 
-  ctx.scale(0.5, 0.5);
-  bctx.scale(0.5, 0.5);
-
-  // Latar perkamen kulit kerbau berlapis prada emas
-  const grad = ctx.createLinearGradient(0, 0, 1024, 1024);
-  grad.addColorStop(0, '#f7d983');
-  grad.addColorStop(0.35, '#e2b659');
-  grad.addColorStop(0.7, '#c69235');
-  grad.addColorStop(1, '#8c5818');
+  const grad = ctx.createRadialGradient(size * 0.5, size * 0.45, 12, size * 0.5, size * 0.5, size * 0.65);
+  grad.addColorStop(0, '#f3c65f');
+  grad.addColorStop(0.45, '#d59834');
+  grad.addColorStop(0.82, '#9e6218');
+  grad.addColorStop(1, '#5e340b');
   ctx.fillStyle = grad;
-  ctx.fillRect(0, 0, 1024, 1024);
+  ctx.fillRect(0, 0, size, size);
 
-  bctx.fillStyle = '#909090';
-  bctx.fillRect(0, 0, 1024, 1024);
+  bCtx.fillStyle = '#848484';
+  bCtx.fillRect(0, 0, size, size);
 
-  // Serat mikro perkamen & seritan tatah
-  for (let y = 16; y < 1008; y += 24) {
-    for (let x = 16; x < 1008; x += 24) {
-      const offset = (y / 24) % 2 === 0 ? 0 : 12;
-      const cx = x + offset;
+  // Sabuk sunggingan merah gendul, biru nila, dan hijau jamrud khas tatahan Surakarta
+  const drawSunggingBand = (yCenter: number, bandH: number, colorA: string, colorB: string) => {
+    const sg = ctx.createLinearGradient(0, yCenter - bandH / 2, 0, yCenter + bandH / 2);
+    sg.addColorStop(0, colorA);
+    sg.addColorStop(0.5, colorB);
+    sg.addColorStop(1, colorA);
+    ctx.fillStyle = sg;
+    ctx.fillRect(12, yCenter - bandH / 2, size - 24, bandH);
 
-      // Lubang tatahan inti gelap (efek krawangan tembus blencong)
-      ctx.fillStyle = '#1e1005';
+    ctx.strokeStyle = '#f8d87c';
+    ctx.lineWidth = 1.5;
+    ctx.strokeRect(12, yCenter - bandH / 2, size - 24, bandH);
+
+    bCtx.strokeStyle = '#dcdcdc';
+    bCtx.lineWidth = 2;
+    bCtx.strokeRect(12, yCenter - bandH / 2, size - 24, bandH);
+  };
+
+  drawSunggingBand(48, 18, 'rgba(138, 24, 18, 0.65)', 'rgba(218, 56, 32, 0.72)');
+  drawSunggingBand(128, 20, 'rgba(22, 62, 84, 0.55)', 'rgba(42, 112, 138, 0.62)');
+  drawSunggingBand(204, 18, 'rgba(138, 24, 18, 0.65)', 'rgba(218, 56, 32, 0.72)');
+
+  // Grid tatahan mas-masan, sembuliyan, dan cecekan krawangan
+  const cell = 32;
+  for (let gx = cell; gx < size; gx += cell) {
+    for (let gy = cell; gy < size; gy += cell) {
+      ctx.strokeStyle = 'rgba(52, 22, 5, 0.58)';
+      ctx.lineWidth = 1.4;
       ctx.beginPath();
-      ctx.arc(cx, y, 3.6, 0, Math.PI * 2);
-      ctx.fill();
-
-      // Ring prada emas timbul mengelilingi lubang tatah
-      ctx.strokeStyle = '#fff3be';
-      ctx.lineWidth = 1.8;
-      ctx.beginPath();
-      ctx.arc(cx, y, 6.2, 0, Math.PI * 2);
+      ctx.arc(gx, gy, 9, 0, Math.PI * 2);
       ctx.stroke();
 
-      // Pahatan koma (inten-intenan & sembuliyan)
-      ctx.fillStyle = '#381d07';
+      ctx.strokeStyle = 'rgba(255, 232, 152, 0.65)';
+      ctx.lineWidth = 1;
       ctx.beginPath();
-      ctx.ellipse(cx + 8, y, 4.2, 1.8, Math.PI / 6, 0, Math.PI * 2);
+      ctx.arc(gx, gy, 6, 0, Math.PI * 2);
+      ctx.stroke();
+
+      ctx.fillStyle = '#240f04';
+      ctx.beginPath();
+      ctx.arc(gx, gy, 2.2, 0, Math.PI * 2);
       ctx.fill();
 
-      // Bump map pahatan timbul-tenggelam
-      bctx.fillStyle = '#181818';
-      bctx.beginPath();
-      bctx.arc(cx, y, 4, 0, Math.PI * 2);
-      bctx.fill();
+      bCtx.strokeStyle = '#e5e5e5';
+      bCtx.lineWidth = 2;
+      bCtx.beginPath();
+      bCtx.arc(gx, gy, 8, 0, Math.PI * 2);
+      bCtx.stroke();
 
-      bctx.strokeStyle = '#ffffff';
-      bctx.lineWidth = 2.2;
-      bctx.beginPath();
-      bctx.arc(cx, y, 7, 0, Math.PI * 2);
-      bctx.stroke();
+      bCtx.fillStyle = '#141414';
+      bCtx.beginPath();
+      bCtx.arc(gx, gy, 3, 0, Math.PI * 2);
+      bCtx.fill();
     }
   }
 
-  // Ornamen sunggingan merah-biru-putih-emas khas wayang keraton
-  const pitaY = [140, 320, 520, 740];
-  for (const py of pitaY) {
-    ctx.fillStyle = '#991b1b';
-    ctx.fillRect(0, py, 1024, 22);
-    ctx.fillStyle = '#1d4ed8';
-    ctx.fillRect(0, py + 22, 1024, 12);
-    ctx.fillStyle = '#fef3c7';
-    for (let x = 12; x < 1024; x += 28) {
-      ctx.beginPath();
-      ctx.arc(x, py + 11, 4, 0, Math.PI * 2);
-      ctx.fill();
-    }
-  }
-
-  cacheSriRamaDiffuse = new THREE.CanvasTexture(canvas);
+  cacheSriRamaDiffuse = new THREE.CanvasTexture(cDiff);
   cacheSriRamaDiffuse.colorSpace = THREE.SRGBColorSpace;
-  cacheSriRamaBump = new THREE.CanvasTexture(bumpCanvas);
+  cacheSriRamaDiffuse.wrapS = THREE.RepeatWrapping;
+  cacheSriRamaDiffuse.wrapT = THREE.RepeatWrapping;
+
+  cacheSriRamaBump = new THREE.CanvasTexture(cBump);
+  cacheSriRamaBump.wrapS = THREE.RepeatWrapping;
+  cacheSriRamaBump.wrapT = THREE.RepeatWrapping;
 
   return { diffuse: cacheSriRamaDiffuse, bump: cacheSriRamaBump };
 }
 
-/** Membuat tekstur kain dodot dan bokongan wayang polikrom (merah gincu, biru nila, putih, prada emas). */
-function getTeksturKainDodot(): THREE.CanvasTexture | null {
-  if (typeof document === 'undefined') return null;
-  if (cacheDodotDiffuse) return cacheDodotDiffuse;
+function getTeksturKainDodot(): {
+  diffuse: THREE.CanvasTexture | null;
+  bump: THREE.CanvasTexture | null;
+} {
+  if (typeof document === 'undefined') return { diffuse: null, bump: null };
+  if (cacheDodotDiffuse && cacheDodotBump) {
+    return { diffuse: cacheDodotDiffuse, bump: cacheDodotBump };
+  }
 
+  const size = 256;
   const canvas = document.createElement('canvas');
-  canvas.width = 512;
-  canvas.height = 512;
+  canvas.width = size;
+  canvas.height = size;
   const ctx = canvas.getContext('2d');
-  if (!ctx) return null;
 
-  ctx.scale(0.5, 0.5);
+  const bumpCanvas = document.createElement('canvas');
+  bumpCanvas.width = size;
+  bumpCanvas.height = size;
+  const bCtx = bumpCanvas.getContext('2d');
+  if (!ctx || !bCtx) return { diffuse: null, bump: null };
 
-  // Dasar putih gading & prada
-  ctx.fillStyle = '#f8f1df';
-  ctx.fillRect(0, 0, 1024, 1024);
+  const bg = ctx.createLinearGradient(0, 0, size, size);
+  bg.addColorStop(0, '#6e1912');
+  bg.addColorStop(0.5, '#8c2318');
+  bg.addColorStop(1, '#4c110c');
+  ctx.fillStyle = bg;
+  ctx.fillRect(0, 0, size, size);
 
-  // Lengkung sisik sembuliyan polikrom merah-emas-biru-hijau
-  const step = 96;
-  for (let row = 0; row < 12; row++) {
-    for (let col = 0; col < 12; col++) {
-      const cx = col * step + (row % 2 === 0 ? 0 : step / 2);
-      const cy = row * step;
+  bCtx.fillStyle = '#787878';
+  bCtx.fillRect(0, 0, size, size);
 
-      // Kelopak luar merah vermilion
-      ctx.fillStyle = '#c81e1e';
-      ctx.beginPath();
-      ctx.arc(cx, cy, 44, Math.PI, 0, false);
-      ctx.fill();
-
-      // Kelopak tengah emas prada
-      ctx.fillStyle = '#d99b26';
-      ctx.beginPath();
-      ctx.arc(cx, cy, 34, Math.PI, 0, false);
-      ctx.fill();
-
-      // Kelopak dalam biru tua & putih
-      ctx.fillStyle = '#1e3a8a';
-      ctx.beginPath();
-      ctx.arc(cx, cy, 22, Math.PI, 0, false);
-      ctx.fill();
-
-      ctx.fillStyle = '#fffbeb';
-      ctx.beginPath();
-      ctx.arc(cx, cy - 6, 8, 0, Math.PI * 2);
-      ctx.fill();
-
-      // Titik cecek putih & tatahan hitam di tepi kelopak
-      ctx.fillStyle = '#1b1107';
-      for (let a = Math.PI + 0.25; a < Math.PI * 2 - 0.2; a += 0.35) {
-        const tx = cx + Math.cos(a) * 38;
-        const ty = cy + Math.sin(a) * 38;
-        ctx.beginPath();
-        ctx.arc(tx, ty, 2.5, 0, Math.PI * 2);
-        ctx.fill();
-      }
-    }
-  }
-
-  // Sabuk diagonal parang barong emas-merah
-  ctx.strokeStyle = '#7f1d1d';
-  ctx.lineWidth = 10;
-  for (let i = -512; i < 1024; i += 128) {
+  for (let diag = -size; diag < size * 2; diag += 32) {
+    ctx.fillStyle = 'rgba(28, 14, 9, 0.72)';
     ctx.beginPath();
-    ctx.moveTo(i, 0);
-    ctx.lineTo(i + 512, 1024);
+    ctx.moveTo(diag, 0);
+    ctx.lineTo(diag + 16, 0);
+    ctx.lineTo(diag - size + 16, size);
+    ctx.lineTo(diag - size, size);
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.strokeStyle = '#f2c968';
+    ctx.lineWidth = 1.8;
+    ctx.beginPath();
+    ctx.moveTo(diag, 0);
+    ctx.lineTo(diag - size, size);
     ctx.stroke();
+
+    bCtx.strokeStyle = '#dedede';
+    bCtx.lineWidth = 2;
+    ctx.beginPath();
+    bCtx.moveTo(diag, 0);
+    bCtx.lineTo(diag - size, size);
+    bCtx.stroke();
   }
+
+  ctx.fillStyle = 'rgba(242, 198, 94, 0.25)';
+  ctx.fillRect(0, 0, size, 24);
+  ctx.strokeStyle = '#f8d878';
+  ctx.lineWidth = 3;
+  ctx.strokeRect(4, 4, size - 8, size - 8);
 
   cacheDodotDiffuse = new THREE.CanvasTexture(canvas);
   cacheDodotDiffuse.colorSpace = THREE.SRGBColorSpace;
-  return cacheDodotDiffuse;
+  cacheDodotDiffuse.wrapS = THREE.RepeatWrapping;
+  cacheDodotDiffuse.wrapT = THREE.RepeatWrapping;
+
+  cacheDodotBump = new THREE.CanvasTexture(bumpCanvas);
+  cacheDodotBump.wrapS = THREE.RepeatWrapping;
+  cacheDodotBump.wrapT = THREE.RepeatWrapping;
+
+  return { diffuse: cacheDodotDiffuse, bump: cacheDodotBump };
 }
 
-/**
- * Tekstur Gunungan (Kayon) resolusi tinggi dengan Pohon Kalpataru, Gapura Candi,
- * Banaspati (Kala), sayap Makara, dan kemamang api.
- */
-function getTeksturGununganDetail(): THREE.CanvasTexture | null {
-  if (typeof document === 'undefined') return null;
-  if (cacheGununganDiffuse) return cacheGununganDiffuse;
+function getTeksturGununganDetail(): {
+  diffuse: THREE.CanvasTexture | null;
+  bump: THREE.CanvasTexture | null;
+} {
+  if (typeof document === 'undefined') return { diffuse: null, bump: null };
+  if (cacheGununganDiffuse && cacheGununganBump) {
+    return { diffuse: cacheGununganDiffuse, bump: cacheGununganBump };
+  }
 
+  const w = 256;
+  const h = 512;
   const canvas = document.createElement('canvas');
-  canvas.width = 512;
-  canvas.height = 768;
+  canvas.width = w;
+  canvas.height = h;
   const ctx = canvas.getContext('2d');
-  if (!ctx) return null;
 
-  ctx.scale(0.5, 0.5);
+  const bumpCanvas = document.createElement('canvas');
+  bumpCanvas.width = w;
+  bumpCanvas.height = h;
+  const bCtx = bumpCanvas.getContext('2d');
+  if (!ctx || !bCtx) return { diffuse: null, bump: null };
 
-  // Gradasi kulit kerbau prada emas & bingkai merah api
-  const grad = ctx.createRadialGradient(512, 820, 60, 512, 760, 820);
-  grad.addColorStop(0, '#fae08c');
-  grad.addColorStop(0.45, '#d49832');
-  grad.addColorStop(0.82, '#8b3a14');
-  grad.addColorStop(1, '#2b1105');
-  ctx.fillStyle = grad;
-  ctx.fillRect(0, 0, 1024, 1536);
+  const bg = ctx.createLinearGradient(0, h, 0, 0);
+  bg.addColorStop(0, '#2e1109');
+  bg.addColorStop(0.28, '#5e1a0e');
+  bg.addColorStop(0.62, '#3a1a0c');
+  bg.addColorStop(0.88, '#6e3814');
+  bg.addColorStop(1, '#d69e3a');
+  ctx.fillStyle = bg;
+  ctx.fillRect(0, 0, w, h);
 
-  // Bingkai lidah api (kemamang) merah-emas di sekeliling tepi
-  ctx.strokeStyle = '#b91c1c';
-  ctx.lineWidth = 28;
+  bCtx.fillStyle = '#707070';
+  bCtx.fillRect(0, 0, w, h);
+
+  ctx.strokeStyle = '#f5cb64';
+  ctx.lineWidth = 6;
   ctx.beginPath();
-  ctx.moveTo(90, 1440);
-  ctx.quadraticCurveTo(40, 720, 512, 70);
-  ctx.quadraticCurveTo(984, 720, 934, 1440);
+  ctx.moveTo(w / 2, 12);
+  ctx.bezierCurveTo(w * 0.92, h * 0.34, w * 0.96, h * 0.68, w * 0.82, h - 10);
+  ctx.lineTo(w * 0.18, h - 10);
+  ctx.bezierCurveTo(w * 0.04, h * 0.68, w * 0.08, h * 0.34, w / 2, 12);
   ctx.closePath();
   ctx.stroke();
 
-  // Lubang tatahan krawangan di seluruh latar Gunungan
-  ctx.fillStyle = '#1f0e04';
-  for (let y = 120; y < 1420; y += 28) {
-    for (let x = 110; x < 914; x += 28) {
-      if ((x + y) % 56 === 0) {
-        ctx.beginPath();
-        ctx.arc(x, y, 3.5, 0, Math.PI * 2);
-        ctx.fill();
-      }
-    }
-  }
+  bCtx.strokeStyle = '#ececec';
+  bCtx.lineWidth = 6;
+  bCtx.stroke();
 
-  // Gapura Candi Berundak di bagian bawah (Blumbangan & Atap Joglo)
-  ctx.fillStyle = '#7f1d1d';
-  ctx.fillRect(312, 1140, 400, 290);
-  ctx.strokeStyle = '#fde047';
-  ctx.lineWidth = 6;
-  ctx.strokeRect(312, 1140, 400, 290);
+  // Gapura Candi di kaki Kayon
+  ctx.fillStyle = '#99321b';
+  ctx.strokeStyle = '#f5cb64';
+  ctx.lineWidth = 2;
+  ctx.fillRect(w * 0.28, 380, w * 0.44, 105);
+  ctx.strokeRect(w * 0.28, 380, w * 0.44, 105);
 
-  // Atap Gapura bertingkat 3
-  const atapGapura = [
-    [260, 1140, 504, 48],
-    [300, 1085, 424, 48],
-    [350, 1035, 324, 44],
-  ];
-  for (const [gx, gy, gw, gh] of atapGapura) {
-    ctx.fillStyle = '#b45309';
-    ctx.fillRect(gx, gy, gw, gh);
-    ctx.strokeStyle = '#fef08a';
-    ctx.strokeRect(gx, gy, gw, gh);
-  }
-
-  // Pintu Gapura & Sepasang Gupala (Cingkarabala-Balaupata)
-  ctx.fillStyle = '#1e293b';
-  ctx.fillRect(442, 1210, 140, 220);
-  ctx.strokeStyle = '#f59e0b';
-  ctx.strokeRect(442, 1210, 140, 220);
-
-  // Batang Utama Pohon Kalpataru
-  ctx.strokeStyle = '#291304';
-  ctx.lineWidth = 22;
+  // Wajah Banaspati di tengah
+  ctx.fillStyle = '#b82816';
   ctx.beginPath();
-  ctx.moveTo(512, 1035);
-  ctx.lineTo(512, 160);
-  ctx.stroke();
-
-  ctx.strokeStyle = '#fef08a';
-  ctx.lineWidth = 6;
-  ctx.beginPath();
-  ctx.moveTo(512, 1035);
-  ctx.lineTo(512, 160);
-  ctx.stroke();
-
-  // Wajah Banaspati / Kala di jantung pohon Kalpataru
-  ctx.fillStyle = '#991b1b';
-  ctx.beginPath();
-  ctx.arc(512, 680, 96, 0, Math.PI * 2);
+  ctx.arc(w / 2, 298, 28, 0, Math.PI * 2);
   ctx.fill();
-  ctx.strokeStyle = '#fde047';
-  ctx.lineWidth = 6;
+  ctx.strokeStyle = '#f8d46e';
+  ctx.lineWidth = 2.5;
   ctx.stroke();
 
-  // Mata Banaspati melotot
-  for (const mx of [472, 552]) {
-    ctx.fillStyle = '#ffffff';
-    ctx.beginPath();
-    ctx.arc(mx, 665, 22, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = '#090a0d';
-    ctx.beginPath();
-    ctx.arc(mx, 665, 10, 0, Math.PI * 2);
-    ctx.fill();
-  }
+  // Batang & Cabang Pohon Hayat Kalpataru
+  ctx.strokeStyle = '#f5c95c';
+  ctx.lineWidth = 5;
+  ctx.beginPath();
+  ctx.moveTo(w / 2, 268);
+  ctx.lineTo(w / 2, 48);
+  ctx.stroke();
 
-  // Sulur Cabang Kalpataru Simetris & Bunga Padma
-  const cabang = [
-    [512, 880, 230, 760],
-    [512, 880, 794, 760],
-    [512, 720, 190, 560],
-    [512, 720, 834, 560],
-    [512, 520, 240, 380],
-    [512, 520, 784, 380],
-    [512, 350, 330, 230],
-    [512, 350, 694, 230],
-  ];
-  for (const [x1, y1, x2, y2] of cabang) {
-    ctx.strokeStyle = '#291304';
-    ctx.lineWidth = 14;
-    ctx.beginPath();
-    ctx.moveTo(x1, y1);
-    ctx.bezierCurveTo((x1 + x2) / 2, y1 - 80, x2, y1 - 20, x2, y2);
-    ctx.stroke();
+  for (let level = 0; level < 5; level++) {
+    const by = 240 - level * 36;
+    const reach = 82 - level * 10;
+    for (const dir of [-1, 1]) {
+      ctx.strokeStyle = '#f5c95c';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(w / 2, by);
+      ctx.quadraticCurveTo(w / 2 + dir * reach * 0.5, by - 18, w / 2 + dir * reach, by - 10);
+      ctx.stroke();
 
-    ctx.strokeStyle = '#fde047';
-    ctx.lineWidth = 5;
-    ctx.stroke();
-
-    // Mekar bunga & daun krawangan
-    ctx.fillStyle = '#dc2626';
-    ctx.beginPath();
-    ctx.arc(x2, y2, 32, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = '#fef08a';
-    ctx.beginPath();
-    ctx.arc(x2, y2, 14, 0, Math.PI * 2);
-    ctx.fill();
+      ctx.fillStyle = level % 2 === 0 ? '#e3532a' : '#43946c';
+      ctx.beginPath();
+      ctx.arc(w / 2 + dir * reach * 0.78, by - 9, 8, 0, Math.PI * 2);
+      ctx.fill();
+    }
   }
 
   cacheGununganDiffuse = new THREE.CanvasTexture(canvas);
   cacheGununganDiffuse.colorSpace = THREE.SRGBColorSpace;
-  return cacheGununganDiffuse;
+  cacheGununganBump = new THREE.CanvasTexture(bumpCanvas);
+
+  return { diffuse: cacheGununganDiffuse, bump: cacheGununganBump };
 }
 
-function getTeksturKidangKencana(): THREE.CanvasTexture | null {
-  if (typeof document === 'undefined') return null;
-  if (cacheKidangDiffuse) return cacheKidangDiffuse;
+function getTeksturKidangKencana(): {
+  diffuse: THREE.CanvasTexture | null;
+  bump: THREE.CanvasTexture | null;
+} {
+  if (typeof document === 'undefined') return { diffuse: null, bump: null };
+  if (cacheKidangDiffuse && cacheKidangBump) {
+    return { diffuse: cacheKidangDiffuse, bump: cacheKidangBump };
+  }
 
+  const size = 256;
   const canvas = document.createElement('canvas');
-  canvas.width = 512;
-  canvas.height = 512;
+  canvas.width = size;
+  canvas.height = size;
   const ctx = canvas.getContext('2d');
-  if (!ctx) return null;
 
-  const grad = ctx.createLinearGradient(0, 0, 512, 512);
-  grad.addColorStop(0, '#fde047');
-  grad.addColorStop(0.5, '#f59e0b');
-  grad.addColorStop(1, '#92400e');
+  const bumpCanvas = document.createElement('canvas');
+  bumpCanvas.width = size;
+  bumpCanvas.height = size;
+  const bCtx = bumpCanvas.getContext('2d');
+  if (!ctx || !bCtx) return { diffuse: null, bump: null };
+
+  const grad = ctx.createLinearGradient(0, size, 0, 0);
+  grad.addColorStop(0, '#8a3412');
+  grad.addColorStop(0.32, '#c86a1e');
+  grad.addColorStop(0.68, '#eab33e');
+  grad.addColorStop(1, '#8c2814');
   ctx.fillStyle = grad;
-  ctx.fillRect(0, 0, 512, 512);
+  ctx.fillRect(0, 0, size, size);
 
-  // Totol-totol emas permata & pahatan tatahan bulu kijang kencana
-  for (let y = 28; y < 484; y += 36) {
-    for (let x = 28; x < 484; x += 36) {
-      ctx.fillStyle = '#fffbeb';
+  bCtx.fillStyle = '#808080';
+  bCtx.fillRect(0, 0, size, size);
+
+  for (let gx = 24; gx < size - 16; gx += 32) {
+    for (let gy = 24; gy < size - 16; gy += 32) {
+      const ox = gx + ((gy / 32) % 2) * 14;
+      ctx.fillStyle = '#fff1b5';
       ctx.beginPath();
-      ctx.ellipse(x, y, 8, 4.5, 0.2, 0, Math.PI * 2);
+      ctx.arc(ox, gy, 4, 0, Math.PI * 2);
       ctx.fill();
 
-      ctx.strokeStyle = '#78350f';
-      ctx.lineWidth = 2;
+      ctx.strokeStyle = '#73200c';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.arc(ox, gy, 6.5, 0, Math.PI * 2);
       ctx.stroke();
 
-      ctx.fillStyle = '#271203';
-      ctx.beginPath();
-      ctx.arc(x + 14, y + 12, 2.5, 0, Math.PI * 2);
-      ctx.fill();
+      bCtx.fillStyle = '#ececec';
+      bCtx.beginPath();
+      ctx.arc(ox, gy, 5, 0, Math.PI * 2);
+      bCtx.fill();
     }
   }
 
   cacheKidangDiffuse = new THREE.CanvasTexture(canvas);
   cacheKidangDiffuse.colorSpace = THREE.SRGBColorSpace;
-  return cacheKidangDiffuse;
+  cacheKidangBump = new THREE.CanvasTexture(bumpCanvas);
+
+  return { diffuse: cacheKidangDiffuse, bump: cacheKidangBump };
 }
 
-/** Membangun rig Wayang Kulit Sri Rama gaya alusan Surakarta/Yogyakarta lengkap beserta sendi lengan, Gendewa, dan cempurit tanduk. */
-export function buildSriRamaWayang3D(): WayangSriRamaRig {
-  const tex = loadBudayaTextures();
-  const prada = getTeksturPradaTatahan();
-  const dodotTex = getTeksturKainDodot();
+/**
+ * Membangun Lampu Minyak Kelapa Blencong Kencana Gantung (Garuda Kyai Blencong).
+ */
+export function buildBlencongWayang3D(): {
+  grup: THREE.Group;
+  nyalaInti: THREE.Mesh;
+  haloApi: THREE.Mesh;
+} {
+  const grup = new THREE.Group();
+  const tatahan = getTeksturPradaTatahan();
 
-  const kulitPradaMat = new THREE.MeshStandardMaterial({
-    map: prada.diffuse,
-    bumpMap: prada.bump,
-    bumpScale: 0.025,
-    normalMap: tex.kulitNormal,
-    roughnessMap: tex.kulitRough,
-    color: 0xf7d57c,
-    metalness: 0.52,
+  const kuninganTuaMat = new THREE.MeshStandardMaterial({
+    color: 0xd8a23c,
+    roughness: 0.24,
+    metalness: 0.88,
+    bumpMap: tatahan.bump,
+    bumpScale: 0.008,
+  });
+
+  const perungguGelapMat = new THREE.MeshStandardMaterial({
+    color: 0x4b3316,
     roughness: 0.36,
+    metalness: 0.82,
   });
 
-  const wajahHitamMat = new THREE.MeshStandardMaterial({
-    bumpMap: prada.bump,
-    bumpScale: 0.012,
-    normalMap: tex.kulitNormal,
-    color: 0x121110,
-    metalness: 0.22,
-    roughness: 0.38,
+  const ptsTangki = [
+    new THREE.Vector2(0.0, -0.22),
+    new THREE.Vector2(0.09, -0.2),
+    new THREE.Vector2(0.06, -0.15),
+    new THREE.Vector2(0.24, -0.1),
+    new THREE.Vector2(0.34, -0.01),
+    new THREE.Vector2(0.31, 0.08),
+    new THREE.Vector2(0.18, 0.13),
+    new THREE.Vector2(0.12, 0.2),
+    new THREE.Vector2(0.0, 0.22),
+  ];
+  const tangkiMesh = new THREE.Mesh(new THREE.LatheGeometry(ptsTangki, 20), kuninganTuaMat);
+  grup.add(tangkiMesh);
+
+  const garudaHead = new THREE.Group();
+  garudaHead.position.set(0, 0.06, -0.32);
+  const kepala = new THREE.Mesh(new THREE.SphereGeometry(0.075, 12, 10), kuninganTuaMat);
+  kepala.scale.set(0.9, 1.1, 1.25);
+  const paruh = new THREE.Mesh(new THREE.ConeGeometry(0.042, 0.12, 8), perungguGelapMat);
+  paruh.rotation.x = -Math.PI * 0.62;
+  paruh.position.set(0, -0.02, -0.09);
+  garudaHead.add(kepala, paruh);
+  grup.add(garudaHead);
+
+  const sayapGeo = ambilAtauBuatExtrudeGeo('blencong-sayap', () => {
+    const sayapShape = new THREE.Shape();
+    sayapShape.moveTo(0, -0.06);
+    sayapShape.bezierCurveTo(0.22, 0.24, 0.56, 0.34, 0.66, 0.12);
+    sayapShape.bezierCurveTo(0.62, -0.04, 0.52, -0.14, 0.42, -0.2);
+    sayapShape.bezierCurveTo(0.28, -0.24, 0.12, -0.16, 0, -0.06);
+
+    for (const [hx, hy, hr] of [
+      [0.24, 0.08, 0.028],
+      [0.38, 0.1, 0.03],
+      [0.34, -0.04, 0.025],
+    ]) {
+      const hole = new THREE.Path();
+      hole.absarc(hx, hy, hr, 0, Math.PI * 2, false);
+      sayapShape.holes.push(hole);
+    }
+
+    const g = new THREE.ExtrudeGeometry(sayapShape, {
+      depth: 0.022,
+      bevelEnabled: true,
+      bevelSize: 0.006,
+      bevelThickness: 0.006,
+      bevelSegments: 1,
+      curveSegments: 10,
+    });
+    normalisasiUvExtrude(g);
+    return g;
   });
 
-  const dodotPolikromMat = new THREE.MeshStandardMaterial({
-    map: dodotTex,
-    bumpMap: prada.bump,
-    bumpScale: 0.02,
-    normalMap: tex.kulitNormal,
-    color: 0xffffff,
-    metalness: 0.28,
-    roughness: 0.44,
-  });
+  const sayapKanan = new THREE.Mesh(sayapGeo, kuninganTuaMat);
+  sayapKanan.position.set(0.22, 0.02, -0.06);
+  sayapKanan.rotation.y = -0.28;
 
-  const merahSunggingMat = new THREE.MeshStandardMaterial({
-    color: 0xb91c1c,
-    metalness: 0.3,
-    roughness: 0.42,
-  });
+  const sayapKiri = new THREE.Mesh(sayapGeo.clone(), kuninganTuaMat);
+  sayapKiri.scale.x = -1;
+  sayapKiri.position.set(-0.22, 0.02, -0.06);
+  sayapKiri.rotation.y = 0.28;
+  grup.add(sayapKanan, sayapKiri);
 
-  const emasMurniMat = new THREE.MeshStandardMaterial({
-    color: 0xfbbf24,
-    emissive: 0x78350f,
-    emissiveIntensity: 0.22,
-    metalness: 0.86,
-    roughness: 0.2,
-  });
+  const ceratCurve = new THREE.CatmullRomCurve3([
+    new THREE.Vector3(0, -0.03, 0.25),
+    new THREE.Vector3(0, -0.05, 0.42),
+    new THREE.Vector3(0, 0.04, 0.54),
+    new THREE.Vector3(0, 0.12, 0.58),
+  ]);
+  const ceratMesh = new THREE.Mesh(
+    new THREE.TubeGeometry(ceratCurve, 12, 0.034, 8, false),
+    perungguGelapMat,
+  );
+  grup.add(ceratMesh);
 
-  const tandukGapitMat = new THREE.MeshPhysicalMaterial({
-    color: 0xe6b45a,
-    roughness: 0.2,
-    metalness: 0.06,
-    transmission: 0.28,
-    thickness: 0.2,
-    clearcoat: 0.85,
+  const nyalaMat = new THREE.MeshStandardMaterial({
+    color: 0xfff6cf,
+    emissive: 0xff9b26,
+    emissiveIntensity: 3.4,
+    roughness: 0.1,
   });
+  const nyalaInti = new THREE.Mesh(new THREE.ConeGeometry(0.058, 0.22, 10), nyalaMat);
+  nyalaInti.position.set(0, 0.25, 0.58);
+  grup.add(nyalaInti);
 
+  const haloMat = new THREE.MeshBasicMaterial({
+    color: 0xffae38,
+    transparent: true,
+    opacity: 0.32,
+    depthWrite: false,
+  });
+  const haloApi = new THREE.Mesh(new THREE.SphereGeometry(0.22, 12, 12), haloMat);
+  haloApi.position.set(0, 0.25, 0.58);
+  grup.add(haloApi);
+
+  for (const [rx, rz] of [
+    [-0.18, -0.06],
+    [0.18, -0.06],
+    [0, 0.18],
+  ]) {
+    const rantaiCurve = new THREE.LineCurve3(
+      new THREE.Vector3(rx, 0.12, rz),
+      new THREE.Vector3(0, 0.62, 0),
+    );
+    const rantai = new THREE.Mesh(
+      new THREE.TubeGeometry(rantaiCurve, 4, 0.011, 6, false),
+      perungguGelapMat,
+    );
+    grup.add(rantai);
+  }
+
+  return { grup, nyalaInti, haloApi };
+}
+
+/**
+ * Membangun Wayang Kulit Purwa Sri Rama (Kria Tatahan Kulit Kerbau & Sunggingan Prada)
+ */
+export function buildSriRamaWayang3D(): WayangSriRamaRig {
   const root = new THREE.Group();
-  root.userData.explodeVec = new THREE.Vector3(0, 0, 0);
-
   const badan = new THREE.Group();
   root.add(badan);
 
-  // Torso ramping alusan dengan lubang tatahan krawangan
-  const bentukTorso = new THREE.Shape();
-  bentukTorso.moveTo(-0.42, 0.56); // Bahu depan (kiri)
-  bentukTorso.quadraticCurveTo(-0.1, 0.62, 0.44, 0.53); // Bahu belakang (kanan)
-  bentukTorso.quadraticCurveTo(0.24, 0.28, 0.14, -0.06); // Pinggang belakang ramping
-  bentukTorso.lineTo(-0.13, -0.06); // Pinggang depan
-  bentukTorso.quadraticCurveTo(-0.22, 0.24, -0.42, 0.56);
+  const tex = getTeksturPradaTatahan();
+  const dodotTex = getTeksturKainDodot();
 
-  // Lubang krawangan dada (tatahan tembus cahaya)
-  const lubangDada1 = new THREE.Path();
-  lubangDada1.absarc(-0.08, 0.36, 0.032, 0, Math.PI * 2, false);
-  const lubangDada2 = new THREE.Path();
-  lubangDada2.absarc(0.08, 0.36, 0.032, 0, Math.PI * 2, false);
-  const lubangDada3 = new THREE.Path();
-  lubangDada3.absarc(0, 0.2, 0.028, 0, Math.PI * 2, false);
-  bentukTorso.holes.push(lubangDada1, lubangDada2, lubangDada3);
+  const kulitPradaMat = new THREE.MeshStandardMaterial({
+    color: 0xe8b54c,
+    map: tex.diffuse,
+    bumpMap: tex.bump,
+    bumpScale: 0.022,
+    roughness: 0.36,
+    metalness: 0.58,
+  });
 
-  const torsoMesh = new THREE.Mesh(
-    new THREE.ExtrudeGeometry(bentukTorso, {
-      depth: 0.036,
+  const pradaMurniMat = new THREE.MeshStandardMaterial({
+    color: 0xf4c960,
+    bumpMap: tex.bump,
+    bumpScale: 0.015,
+    roughness: 0.26,
+    metalness: 0.78,
+  });
+
+  const wajahHitamLuruhMat = new THREE.MeshStandardMaterial({
+    color: 0x17120e,
+    roughness: 0.38,
+    metalness: 0.25,
+  });
+
+  const mahkotaSogaMat = new THREE.MeshStandardMaterial({
+    color: 0x26150b,
+    bumpMap: tex.bump,
+    bumpScale: 0.016,
+    roughness: 0.35,
+    metalness: 0.42,
+  });
+
+  const kainDodotMat = new THREE.MeshStandardMaterial({
+    color: 0xd96838,
+    map: dodotTex.diffuse,
+    bumpMap: dodotTex.bump,
+    bumpScale: 0.02,
+    roughness: 0.44,
+    metalness: 0.3,
+  });
+
+  const tandukGapitMat = new THREE.MeshStandardMaterial({
+    color: 0x2a1d13,
+    roughness: 0.28,
+    metalness: 0.15,
+  });
+
+  const gegelKuninganMat = new THREE.MeshStandardMaterial({
+    color: 0xfbe088,
+    roughness: 0.2,
+    metalness: 0.9,
+  });
+
+  // 1. Torso Ksatria Berpinggang Ramping
+  const torsoGeo = ambilAtauBuatExtrudeGeo('rama-torso', () => {
+    const torsoShape = new THREE.Shape();
+    torsoShape.moveTo(-0.15, -0.05);
+    torsoShape.bezierCurveTo(-0.18, 0.14, -0.32, 0.36, -0.35, 0.56);
+    torsoShape.bezierCurveTo(-0.34, 0.65, -0.18, 0.68, -0.06, 0.71);
+    torsoShape.lineTo(0.06, 0.71);
+    torsoShape.bezierCurveTo(0.18, 0.68, 0.34, 0.65, 0.35, 0.56);
+    torsoShape.bezierCurveTo(0.32, 0.36, 0.18, 0.14, 0.15, -0.05);
+    torsoShape.closePath();
+
+    for (const [hx, hy, hr] of [
+      [0, 0.46, 0.032],
+      [-0.12, 0.48, 0.024],
+      [0.12, 0.48, 0.024],
+      [-0.07, 0.33, 0.022],
+      [0.07, 0.33, 0.022],
+      [0, 0.2, 0.025],
+    ]) {
+      const hole = new THREE.Path();
+      hole.absarc(hx, hy, hr, 0, Math.PI * 2, false);
+      torsoShape.holes.push(hole);
+    }
+
+    const g = new THREE.ExtrudeGeometry(torsoShape, {
+      depth: 0.026,
       bevelEnabled: true,
-      bevelThickness: 0.009,
-      bevelSize: 0.008,
-      bevelSegments: 2,
-    }),
-    kulitPradaMat,
-  );
-  torsoMesh.position.z = -0.018;
+      bevelSize: 0.006,
+      bevelThickness: 0.006,
+      bevelSegments: 1,
+      curveSegments: 12,
+    });
+    g.center();
+    normalisasiUvExtrude(g);
+    return g;
+  });
+  const torsoMesh = new THREE.Mesh(torsoGeo, kulitPradaMat);
+  torsoMesh.position.set(0, 0.34, 0);
   torsoMesh.castShadow = true;
-  torsoMesh.receiveShadow = true;
-  torsoMesh.userData.explodeVec = new THREE.Vector3(0, 0.2, 0.38);
   badan.add(torsoMesh);
 
-  // Kalung Ulur-Ulur & Sembuliyan Dada Timbul
-  const kalungPoints = [
-    new THREE.Vector3(-0.11, 0.58, 0.025),
-    new THREE.Vector3(-0.14, 0.32, 0.03),
-    new THREE.Vector3(-0.02, 0.04, 0.032),
-    new THREE.Vector3(0.11, 0.34, 0.028),
-    new THREE.Vector3(0.09, 0.56, 0.025),
-  ];
-  const kalungGeo = new THREE.TubeGeometry(new THREE.CatmullRomCurve3(kalungPoints), 28, 0.018, 8, false);
-  const kalungMesh = new THREE.Mesh(kalungGeo, emasMurniMat);
-  kalungMesh.userData.explodeVec = new THREE.Vector3(0, 0.25, 0.62);
+  // 2. Praba Agung (Sayap Punggung Kerajaan Ksatria)
+  const prabaGeo = ambilAtauBuatExtrudeGeo('rama-praba', () => {
+    const prabaShape = new THREE.Shape();
+    prabaShape.moveTo(0.05, 0.35);
+    prabaShape.bezierCurveTo(0.28, 0.42, 0.42, 0.68, 0.34, 0.98);
+    prabaShape.bezierCurveTo(0.28, 1.12, 0.16, 1.02, 0.12, 0.85);
+    prabaShape.bezierCurveTo(0.14, 0.68, 0.12, 0.5, 0.05, 0.35);
+    for (const [hx, hy, hr] of [
+      [0.24, 0.68, 0.028],
+      [0.27, 0.82, 0.025],
+    ]) {
+      const h = new THREE.Path();
+      h.absarc(hx, hy, hr, 0, Math.PI * 2, false);
+      prabaShape.holes.push(h);
+    }
+    const g = new THREE.ExtrudeGeometry(prabaShape, {
+      depth: 0.018,
+      bevelEnabled: true,
+      bevelSize: 0.005,
+      bevelThickness: 0.005,
+      bevelSegments: 1,
+      curveSegments: 10,
+    });
+    normalisasiUvExtrude(g);
+    return g;
+  });
+  const prabaMesh = new THREE.Mesh(prabaGeo, pradaMurniMat);
+  prabaMesh.position.set(0, 0, -0.018);
+  badan.add(prabaMesh);
+
+  // 3. Kalung Ulur-Ulur & Sabuk Pending Kencana
+  const kalungCurve = new THREE.CatmullRomCurve3([
+    new THREE.Vector3(-0.14, 0.62, 0.022),
+    new THREE.Vector3(-0.11, 0.36, 0.025),
+    new THREE.Vector3(0, 0.22, 0.028),
+    new THREE.Vector3(0.11, 0.36, 0.025),
+    new THREE.Vector3(0.14, 0.62, 0.022),
+  ]);
+  const kalungMesh = new THREE.Mesh(
+    new THREE.TubeGeometry(kalungCurve, 14, 0.014, 6, false),
+    gegelKuninganMat,
+  );
   badan.add(kalungMesh);
 
-  // Kepala alusan hitam, mata gabahan, & Gelung Supit Urang
-  const kepalaGrup = new THREE.Group();
-  kepalaGrup.userData.explodeVec = new THREE.Vector3(-0.15, 0.68, 0.45);
-
-  // Leher condong anggun ke depan (kiri)
-  const bentukLeherWajah = new THREE.Shape();
-  bentukLeherWajah.moveTo(-0.11, 0.54);
-  bentukLeherWajah.lineTo(-0.18, 0.64);
-  bentukLeherWajah.lineTo(-0.22, 0.64); // Dagu
-  bentukLeherWajah.lineTo(-0.27, 0.69); // Bibir
-  bentukLeherWajah.lineTo(-0.37, 0.72); // Ujung hidung mbangir lancip
-  bentukLeherWajah.quadraticCurveTo(-0.27, 0.82, -0.21, 0.89); // Dahi
-  bentukLeherWajah.quadraticCurveTo(-0.06, 0.98, 0.14, 0.92); // Batok kepala
-  bentukLeherWajah.lineTo(0.12, 0.64);
-  bentukLeherWajah.lineTo(0.06, 0.54);
-  bentukLeherWajah.closePath();
-
-  const wajahMesh = new THREE.Mesh(
-    new THREE.ExtrudeGeometry(bentukLeherWajah, {
-      depth: 0.038,
-      bevelEnabled: true,
-      bevelThickness: 0.008,
-      bevelSize: 0.007,
-    }),
-    wajahHitamMat,
-  );
-  wajahMesh.position.z = -0.019;
-  wajahMesh.castShadow = true;
-  kepalaGrup.add(wajahMesh);
-
-  // Detail Mata Gabahan & Alis Emas di kedua sisi wajah
-  const mataShape = new THREE.Shape();
-  mataShape.moveTo(-0.28, 0.76);
-  mataShape.quadraticCurveTo(-0.22, 0.79, -0.16, 0.77);
-  mataShape.quadraticCurveTo(-0.22, 0.74, -0.28, 0.76);
-  const mataMesh = new THREE.Mesh(
-    new THREE.ExtrudeGeometry(mataShape, { depth: 0.046, bevelEnabled: false }),
-    emasMurniMat,
-  );
-  mataMesh.position.z = -0.023;
-  kepalaGrup.add(mataMesh);
-
-  // Gelung Supit Urang (Mahkota Capit Udang Melengkung Tinggi dengan Lubang Tatahan)
-  const bentukGelung = new THREE.Shape();
-  bentukGelung.moveTo(-0.18, 0.86);
-  bentukGelung.quadraticCurveTo(-0.08, 1.04, 0.12, 1.02);
-  bentukGelung.quadraticCurveTo(0.28, 1.24, 0.08, 1.38);
-  bentukGelung.quadraticCurveTo(-0.08, 1.42, -0.06, 1.26); // Ujung capit melengkung ke dalam
-  bentukGelung.quadraticCurveTo(0.02, 1.24, 0.05, 1.3);
-  bentukGelung.quadraticCurveTo(0.14, 1.22, 0.04, 1.08);
-  bentukGelung.quadraticCurveTo(0.38, 1.12, 0.42, 0.88); // Bokong gelung bulat hitam-emas
-  bentukGelung.quadraticCurveTo(0.4, 0.66, 0.14, 0.66);
-  bentukGelung.closePath();
-
-  // Lubang krawangan pada Gelung Supit Urang
-  for (const [hx, hy, hr] of [
-    [0.02, 0.96, 0.022],
-    [0.14, 1.12, 0.024],
-    [0.26, 0.88, 0.035],
-    [0.24, 0.76, 0.028],
-  ]) {
-    const h = new THREE.Path();
-    h.absarc(hx, hy, hr, 0, Math.PI * 2, false);
-    bentukGelung.holes.push(h);
-  }
-
-  const gelungMesh = new THREE.Mesh(
-    new THREE.ExtrudeGeometry(bentukGelung, {
-      depth: 0.042,
-      bevelEnabled: true,
-      bevelThickness: 0.01,
-      bevelSize: 0.008,
-    }),
-    kulitPradaMat,
-  );
-  gelungMesh.position.z = -0.021;
-  gelungMesh.castShadow = true;
-  kepalaGrup.add(gelungMesh);
-
-  // Sumping Telinga & Garuda Mungkur Emas-Merah
-  const sumpingShape = new THREE.Shape();
-  sumpingShape.moveTo(-0.08, 0.72);
-  sumpingShape.quadraticCurveTo(0.06, 0.88, 0.14, 1.05);
-  sumpingShape.quadraticCurveTo(0.02, 0.98, -0.12, 0.78);
-  sumpingShape.closePath();
-  const sumpingMesh = new THREE.Mesh(
-    new THREE.ExtrudeGeometry(sumpingShape, { depth: 0.048, bevelEnabled: true, bevelThickness: 0.006, bevelSize: 0.005 }),
-    emasMurniMat,
-  );
-  sumpingMesh.position.z = -0.024;
-  kepalaGrup.add(sumpingMesh);
-
-  // Untaian rambut panjang ngore di punggung atas
-  const rambutShape = new THREE.Shape();
-  rambutShape.moveTo(0.08, 0.68);
-  rambutShape.quadraticCurveTo(0.24, 0.62, 0.42, 0.56);
-  rambutShape.lineTo(0.28, 0.52);
-  rambutShape.quadraticCurveTo(0.14, 0.58, 0.05, 0.64);
-  rambutShape.closePath();
-  const rambutMesh = new THREE.Mesh(
-    new THREE.ExtrudeGeometry(rambutShape, { depth: 0.04, bevelEnabled: false }),
-    wajahHitamMat,
-  );
-  rambutMesh.position.z = -0.02;
-  kepalaGrup.add(rambutMesh);
-
-  badan.add(kepalaGrup);
-
-  // Kain Kampuh / Dodot, bokongan melengkung, kaki & lemahan
-  const kainGrup = new THREE.Group();
-  kainGrup.userData.explodeVec = new THREE.Vector3(0, -0.38, 0.35);
-
-  // Siluet Kain Dodot + Bokongan Kerajaan Melengkung Besar di Belakang (Kanan)
-  const bentukDodot = new THREE.Shape();
-  bentukDodot.moveTo(-0.16, -0.04); // Pinggang depan
-  bentukDodot.lineTo(0.16, -0.04); // Pinggang belakang
-  // Jambul manggaran / panjen di belakang pinggang
-  bentukDodot.lineTo(0.36, 0.14);
-  bentukDodot.quadraticCurveTo(0.32, 0.02, 0.24, -0.08);
-  // Bokongan bulat melengkung
-  bentukDodot.bezierCurveTo(0.56, -0.18, 0.58, -0.58, 0.26, -0.66);
-  // Ekor kain konca menjuntai di belakang kaki
-  bentukDodot.lineTo(0.42, -0.82);
-  bentukDodot.quadraticCurveTo(0.24, -0.84, 0.16, -0.68);
-  // Sela lipatan uncal tengah di antara kedua kaki
-  bentukDodot.lineTo(0.04, -0.84);
-  bentukDodot.lineTo(-0.08, -0.78);
-  bentukDodot.lineTo(-0.08, -0.52);
-  // Paha depan (kiri)
-  bentukDodot.quadraticCurveTo(-0.34, -0.54, -0.32, -0.32);
-  bentukDodot.quadraticCurveTo(-0.28, -0.14, -0.16, -0.04);
-  bentukDodot.closePath();
-
-  // Lubang krawangan pada kain dodot
-  for (const [hx, hy, hr] of [
-    [0.26, -0.38, 0.036],
-    [0.12, -0.28, 0.03],
-    [-0.12, -0.32, 0.028],
-    [0.02, -0.56, 0.025],
-  ]) {
-    const h = new THREE.Path();
-    h.absarc(hx, hy, hr, 0, Math.PI * 2, false);
-    bentukDodot.holes.push(h);
-  }
-
-  const dodotMesh = new THREE.Mesh(
-    new THREE.ExtrudeGeometry(bentukDodot, {
-      depth: 0.04,
-      bevelEnabled: true,
-      bevelThickness: 0.01,
-      bevelSize: 0.008,
-    }),
-    dodotPolikromMat,
-  );
-  dodotMesh.position.z = -0.02;
-  dodotMesh.castShadow = true;
-  dodotMesh.receiveShadow = true;
-  kainGrup.add(dodotMesh);
-
-  // Sabuk Pending Emas di Pinggang
   const pendingMesh = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.18, 0.2, 0.12, 16),
-    emasMurniMat,
+    new THREE.CylinderGeometry(0.16, 0.17, 0.09, 14),
+    pradaMurniMat,
   );
-  pendingMesh.scale.set(1, 1, 0.32);
-  pendingMesh.position.set(0, -0.05, 0);
-  kainGrup.add(pendingMesh);
+  pendingMesh.scale.set(1, 1, 0.28);
+  pendingMesh.position.set(0, 0.01, 0);
+  badan.add(pendingMesh);
 
-  // Kaki Depan (Kiri) & Kaki Belakang (Kanan) + Jari Telapak + Gelang Kaki Binggel
-  const buatKakiWayang = (xPos: number): THREE.Group => {
-    const kg = new THREE.Group();
-    const betisShape = new THREE.Shape();
-    betisShape.moveTo(xPos - 0.05, -0.45);
-    betisShape.lineTo(xPos + 0.05, -0.45);
-    betisShape.lineTo(xPos + 0.035, -0.94);
-    betisShape.lineTo(xPos + 0.08, -1.02); // Tumit
-    betisShape.lineTo(xPos - 0.16, -1.02); // Ujung jari kaki menghadap kiri
-    betisShape.lineTo(xPos - 0.14, -0.96);
-    betisShape.lineTo(xPos - 0.04, -0.93);
-    betisShape.closePath();
+  // 4. Profil Wajah Luruh Bangsawan
+  const kepalaGeo = ambilAtauBuatExtrudeGeo('rama-kepala', () => {
+    const kepalaShape = new THREE.Shape();
+    kepalaShape.moveTo(-0.07, 0.68);
+    kepalaShape.lineTo(-0.13, 0.72);
+    kepalaShape.lineTo(-0.17, 0.75);
+    kepalaShape.lineTo(-0.27, 0.8);
+    kepalaShape.lineTo(-0.17, 0.83);
+    kepalaShape.bezierCurveTo(-0.14, 0.91, -0.04, 0.96, 0.08, 0.93);
+    kepalaShape.bezierCurveTo(0.14, 0.86, 0.13, 0.74, 0.05, 0.68);
+    kepalaShape.closePath();
 
-    const betisMesh = new THREE.Mesh(
-      new THREE.ExtrudeGeometry(betisShape, {
-        depth: 0.034,
-        bevelEnabled: true,
-        bevelThickness: 0.007,
-        bevelSize: 0.006,
-      }),
-      kulitPradaMat,
+    const g = new THREE.ExtrudeGeometry(kepalaShape, {
+      depth: 0.024,
+      bevelEnabled: true,
+      bevelSize: 0.004,
+      bevelThickness: 0.004,
+      bevelSegments: 1,
+      curveSegments: 10,
+    });
+    normalisasiUvExtrude(g);
+    return g;
+  });
+  const kepalaMesh = new THREE.Mesh(kepalaGeo, wajahHitamLuruhMat);
+  kepalaMesh.position.z = -0.012;
+  badan.add(kepalaMesh);
+
+  const mataMesh = new THREE.Mesh(
+    new THREE.CapsuleGeometry(0.009, 0.028, 4, 6),
+    gegelKuninganMat,
+  );
+  mataMesh.rotation.z = Math.PI * 0.42;
+  mataMesh.position.set(-0.12, 0.81, 0.016);
+  badan.add(mataMesh);
+
+  // 5. Mahkota Gelung Supit Urang & Jamang Emas
+  const gelungGeo = ambilAtauBuatExtrudeGeo('rama-gelung', () => {
+    const gelungShape = new THREE.Shape();
+    gelungShape.moveTo(-0.13, 0.85);
+    gelungShape.bezierCurveTo(-0.1, 0.99, 0.04, 1.08, 0.18, 1.05);
+    gelungShape.bezierCurveTo(0.28, 1.18, 0.22, 1.44, 0.02, 1.54);
+    gelungShape.bezierCurveTo(-0.09, 1.56, -0.11, 1.44, -0.02, 1.38);
+    gelungShape.bezierCurveTo(0.11, 1.34, 0.14, 1.16, 0.02, 1.08);
+    gelungShape.bezierCurveTo(0.12, 1.0, 0.16, 0.84, 0.06, 0.74);
+    gelungShape.closePath();
+
+    for (const [hx, hy, hr] of [
+      [0.04, 0.95, 0.024],
+      [0.14, 1.16, 0.024],
+      [0.12, 1.32, 0.022],
+    ]) {
+      const hole = new THREE.Path();
+      hole.absarc(hx, hy, hr, 0, Math.PI * 2, false);
+      gelungShape.holes.push(hole);
+    }
+
+    const g = new THREE.ExtrudeGeometry(gelungShape, {
+      depth: 0.024,
+      bevelEnabled: true,
+      bevelSize: 0.006,
+      bevelThickness: 0.006,
+      bevelSegments: 1,
+      curveSegments: 12,
+    });
+    normalisasiUvExtrude(g);
+    return g;
+  });
+  const gelungMesh = new THREE.Mesh(gelungGeo, mahkotaSogaMat);
+  gelungMesh.position.z = -0.012;
+  badan.add(gelungMesh);
+
+  const jamangCurve = new THREE.CatmullRomCurve3([
+    new THREE.Vector3(-0.15, 0.85, 0.018),
+    new THREE.Vector3(-0.04, 0.94, 0.022),
+    new THREE.Vector3(0.1, 0.98, 0.02),
+    new THREE.Vector3(0.18, 1.18, 0.018),
+    new THREE.Vector3(0.04, 1.48, 0.018),
+  ]);
+  const jamangMesh = new THREE.Mesh(
+    new THREE.TubeGeometry(jamangCurve, 16, 0.016, 6, false),
+    pradaMurniMat,
+  );
+  badan.add(jamangMesh);
+
+  // 6. Kain Kampuh / Dodot Sembuliyan Kerajaan + Uncal Kencana
+  const dodotGeo = ambilAtauBuatExtrudeGeo('rama-dodot', () => {
+    const dodotShape = new THREE.Shape();
+    dodotShape.moveTo(-0.17, 0.02);
+    dodotShape.bezierCurveTo(-0.27, -0.14, -0.34, -0.44, -0.26, -0.68);
+    dodotShape.lineTo(-0.08, -0.66);
+    dodotShape.bezierCurveTo(-0.02, -0.78, 0.08, -0.82, 0.16, -0.74);
+    dodotShape.bezierCurveTo(0.34, -0.58, 0.4, -0.24, 0.24, 0.02);
+    dodotShape.closePath();
+
+    for (const [hx, hy, hr] of [
+      [-0.14, -0.32, 0.024],
+      [0.04, -0.46, 0.026],
+      [0.18, -0.3, 0.025],
+    ]) {
+      const hole = new THREE.Path();
+      hole.absarc(hx, hy, hr, 0, Math.PI * 2, false);
+      dodotShape.holes.push(hole);
+    }
+
+    const g = new THREE.ExtrudeGeometry(dodotShape, {
+      depth: 0.032,
+      bevelEnabled: true,
+      bevelSize: 0.007,
+      bevelThickness: 0.007,
+      bevelSegments: 1,
+      curveSegments: 12,
+    });
+    normalisasiUvExtrude(g);
+    return g;
+  });
+  const dodotMesh = new THREE.Mesh(dodotGeo, kainDodotMat);
+  dodotMesh.position.z = -0.016;
+  dodotMesh.castShadow = true;
+  badan.add(dodotMesh);
+
+  for (const xOff of [-0.08, 0.05]) {
+    const uncalCurve = new THREE.CatmullRomCurve3([
+      new THREE.Vector3(xOff, -0.02, 0.024),
+      new THREE.Vector3(xOff - 0.03, -0.32, 0.028),
+      new THREE.Vector3(xOff - 0.01, -0.62, 0.025),
+    ]);
+    const uncalMesh = new THREE.Mesh(
+      new THREE.TubeGeometry(uncalCurve, 8, 0.014, 6, false),
+      pradaMurniMat,
     );
-    betisMesh.position.z = -0.017;
-    betisMesh.castShadow = true;
-    kg.add(betisMesh);
+    badan.add(uncalMesh);
+  }
 
-    // Gelang Kaki (Binggel / Kroncong) Emas
+  // 7. Sepasang Kaki Ksatria Berlangkah Jangkah
+  const buatKakiKsatria = (kunci: string, xPos: number, zPos: number): THREE.Group => {
+    const grupKaki = new THREE.Group();
+    const kakiGeo = ambilAtauBuatExtrudeGeo(kunci, () => {
+      const kakiShape = new THREE.Shape();
+      kakiShape.moveTo(xPos - 0.045, -0.56);
+      kakiShape.lineTo(xPos - 0.055, -0.96);
+      kakiShape.lineTo(xPos - 0.16, -0.99);
+      kakiShape.bezierCurveTo(xPos - 0.18, -1.03, xPos - 0.08, -1.04, xPos + 0.05, -1.03);
+      kakiShape.lineTo(xPos + 0.045, -0.56);
+      kakiShape.closePath();
+
+      const g = new THREE.ExtrudeGeometry(kakiShape, {
+        depth: 0.022,
+        bevelEnabled: false,
+        curveSegments: 8,
+      });
+      normalisasiUvExtrude(g);
+      return g;
+    });
+    const mesh = new THREE.Mesh(kakiGeo, kulitPradaMat);
+    mesh.position.z = zPos;
+    grupKaki.add(mesh);
+
     const binggel = new THREE.Mesh(
-      new THREE.TorusGeometry(0.058, 0.016, 10, 20),
-      emasMurniMat,
+      new THREE.TorusGeometry(0.038, 0.009, 6, 12),
+      gegelKuninganMat,
     );
     binggel.rotation.x = Math.PI / 2;
-    binggel.scale.z = 0.55;
-    binggel.position.set(xPos, -0.91, 0);
-    kg.add(binggel);
-
-    return kg;
+    binggel.position.set(xPos - 0.01, -0.9, zPos + 0.011);
+    grupKaki.add(binggel);
+    return grupKaki;
   };
-
-  kainGrup.add(buatKakiWayang(-0.2), buatKakiWayang(0.16));
-
-  // Pita lemahan merah penghubung kedua telapak kaki
-  const lemahan = new THREE.Mesh(
-    new THREE.BoxGeometry(0.42, 0.045, 0.032),
-    merahSunggingMat,
+  badan.add(
+    buatKakiKsatria('rama-kaki-kiri', -0.15, -0.011),
+    buatKakiKsatria('rama-kaki-kanan', 0.14, -0.014),
   );
-  lemahan.position.set(-0.02, -1.01, 0);
-  kainGrup.add(lemahan);
 
-  badan.add(kainGrup);
-
-  // Cempurit tanduk kerbau melengkung mengikuti rangka punggung
-  const kurvaCempurit = new THREE.CatmullRomCurve3([
-    new THREE.Vector3(0.05, -1.85, 0.025), // Gagang pegangan dalang di gedebog
-    new THREE.Vector3(0.04, -1.02, 0.025), // Antara kedua kaki
-    new THREE.Vector3(0.02, -0.45, 0.028), // Menyusuri kain dodot
-    new THREE.Vector3(-0.03, 0.05, 0.03),  // Pinggang
-    new THREE.Vector3(0.02, 0.48, 0.03),   // Dada atas
-    new THREE.Vector3(-0.14, 0.78, 0.03),  // Melengkung ke pipi/telinga
-    new THREE.Vector3(0.06, 1.06, 0.028),  // Mengikat mahkota gelung
-  ]);
-  const cempuritGeo = new THREE.TubeGeometry(kurvaCempurit, 48, 0.022, 10, false);
-  const cempuritMesh = new THREE.Mesh(cempuritGeo, tandukGapitMat);
-  cempuritMesh.castShadow = true;
-  cempuritMesh.userData.explodeVec = new THREE.Vector3(0, -0.15, -0.68);
-
-  // Hulu gagang cempurit berukir cincin (tempat genggaman tangan Dalang)
-  const huluCempurit = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.034, 0.026, 0.55, 14),
-    tandukGapitMat,
-  );
-  huluCempurit.position.set(0.05, -1.55, 0.025);
-  huluCempurit.userData.explodeVec = new THREE.Vector3(0, -0.35, -0.68);
-  badan.add(cempuritMesh, huluCempurit);
-
-  // Lengan kanan berartikulasi 2 sendi dengan busur Gendewa & tuding
+  // 8. Lengan Kanan Berartikulasi (Memegang Busur Gandewa)
   const lenganKanan = new THREE.Group();
-  lenganKanan.position.set(-0.39, 0.52, 0.028);
-  lenganKanan.userData.explodeVec = new THREE.Vector3(-0.68, 0.15, 0.35);
-
-  // Sendi Bahu Emas (Gegel)
-  const gegelBahuKanan = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.032, 0.032, 0.06, 12),
-    emasMurniMat,
-  );
-  gegelBahuKanan.rotation.x = Math.PI / 2;
-  lenganKanan.add(gegelBahuKanan);
-
-  // Lengan Atas + Kelat Bahu Naga Berukir
-  const atasKananShape = new THREE.Shape();
-  atasKananShape.moveTo(-0.038, 0);
-  atasKananShape.lineTo(0.038, 0);
-  atasKananShape.lineTo(0.032, -0.46);
-  atasKananShape.lineTo(-0.032, -0.46);
-  atasKananShape.closePath();
-  const atasKanan = new THREE.Mesh(
-    new THREE.ExtrudeGeometry(atasKananShape, { depth: 0.024, bevelEnabled: true, bevelThickness: 0.005, bevelSize: 0.004 }),
-    kulitPradaMat,
-  );
-  atasKanan.position.z = -0.012;
-  atasKanan.castShadow = true;
-  lenganKanan.add(atasKanan);
-
-  const kelatBahuKanan = new THREE.Mesh(
-    new THREE.TorusGeometry(0.048, 0.014, 8, 16),
-    emasMurniMat,
-  );
-  kelatBahuKanan.position.set(0, -0.18, 0);
-  lenganKanan.add(kelatBahuKanan);
-
-  // Sendi Siku Kanan + Lengan Bawah + Jari Nyempurit
-  const sikuKanan = new THREE.Group();
-  sikuKanan.position.set(0, -0.45, 0.008);
-
-  const gegelSikuKanan = gegelBahuKanan.clone();
-  sikuKanan.add(gegelSikuKanan);
-
-  const bawahKananShape = new THREE.Shape();
-  bawahKananShape.moveTo(-0.032, 0);
-  bawahKananShape.lineTo(0.032, 0);
-  bawahKananShape.lineTo(0.026, -0.42);
-  // Telapak tangan & jari lentik nyempurit
-  bawahKananShape.lineTo(0.06, -0.48);
-  bawahKananShape.lineTo(-0.09, -0.52);
-  bawahKananShape.lineTo(-0.04, -0.42);
-  bawahKananShape.closePath();
-
-  const bawahKanan = new THREE.Mesh(
-    new THREE.ExtrudeGeometry(bawahKananShape, { depth: 0.022, bevelEnabled: true, bevelThickness: 0.004, bevelSize: 0.004 }),
-    kulitPradaMat,
-  );
-  bawahKanan.position.z = -0.011;
-  bawahKanan.castShadow = true;
-  sikuKanan.add(bawahKanan);
-
-  // Gelang Kana Pergelangan Tangan
-  const gelangKanan = new THREE.Mesh(new THREE.TorusGeometry(0.042, 0.012, 8, 16), emasMurniMat);
-  gelangKanan.rotation.x = Math.PI / 2;
-  gelangKanan.position.set(0, -0.38, 0);
-  sikuKanan.add(gelangKanan);
-
-  // Tuding Kanan (Tangkai Penggerak Tangan Depan)
-  const tudingKanan = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.01, 0.014, 1.42, 10),
-    tandukGapitMat,
-  );
-  tudingKanan.position.set(-0.03, -1.16, 0.01);
-  tudingKanan.rotation.z = 0.06;
-  sikuKanan.add(tudingKanan);
-
-  // Busur Gendewa Berukir Emas + Tali Busur + Anak Panah Guwawijaya
-  const busur = new THREE.Group();
-  busur.position.set(-0.08, -0.44, 0.03);
-  busur.userData.explodeVec = new THREE.Vector3(-0.55, 0.25, 0.55);
-
-  const kurvaBusur = new THREE.CatmullRomCurve3([
-    new THREE.Vector3(0.08, 0.52, 0),
-    new THREE.Vector3(-0.18, 0.34, 0),
-    new THREE.Vector3(-0.28, 0, 0),
-    new THREE.Vector3(-0.18, -0.34, 0),
-    new THREE.Vector3(0.08, -0.52, 0),
-  ]);
-  const lengkungBusur = new THREE.Mesh(
-    new THREE.TubeGeometry(kurvaBusur, 32, 0.022, 10, false),
-    emasMurniMat,
-  );
-  lengkungBusur.castShadow = true;
-  busur.add(lengkungBusur);
-
-  const taliBusur = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.004, 0.004, 1.02, 6),
-    tandukGapitMat,
-  );
-  taliBusur.position.set(0.06, 0, 0);
-  busur.add(taliBusur);
-
-  const anakPanah = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.012, 0.012, 0.96, 8),
-    emasMurniMat,
-  );
-  anakPanah.rotation.z = Math.PI / 2;
-  anakPanah.position.set(-0.16, 0, 0);
-  const mataPanah = new THREE.Mesh(new THREE.ConeGeometry(0.036, 0.14, 6), emasMurniMat);
-  mataPanah.rotation.z = Math.PI / 2;
-  mataPanah.position.set(-0.48, 0, 0);
-  anakPanah.add(mataPanah);
-  busur.add(anakPanah);
-
-  sikuKanan.add(busur);
-  lenganKanan.add(sikuKanan);
-  lenganKanan.rotation.z = -0.32;
-  sikuKanan.rotation.z = 0.58;
+  lenganKanan.position.set(-0.27, 0.56, 0.024);
+  lenganKanan.rotation.z = -0.34;
   badan.add(lenganKanan);
 
-  // Lengan kiri berartikulasi 2 sendi dengan tuding
-  const lenganKiri = new THREE.Group();
-  lenganKiri.position.set(0.41, 0.5, -0.024);
-  lenganKiri.userData.explodeVec = new THREE.Vector3(0.68, 0.15, -0.35);
+  const bahuPinKanan = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.024, 0.024, 0.06, 10),
+    gegelKuninganMat,
+  );
+  bahuPinKanan.rotation.x = Math.PI / 2;
+  lenganKanan.add(bahuPinKanan);
 
-  const gegelBahuKiri = gegelBahuKanan.clone();
-  lenganKiri.add(gegelBahuKiri);
+  const lenganAtasGeo = new THREE.CapsuleGeometry(0.032, 0.34, 6, 10);
+  lenganAtasGeo.scale(1, 1, 0.42);
+  const lenganAtasKanan = new THREE.Mesh(lenganAtasGeo, kulitPradaMat);
+  lenganAtasKanan.position.set(0, -0.18, 0);
+  lenganKanan.add(lenganAtasKanan);
 
-  const atasKiri = atasKanan.clone();
-  lenganKiri.add(atasKiri);
+  const sikuKanan = new THREE.Group();
+  sikuKanan.position.set(0, -0.36, 0);
+  sikuKanan.rotation.z = 0.56;
+  lenganKanan.add(sikuKanan);
 
-  const kelatBahuKiri = kelatBahuKanan.clone();
-  lenganKiri.add(kelatBahuKiri);
+  sikuKanan.add(bahuPinKanan.clone());
 
-  const sikuKiri = new THREE.Group();
-  sikuKiri.position.set(0, -0.45, -0.008);
-  const bawahKiri = bawahKanan.clone();
-  sikuKiri.add(bawahKiri, gelangKanan.clone());
+  const lenganBawahGeo = new THREE.CapsuleGeometry(0.026, 0.34, 6, 10);
+  lenganBawahGeo.scale(1, 1, 0.42);
+  const lenganBawahKanan = new THREE.Mesh(lenganBawahGeo, kulitPradaMat);
+  lenganBawahKanan.position.set(0, -0.18, 0);
+  sikuKanan.add(lenganBawahKanan);
 
-  const tudingKiri = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.01, 0.014, 1.38, 10),
+  // Busur Pusaka Gandewa Berukir
+  const busur = new THREE.Group();
+  busur.position.set(-0.04, -0.36, 0.01);
+  sikuKanan.add(busur);
+
+  const gandewaCurve = new THREE.CatmullRomCurve3([
+    new THREE.Vector3(0.12, 0.58, 0),
+    new THREE.Vector3(-0.06, 0.42, 0),
+    new THREE.Vector3(-0.24, 0.16, 0),
+    new THREE.Vector3(-0.28, 0, 0),
+    new THREE.Vector3(-0.24, -0.16, 0),
+    new THREE.Vector3(-0.06, -0.42, 0),
+    new THREE.Vector3(0.12, -0.58, 0),
+  ]);
+  const busurArc = new THREE.Mesh(
+    new THREE.TubeGeometry(gandewaCurve, 20, 0.02, 8, false),
+    pradaMurniMat,
+  );
+  busur.add(busurArc);
+
+  const taliBusur = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.005, 0.005, 1.14, 6),
+    gegelKuninganMat,
+  );
+  taliBusur.position.set(0.11, 0, 0);
+  busur.add(taliBusur);
+
+  const batangPanah = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.009, 0.009, 0.68, 6),
+    pradaMurniMat,
+  );
+  batangPanah.rotation.z = Math.PI / 2;
+  batangPanah.position.set(-0.14, 0, 0.01);
+  busur.add(batangPanah);
+
+  const mataPanah = new THREE.Mesh(
+    new THREE.ConeGeometry(0.036, 0.13, 6),
+    gegelKuninganMat,
+  );
+  mataPanah.rotation.z = Math.PI / 2;
+  mataPanah.position.set(-0.5, 0, 0.01);
+  busur.add(mataPanah);
+
+  const tudingKanan = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.009, 0.012, 1.12, 6),
     tandukGapitMat,
   );
-  tudingKiri.position.set(-0.04, -1.12, -0.01);
-  tudingKiri.rotation.z = -0.18;
+  tudingKanan.position.set(-0.04, -0.9, -0.01);
+  tudingKanan.rotation.z = 0.08;
+  sikuKanan.add(tudingKanan);
+
+  // 9. Lengan Kiri Berartikulasi
+  const lenganKiri = new THREE.Group();
+  lenganKiri.position.set(0.27, 0.56, -0.024);
+  lenganKiri.rotation.z = 0.4;
+  badan.add(lenganKiri);
+  lenganKiri.add(bahuPinKanan.clone());
+
+  const lenganAtasKiri = new THREE.Mesh(lenganAtasGeo.clone(), kulitPradaMat);
+  lenganAtasKiri.position.set(0, -0.18, 0);
+  lenganKiri.add(lenganAtasKiri);
+
+  const sikuKiri = new THREE.Group();
+  sikuKiri.position.set(0, -0.36, 0);
+  sikuKiri.rotation.z = -0.88;
+  lenganKiri.add(sikuKiri);
+  sikuKiri.add(bahuPinKanan.clone());
+
+  const lenganBawahKiri = new THREE.Mesh(lenganBawahGeo.clone(), kulitPradaMat);
+  lenganBawahKiri.position.set(0, -0.18, 0);
+  sikuKiri.add(lenganBawahKiri);
+
+  const tudingKiri = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.009, 0.012, 1.05, 6),
+    tandukGapitMat,
+  );
+  tudingKiri.position.set(0, -0.84, -0.01);
+  tudingKiri.rotation.z = -0.22;
   sikuKiri.add(tudingKiri);
 
-  sikuKiri.rotation.z = -0.78;
-  lenganKiri.add(sikuKiri);
-  lenganKiri.rotation.z = 0.42;
-  badan.add(lenganKiri);
+  // 10. Cempurit / Gapit Utama Tanduk Kerbau Bule
+  const gapitCurve = new THREE.CatmullRomCurve3([
+    new THREE.Vector3(0, -1.62, 0.028),
+    new THREE.Vector3(0, -0.88, 0.028),
+    new THREE.Vector3(0.02, 0.0, 0.028),
+    new THREE.Vector3(-0.02, 0.68, 0.028),
+    new THREE.Vector3(0.06, 1.38, 0.028),
+  ]);
+  const gapitUtama = new THREE.Mesh(
+    new THREE.TubeGeometry(gapitCurve, 18, 0.018, 6, false),
+    tandukGapitMat,
+  );
+  badan.add(gapitUtama);
 
   return {
     root,
@@ -904,334 +1000,402 @@ export function buildSriRamaWayang3D(): WayangSriRamaRig {
     lenganKiri,
     sikuKiri,
     busur,
-    anakPanah,
   };
 }
 
 /**
- * Membangun Wayang Kidang Kencana (Kijang Emas Dandaka) dengan pahatan tatahan kerawang,
- * mahkota tanduk bercabang 5, serta 4 kaki berartikulasi ganda yang melompat lincah.
+ * Membangun Wayang Kulit Kijang Kencana (Penyamaran Marica di Hutan Dandaka)
  */
-export function buildKidangKencana3D(): WayangKidangRig {
-  const tex = loadBudayaTextures();
+export function buildKidangKencana3D(): KidangKencanaRig {
+  const root = new THREE.Group();
+  const badan = new THREE.Group();
+  root.add(badan);
+
   const kidangTex = getTeksturKidangKencana();
-  const prada = getTeksturPradaTatahan();
+  const tatahan = getTeksturPradaTatahan();
 
   const emasKidangMat = new THREE.MeshStandardMaterial({
-    map: kidangTex,
-    bumpMap: prada.bump,
-    bumpScale: 0.022,
-    normalMap: tex.kulitNormal,
-    roughnessMap: tex.kulitRough,
-    color: 0xfbbf24,
-    emissive: 0x78350f,
-    emissiveIntensity: 0.25,
-    metalness: 0.72,
-    roughness: 0.28,
-  });
-
-  const merahPermataMat = new THREE.MeshStandardMaterial({
-    color: 0xdc2626,
-    metalness: 0.45,
+    color: 0xf4bd46,
+    map: kidangTex.diffuse,
+    bumpMap: kidangTex.bump,
+    bumpScale: 0.02,
     roughness: 0.3,
+    metalness: 0.68,
   });
 
-  const tandukGapitMat = new THREE.MeshPhysicalMaterial({
-    color: 0xe6b45a,
-    roughness: 0.22,
-    transmission: 0.22,
+  const tandukEmasMat = new THREE.MeshStandardMaterial({
+    color: 0xffdf78,
+    bumpMap: tatahan.bump,
+    bumpScale: 0.01,
+    roughness: 0.2,
+    metalness: 0.88,
   });
 
-  const root = new THREE.Group();
+  const teracakGelapMat = new THREE.MeshStandardMaterial({
+    color: 0x24150c,
+    roughness: 0.35,
+    metalness: 0.4,
+  });
 
-  // Siluet Tubuh Kijang Melengkung Anggun + Lubang Krawangan
-  const bentukBadan = new THREE.Shape();
-  bentukBadan.moveTo(-0.42, 0.08); // Pinggul belakang
-  bentukBadan.quadraticCurveTo(-0.1, 0.26, 0.36, 0.22); // Punggung
-  bentukBadan.quadraticCurveTo(0.48, 0.05, 0.32, -0.14); // Dada depan
-  bentukBadan.quadraticCurveTo(0, -0.08, -0.34, -0.14); // Perut ramping
-  bentukBadan.quadraticCurveTo(-0.48, -0.04, -0.42, 0.08);
+  const gapitMat = new THREE.MeshStandardMaterial({
+    color: 0x2a1d13,
+    roughness: 0.28,
+    metalness: 0.14,
+  });
 
-  for (const [hx, hy, hr] of [
-    [-0.18, 0.06, 0.032],
-    [0.04, 0.08, 0.036],
-    [0.22, 0.04, 0.028],
-  ]) {
-    const h = new THREE.Path();
-    h.absarc(hx, hy, hr, 0, Math.PI * 2, false);
-    bentukBadan.holes.push(h);
-  }
+  const bodyGeo = ambilAtauBuatExtrudeGeo('kidang-body', () => {
+    const bodyShape = new THREE.Shape();
+    bodyShape.moveTo(-0.44, -0.02);
+    bodyShape.bezierCurveTo(-0.42, 0.16, -0.18, 0.22, 0.08, 0.18);
+    bodyShape.bezierCurveTo(0.24, 0.16, 0.38, 0.22, 0.46, 0.12);
+    bodyShape.bezierCurveTo(0.56, 0.24, 0.58, 0.14, 0.48, 0.04);
+    bodyShape.bezierCurveTo(0.44, -0.12, 0.24, -0.16, 0.05, -0.13);
+    bodyShape.bezierCurveTo(-0.18, -0.1, -0.36, -0.14, -0.44, -0.02);
 
-  const badanMesh = new THREE.Mesh(
-    new THREE.ExtrudeGeometry(bentukBadan, {
-      depth: 0.036,
+    for (const [hx, hy, hr] of [
+      [-0.18, 0.03, 0.032],
+      [0.02, 0.03, 0.038],
+      [0.22, 0.03, 0.032],
+    ]) {
+      const hole = new THREE.Path();
+      hole.absarc(hx, hy, hr, 0, Math.PI * 2, false);
+      bodyShape.holes.push(hole);
+    }
+
+    const g = new THREE.ExtrudeGeometry(bodyShape, {
+      depth: 0.026,
       bevelEnabled: true,
-      bevelThickness: 0.01,
-      bevelSize: 0.008,
-    }),
-    emasKidangMat,
-  );
-  badanMesh.position.z = -0.018;
-  badanMesh.castShadow = true;
-  root.add(badanMesh);
-
-  // Pelana / Kalung Dada Merah-Emas Kijang Kencana
-  const kalungDada = new THREE.Mesh(
-    new THREE.TorusGeometry(0.16, 0.022, 10, 20, Math.PI),
-    merahPermataMat,
-  );
-  kalungDada.position.set(0.28, 0.08, 0);
-  kalungDada.rotation.z = -Math.PI / 3;
-  kalungDada.scale.z = 0.5;
-  root.add(kalungDada);
-
-  // Ekor Kijang Melengkung
-  const ekorShape = new THREE.Shape();
-  ekorShape.moveTo(-0.4, 0.08);
-  ekorShape.quadraticCurveTo(-0.58, 0.26, -0.52, 0.34);
-  ekorShape.quadraticCurveTo(-0.42, 0.22, -0.36, 0.1);
-  ekorShape.closePath();
-  const ekorMesh = new THREE.Mesh(
-    new THREE.ExtrudeGeometry(ekorShape, { depth: 0.024, bevelEnabled: false }),
-    emasKidangMat,
-  );
-  ekorMesh.position.z = -0.012;
-  root.add(ekorMesh);
-
-  // Leher, Kepala, Telinga & Mahkota Tanduk Bercabang 5
-  const leherKepala = new THREE.Group();
-  leherKepala.position.set(0.32, 0.14, 0);
-
-  const kepalaShape = new THREE.Shape();
-  kepalaShape.moveTo(-0.06, -0.06);
-  kepalaShape.quadraticCurveTo(0.02, 0.22, 0.08, 0.38); // Leher depan
-  kepalaShape.lineTo(-0.08, 0.44); // Telinga panjang
-  kepalaShape.lineTo(0.06, 0.48);
-  kepalaShape.lineTo(0.22, 0.46); // Dahi
-  kepalaShape.lineTo(0.42, 0.36); // Moncong kijang lancip
-  kepalaShape.lineTo(0.38, 0.3);
-  kepalaShape.lineTo(0.18, 0.28); // Rahang bawah
-  kepalaShape.quadraticCurveTo(0.12, 0.08, 0.06, -0.1);
-  kepalaShape.closePath();
-
-  const lubangMata = new THREE.Path();
-  lubangMata.absarc(0.2, 0.39, 0.022, 0, Math.PI * 2, false);
-  kepalaShape.holes.push(lubangMata);
-
-  const kepalaMesh = new THREE.Mesh(
-    new THREE.ExtrudeGeometry(kepalaShape, {
-      depth: 0.034,
-      bevelEnabled: true,
-      bevelThickness: 0.008,
       bevelSize: 0.006,
-    }),
+      bevelThickness: 0.006,
+      bevelSegments: 1,
+      curveSegments: 12,
+    });
+    g.center();
+    normalisasiUvExtrude(g);
+    return g;
+  });
+  const bodyMesh = new THREE.Mesh(bodyGeo, emasKidangMat);
+  bodyMesh.position.set(0, 0.2, 0);
+  bodyMesh.castShadow = true;
+  badan.add(bodyMesh);
+
+  const leherKepala = new THREE.Group();
+  leherKepala.position.set(-0.34, 0.28, 0.006);
+  badan.add(leherKepala);
+
+  const headGeo = ambilAtauBuatExtrudeGeo('kidang-head', () => {
+    const headShape = new THREE.Shape();
+    headShape.moveTo(0.06, -0.08);
+    headShape.bezierCurveTo(0.02, 0.12, -0.04, 0.3, -0.08, 0.44);
+    headShape.lineTo(-0.32, 0.38);
+    headShape.bezierCurveTo(-0.33, 0.32, -0.22, 0.28, -0.14, 0.28);
+    headShape.bezierCurveTo(-0.16, 0.12, -0.1, -0.04, 0.06, -0.08);
+
+    const leherHole = new THREE.Path();
+    leherHole.absarc(-0.05, 0.14, 0.022, 0, Math.PI * 2, false);
+    headShape.holes.push(leherHole);
+
+    const g = new THREE.ExtrudeGeometry(headShape, {
+      depth: 0.024,
+      bevelEnabled: true,
+      bevelSize: 0.005,
+      bevelThickness: 0.005,
+      bevelSegments: 1,
+      curveSegments: 10,
+    });
+    normalisasiUvExtrude(g);
+    return g;
+  });
+  const headMesh = new THREE.Mesh(headGeo, emasKidangMat);
+  headMesh.position.z = -0.012;
+  leherKepala.add(headMesh);
+
+  const kalungGenta = new THREE.Mesh(
+    new THREE.TorusGeometry(0.075, 0.014, 6, 12),
+    tandukEmasMat,
+  );
+  kalungGenta.rotation.set(Math.PI * 0.4, 0.3, 0);
+  kalungGenta.position.set(-0.04, 0.08, 0);
+  leherKepala.add(kalungGenta);
+
+  const telingaMesh = new THREE.Mesh(
+    new THREE.ConeGeometry(0.036, 0.16, 6),
     emasKidangMat,
   );
-  kepalaMesh.position.z = -0.017;
-  kepalaMesh.castShadow = true;
-  leherKepala.add(kepalaMesh);
+  telingaMesh.rotation.z = -0.82;
+  telingaMesh.scale.z = 0.35;
+  telingaMesh.position.set(0.02, 0.44, 0);
+  leherKepala.add(telingaMesh);
 
-  // Tanduk Emas Bercabang (Crown Antlers)
-  const kurvaTandukUtama = new THREE.CatmullRomCurve3([
-    new THREE.Vector3(0.12, 0.46, 0),
-    new THREE.Vector3(0.02, 0.64, 0),
-    new THREE.Vector3(-0.14, 0.78, 0),
-    new THREE.Vector3(-0.04, 0.92, 0),
+  const mataKidang = new THREE.Mesh(
+    new THREE.SphereGeometry(0.016, 8, 8),
+    tandukEmasMat,
+  );
+  mataKidang.position.set(-0.14, 0.36, 0.016);
+  leherKepala.add(mataKidang);
+
+  const batangTandukCurve = new THREE.CatmullRomCurve3([
+    new THREE.Vector3(-0.06, 0.43, 0),
+    new THREE.Vector3(-0.02, 0.62, 0),
+    new THREE.Vector3(0.08, 0.8, 0),
+    new THREE.Vector3(0.02, 0.94, 0),
   ]);
   const tandukUtama = new THREE.Mesh(
-    new THREE.TubeGeometry(kurvaTandukUtama, 24, 0.016, 8, false),
-    emasKidangMat,
+    new THREE.TubeGeometry(batangTandukCurve, 14, 0.014, 6, false),
+    tandukEmasMat,
   );
-  const cabangTanduk1 = new THREE.Mesh(
-    new THREE.ConeGeometry(0.016, 0.18, 8),
-    emasKidangMat,
-  );
-  cabangTanduk1.position.set(0.05, 0.68, 0);
-  cabangTanduk1.rotation.z = -0.55;
-  const cabangTanduk2 = cabangTanduk1.clone();
-  cabangTanduk2.position.set(-0.06, 0.82, 0);
-  cabangTanduk2.rotation.z = -0.4;
-  leherKepala.add(tandukUtama, cabangTanduk1, cabangTanduk2);
+  leherKepala.add(tandukUtama);
 
-  root.add(leherKepala);
+  for (const [cx, cy, rotZ, len] of [
+    [-0.08, 0.6, 0.68, 0.16],
+    [0.11, 0.68, -0.58, 0.17],
+    [-0.04, 0.78, 0.52, 0.15],
+  ]) {
+    const cabang = new THREE.Mesh(
+      new THREE.ConeGeometry(0.013, len, 6),
+      tandukEmasMat,
+    );
+    cabang.position.set(cx, cy, 0);
+    cabang.rotation.z = rotZ;
+    leherKepala.add(cabang);
+  }
 
-  // Kaki Depan & Belakang Berartikulasi Ganda (Paha + Betis + Kuku Terbelah)
-  const buatSepasangKaki = (xOffset: number, isDepan: boolean): THREE.Group => {
-    const grupKaki = new THREE.Group();
-    grupKaki.position.set(xOffset, -0.08, 0);
+  const buatPasangKakiKijang = (arahDepan: boolean): THREE.Group => {
+    const grup = new THREE.Group();
+    for (const [zOff, rotOffset] of [
+      [0.016, arahDepan ? -0.25 : 0.22],
+      [-0.016, arahDepan ? 0.12 : -0.15],
+    ]) {
+      const tungkai = new THREE.Group();
+      tungkai.rotation.z = rotOffset;
 
-    for (const zLayer of [-0.022, 0.022]) {
       const paha = new THREE.Mesh(
-        new THREE.CylinderGeometry(0.036, 0.022, 0.32, 10),
+        new THREE.CapsuleGeometry(0.026, 0.2, 4, 8),
         emasKidangMat,
       );
-      paha.position.set(zLayer * 1.5, -0.14, zLayer);
-      paha.rotation.z = isDepan ? 0.22 : -0.25;
-      paha.castShadow = true;
+      paha.scale.z = 0.42;
+      paha.position.set(0, -0.11, zOff);
 
       const betis = new THREE.Mesh(
-        new THREE.CylinderGeometry(0.02, 0.014, 0.34, 10),
+        new THREE.CapsuleGeometry(0.018, 0.22, 4, 8),
         emasKidangMat,
       );
-      betis.position.set(isDepan ? 0.08 : -0.08, -0.26, 0);
-      betis.rotation.z = isDepan ? -0.42 : 0.45;
-      paha.add(betis);
+      betis.scale.z = 0.42;
+      betis.position.set(arahDepan ? -0.04 : 0.04, -0.29, zOff);
+      betis.rotation.z = arahDepan ? -0.22 : 0.22;
 
-      grupKaki.add(paha);
+      const teracak = new THREE.Mesh(
+        new THREE.ConeGeometry(0.026, 0.065, 6),
+        teracakGelapMat,
+      );
+      teracak.rotation.z = arahDepan ? Math.PI * 0.42 : Math.PI * 0.55;
+      teracak.position.set(arahDepan ? -0.08 : 0.02, -0.41, zOff);
+
+      tungkai.add(paha, betis, teracak);
+      grup.add(tungkai);
     }
-    return grupKaki;
+    return grup;
   };
 
-  const kakiDepan = buatSepasangKaki(0.28, true);
-  const kakiBelakang = buatSepasangKaki(-0.32, false);
-  root.add(kakiDepan, kakiBelakang);
+  const kakiDepan = buatPasangKakiKijang(true);
+  kakiDepan.position.set(-0.3, 0.1, 0);
+  badan.add(kakiDepan);
 
-  // Cempurit Tanduk Kerbau Kidang Kencana
-  const cempurit = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.016, 0.022, 1.92, 10),
-    tandukGapitMat,
+  const kakiBelakang = buatPasangKakiKijang(false);
+  kakiBelakang.position.set(0.32, 0.1, 0);
+  badan.add(kakiBelakang);
+
+  const gapit = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.014, 0.018, 1.55, 6),
+    gapitMat,
   );
-  cempurit.position.set(0, -0.62, -0.02);
-  root.add(cempurit);
+  gapit.position.set(-0.02, -0.35, -0.022);
+  badan.add(gapit);
 
-  return { root, leherKepala, kakiDepan, kakiBelakang };
+  return {
+    root,
+    badan,
+    leherKepala,
+    kakiDepan,
+    kakiBelakang,
+  };
 }
 
 /**
- * Membangun Wayang Gunungan (Kayon) Keraton dengan relief Gapura, Banaspati,
- * Kalpataru, lubang krawangan tatahan, dan tangkai cempurit tanduk.
+ * Membangun Gunungan (Kayon Blumbangan Surakarta) 3D Berlapis Relief
  */
 export function buildGunungan3D(): THREE.Group {
-  const tex = loadBudayaTextures();
-  const map = getTeksturGununganDetail();
-  const prada = getTeksturPradaTatahan();
-
-  const mat = new THREE.MeshStandardMaterial({
-    map,
-    bumpMap: prada.bump,
-    bumpScale: 0.024,
-    normalMap: tex.kulitNormal,
-    color: 0xf7d882,
-    metalness: 0.42,
-    roughness: 0.38,
-  });
-
-  const emasMat = new THREE.MeshStandardMaterial({
-    color: 0xfbbf24,
-    metalness: 0.85,
-    roughness: 0.22,
-  });
-
-  // Siluet Gunungan berlekuk bahu Makara & puncak meruncing
-  const shape = new THREE.Shape();
-  shape.moveTo(-0.46, -0.82); // Dasar gapura kiri
-  shape.lineTo(-0.58, -0.35); // Bahu makara kiri
-  shape.bezierCurveTo(-0.68, 0.15, -0.32, 0.68, 0, 1.15); // Puncak Mahameru
-  shape.bezierCurveTo(0.32, 0.68, 0.68, 0.15, 0.58, -0.35); // Bahu makara kanan
-  shape.lineTo(0.46, -0.82); // Dasar gapura kanan
-  shape.closePath();
-
-  // Lubang krawangan simetris pada dahan Kalpataru Gunungan
-  for (const [hx, hy, hr] of [
-    [-0.24, -0.15, 0.038],
-    [0.24, -0.15, 0.038],
-    [-0.28, 0.18, 0.035],
-    [0.28, 0.18, 0.035],
-    [-0.18, 0.48, 0.03],
-    [0.18, 0.48, 0.03],
-    [0, 0.72, 0.028],
-  ]) {
-    const hole = new THREE.Path();
-    hole.absarc(hx, hy, hr, 0, Math.PI * 2, false);
-    shape.holes.push(hole);
-  }
-
-  const mesh = new THREE.Mesh(
-    new THREE.ExtrudeGeometry(shape, {
-      depth: 0.038,
-      bevelEnabled: true,
-      bevelThickness: 0.012,
-      bevelSize: 0.01,
-    }),
-    mat,
-  );
-  mesh.position.z = -0.019;
-  mesh.castShadow = true;
-  mesh.receiveShadow = true;
-
-  // Medali Relief Banaspati & Batang Pohon Timbul di Tengah
-  const batangPohon = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.018, 0.028, 1.75, 10),
-    emasMat,
-  );
-  batangPohon.position.set(0, 0.12, 0.022);
-
-  const banaspatiRelief = new THREE.Mesh(
-    new THREE.TorusGeometry(0.11, 0.022, 10, 24),
-    emasMat,
-  );
-  banaspatiRelief.position.set(0, 0.14, 0.024);
-
-  const tangkai = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.02, 0.028, 2.45, 12),
-    new THREE.MeshPhysicalMaterial({ color: 0xe6b45a, roughness: 0.25, transmission: 0.2 }),
-  );
-  tangkai.position.set(0, -0.68, -0.01);
-
   const grup = new THREE.Group();
-  grup.add(mesh, batangPohon, banaspatiRelief, tangkai);
+  const gununganTex = getTeksturGununganDetail();
+  const tatahan = getTeksturPradaTatahan();
+
+  const kayonGeo = ambilAtauBuatExtrudeGeo('gunungan-kayon', () => {
+    const kayonShape = new THREE.Shape();
+    kayonShape.moveTo(-0.34, -0.86);
+    kayonShape.bezierCurveTo(-0.62, -0.42, -0.66, 0.12, -0.42, 0.56);
+    kayonShape.bezierCurveTo(-0.24, 0.88, -0.08, 1.12, 0, 1.32);
+    kayonShape.bezierCurveTo(0.08, 1.12, 0.24, 0.88, 0.42, 0.56);
+    kayonShape.bezierCurveTo(0.66, 0.12, 0.62, -0.42, 0.34, -0.86);
+    kayonShape.closePath();
+
+    for (const [hx, hy, hr] of [
+      [0, 0.92, 0.042],
+      [-0.14, 0.68, 0.048],
+      [0.14, 0.68, 0.048],
+      [-0.26, 0.42, 0.052],
+      [0.26, 0.42, 0.052],
+      [-0.34, 0.12, 0.055],
+      [0.34, 0.12, 0.055],
+    ]) {
+      const hole = new THREE.Path();
+      hole.absarc(hx, hy, hr, 0, Math.PI * 2, false);
+      kayonShape.holes.push(hole);
+    }
+
+    const g = new THREE.ExtrudeGeometry(kayonShape, {
+      depth: 0.026,
+      bevelEnabled: true,
+      bevelSize: 0.007,
+      bevelThickness: 0.007,
+      bevelSegments: 1,
+      curveSegments: 14,
+    });
+    normalisasiUvExtrude(g, 0.01);
+    return g;
+  });
+
+  const kayonMat = new THREE.MeshStandardMaterial({
+    color: 0xe6a845,
+    map: gununganTex.diffuse,
+    bumpMap: gununganTex.bump,
+    bumpScale: 0.025,
+    roughness: 0.38,
+    metalness: 0.48,
+  });
+
+  const badanMesh = new THREE.Mesh(kayonGeo, kayonMat);
+  badanMesh.position.z = -0.014;
+  badanMesh.castShadow = true;
+  grup.add(badanMesh);
+
+  const emasReliefMat = new THREE.MeshStandardMaterial({
+    color: 0xf5cb62,
+    bumpMap: tatahan.bump,
+    bumpScale: 0.014,
+    roughness: 0.25,
+    metalness: 0.82,
+  });
+
+  const banaspatiRing = new THREE.Mesh(
+    new THREE.TorusGeometry(0.13, 0.022, 8, 18),
+    emasReliefMat,
+  );
+  banaspatiRing.position.set(0, -0.05, 0);
+  grup.add(banaspatiRing);
+
+  const batangPohon = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.018, 0.032, 1.18, 8),
+    emasReliefMat,
+  );
+  batangPohon.position.set(0, 0.56, 0.016);
+  grup.add(batangPohon);
+
+  const gapit = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.018, 0.024, 2.75, 8),
+    new THREE.MeshStandardMaterial({ color: 0x261910, roughness: 0.28 }),
+  );
+  gapit.position.set(0, -0.1, 0);
+  grup.add(gapit);
+
   return grup;
 }
 
-/** Membangun figur Wayang Simpingan untuk deretan kanan dan kiri gedebog kelir. */
-export function buildSimpinganWayang3D(tinggiSkala = 1, menghadapKanan = false): THREE.Group {
-  const prada = getTeksturPradaTatahan();
+/**
+ * Membangun Wayang Simpingan Kanan-Kiri dengan geometri ter-cache di level modul.
+ */
+export function buildSimpinganWayang3D(warnaKain: number, tinggiSkala = 1): THREE.Group {
+  const grup = new THREE.Group();
+  const tex = getTeksturPradaTatahan();
   const dodotTex = getTeksturKainDodot();
 
-  const matBadan = new THREE.MeshStandardMaterial({
-    map: prada.diffuse,
-    bumpMap: prada.bump,
+  const kulitSimpinganMat = new THREE.MeshStandardMaterial({
+    color: 0xdca43e,
+    map: tex.diffuse,
+    bumpMap: tex.bump,
     bumpScale: 0.018,
-    color: 0xeab308,
-    metalness: 0.45,
-    roughness: 0.42,
+    roughness: 0.38,
+    metalness: 0.52,
   });
 
-  const matDodot = new THREE.MeshStandardMaterial({
-    map: dodotTex,
-    color: 0xdc2626,
-    roughness: 0.5,
+  const dodotSimpinganMat = new THREE.MeshStandardMaterial({
+    color: warnaKain,
+    map: dodotTex.diffuse,
+    bumpMap: dodotTex.bump,
+    bumpScale: 0.016,
+    roughness: 0.45,
+    metalness: 0.28,
   });
 
-  const grup = new THREE.Group();
+  const figGeo = ambilAtauBuatExtrudeGeo('simpingan-fig', () => {
+    const figShape = new THREE.Shape();
+    figShape.moveTo(-0.14, -0.82);
+    figShape.lineTo(-0.12, -0.1);
+    figShape.bezierCurveTo(-0.24, 0.16, -0.32, 0.42, -0.28, 0.58);
+    figShape.bezierCurveTo(-0.22, 0.64, -0.14, 0.68, -0.18, 0.78);
+    figShape.bezierCurveTo(-0.14, 0.92, -0.02, 1.06, 0.06, 1.18);
+    figShape.bezierCurveTo(0.16, 1.08, 0.2, 0.9, 0.12, 0.72);
+    figShape.bezierCurveTo(0.24, 0.68, 0.3, 0.56, 0.26, 0.38);
+    figShape.bezierCurveTo(0.22, 0.16, 0.16, -0.05, 0.14, -0.82);
+    figShape.closePath();
 
-  const siluet = new THREE.Shape();
-  siluet.moveTo(-0.22, -0.75);
-  siluet.lineTo(0.26, -0.75);
-  siluet.quadraticCurveTo(0.38, -0.35, 0.18, 0.05);
-  siluet.lineTo(0.32, 0.48);
-  siluet.quadraticCurveTo(0.18, 0.92, -0.05, 0.98);
-  siluet.lineTo(-0.28, 0.68);
-  siluet.lineTo(-0.34, 0.45);
-  siluet.quadraticCurveTo(-0.16, 0.05, -0.22, -0.75);
-  siluet.closePath();
+    for (const [hx, hy, hr] of [
+      [0, 0.42, 0.028],
+      [0.04, 0.88, 0.025],
+    ]) {
+      const hole = new THREE.Path();
+      hole.absarc(hx, hy, hr, 0, Math.PI * 2, false);
+      figShape.holes.push(hole);
+    }
 
-  const mesh = new THREE.Mesh(
-    new THREE.ExtrudeGeometry(siluet, { depth: 0.026, bevelEnabled: true, bevelThickness: 0.006, bevelSize: 0.005 }),
-    matBadan,
-  );
-  mesh.castShadow = true;
+    const g = new THREE.ExtrudeGeometry(figShape, {
+      depth: 0.02,
+      bevelEnabled: false,
+      curveSegments: 8,
+    });
+    normalisasiUvExtrude(g);
+    return g;
+  });
 
-  const dodot = new THREE.Mesh(new THREE.BoxGeometry(0.46, 0.52, 0.032), matDodot);
-  dodot.position.set(0.02, -0.42, 0.012);
+  const figMesh = new THREE.Mesh(figGeo, kulitSimpinganMat);
+  figMesh.position.z = -0.01;
+  grup.add(figMesh);
 
-  const gapit = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.014, 0.018, 2.1, 8),
-    new THREE.MeshStandardMaterial({ color: 0xd69e46, roughness: 0.3 }),
-  );
-  gapit.position.set(0, -0.45, 0);
+  const kampuhGeo = ambilAtauBuatExtrudeGeo('simpingan-kampuh', () => {
+    const kampuhShape = new THREE.Shape();
+    kampuhShape.moveTo(-0.15, 0.02);
+    kampuhShape.bezierCurveTo(-0.24, -0.18, -0.26, -0.44, -0.18, -0.64);
+    kampuhShape.bezierCurveTo(-0.04, -0.7, 0.12, -0.72, 0.22, -0.58);
+    kampuhShape.bezierCurveTo(0.3, -0.38, 0.26, -0.12, 0.16, 0.02);
+    kampuhShape.closePath();
 
-  grup.add(mesh, dodot, gapit);
-  grup.scale.set(menghadapKanan ? -tinggiSkala : tinggiSkala, tinggiSkala, tinggiSkala);
+    const g = new THREE.ExtrudeGeometry(kampuhShape, {
+      depth: 0.026,
+      bevelEnabled: false,
+      curveSegments: 8,
+    });
+    normalisasiUvExtrude(g);
+    return g;
+  });
+
+  const kampuhMesh = new THREE.Mesh(kampuhGeo, dodotSimpinganMat);
+  kampuhMesh.position.z = -0.013;
+  grup.add(kampuhMesh);
+
+  const gapitMat = new THREE.MeshStandardMaterial({ color: 0x241810, roughness: 0.4 });
+  const gapit = new THREE.Mesh(new THREE.CylinderGeometry(0.013, 0.017, 2.2, 6), gapitMat);
+  gapit.position.y = -0.05;
+  grup.add(gapit);
+
+  grup.scale.setScalar(tinggiSkala);
   return grup;
 }

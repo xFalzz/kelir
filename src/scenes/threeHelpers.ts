@@ -1,5 +1,4 @@
 import * as THREE from 'three';
-import { HDRLoader } from 'three/examples/jsm/loaders/HDRLoader.js';
 
 export interface PaketTeksturBudaya {
   kayuDiffuse: THREE.Texture | null;
@@ -10,7 +9,7 @@ export interface PaketTeksturBudaya {
 }
 
 let cacheTekstur: PaketTeksturBudaya | null = null;
-let janjiHdrRaw: Promise<THREE.DataTexture | null> | null = null;
+let cacheStudioBoxScene: THREE.Scene | null = null;
 
 export function isMobileGpuProfile(): boolean {
   if (typeof window === 'undefined') return false;
@@ -208,6 +207,41 @@ export function jalankanLoopSetelahSiap(
   };
 }
 
+function ambilSceneStudioRingan(): THREE.Scene {
+  if (cacheStudioBoxScene) return cacheStudioBoxScene;
+  const s = new THREE.Scene();
+  s.background = new THREE.Color(0x28231d);
+
+  const panels: Array<{
+    pos: [number, number, number];
+    rot: [number, number, number];
+    scale: [number, number, number];
+    color: number;
+  }> = [
+    // Softbox hangat utama dari atas
+    { pos: [0, 8, 0], rot: [Math.PI / 2, 0, 0], scale: [14, 14, 1], color: 0xfff3de },
+    // Key light kanan hangat
+    { pos: [8, 3, 4], rot: [0, -Math.PI / 2, 0], scale: [10, 8, 1], color: 0xffe4be },
+    // Fill light kiri sejuk
+    { pos: [-8, 2, 3], rot: [0, Math.PI / 2, 0], scale: [10, 8, 1], color: 0xcbe0fa },
+    // Rim accent bara hangat belakang
+    { pos: [0, 3, -8], rot: [0, 0, 0], scale: [10, 6, 1], color: 0xffa66b },
+    // Lantai pantul kayu hangat
+    { pos: [0, -6, 0], rot: [-Math.PI / 2, 0, 0], scale: [14, 14, 1], color: 0x3b2f24 },
+  ];
+
+  const planeGeo = new THREE.PlaneGeometry(1, 1);
+  for (const p of panels) {
+    const m = new THREE.Mesh(planeGeo, new THREE.MeshBasicMaterial({ color: p.color }));
+    m.position.set(p.pos[0], p.pos[1], p.pos[2]);
+    m.rotation.set(p.rot[0], p.rot[1], p.rot[2]);
+    m.scale.set(p.scale[0], p.scale[1], p.scale[2]);
+    s.add(m);
+  }
+  cacheStudioBoxScene = s;
+  return s;
+}
+
 export async function applyStudioHDR(
   renderer: THREE.WebGLRenderer,
   scene: THREE.Scene,
@@ -216,7 +250,7 @@ export async function applyStudioHDR(
   if (opts?.signal?.aborted) return;
 
   await new Promise<void>((resolve) => {
-    const delayMs = opts?.delayMs ?? 120;
+    const delayMs = opts?.delayMs ?? 90;
     const cancelIdle = scheduleIdleWork(() => {
       resolve();
     }, delayMs);
@@ -233,34 +267,15 @@ export async function applyStudioHDR(
   });
 
   if (opts?.signal?.aborted) return;
-
-  if (!janjiHdrRaw) {
-    janjiHdrRaw = new Promise((resolve) => {
-      try {
-        const loader = new HDRLoader();
-        loader.load(
-          '/textures/studio_small_08_1k.hdr',
-          (hdrTexture) => resolve(hdrTexture),
-          undefined,
-          () => resolve(null),
-        );
-      } catch {
-        resolve(null);
-      }
-    });
-  }
-
-  const hdrTexture = await janjiHdrRaw;
-  if (!hdrTexture || opts?.signal?.aborted) return;
   try {
     const gl = renderer.getContext();
     if (!gl || gl.isContextLost()) return;
     const pmrem = new THREE.PMREMGenerator(renderer);
-    const envRT = pmrem.fromEquirectangular(hdrTexture);
+    const envRT = pmrem.fromScene(ambilSceneStudioRingan(), 0.04);
     scene.environment = envRT.texture;
     pmrem.dispose();
   } catch {
-    // Abaikan aman jika panggung telah dibuang sebelum HDR selesai dimuat
+    // Abaikan aman jika panggung telah dibuang sebelum PMREM selesai dibuat
   }
 }
 
@@ -286,13 +301,22 @@ export function attachCadWireframeLayer(
     }
   });
 
+  const cacheEdges = new Map<THREE.BufferGeometry, THREE.EdgesGeometry>();
   for (const mesh of meshes) {
-    const edges = new THREE.EdgesGeometry(mesh.geometry, 18);
-    const segments = new THREE.LineSegments(edges, lineMat);
+    let edges = cacheEdges.get(mesh.geometry);
+    if (!edges) {
+      edges = new THREE.EdgesGeometry(mesh.geometry, 22);
+      cacheEdges.set(mesh.geometry, edges);
+    }
+    const segments = new THREE.LineSegments(edges.clone(), lineMat);
     segments.userData.isCadOverlay = true;
     segments.renderOrder = 4;
     segments.visible = initialOpacity > 0.01;
     mesh.add(segments);
+  }
+
+  for (const edgeGeo of cacheEdges.values()) {
+    edgeGeo.dispose();
   }
 
   return lineMat;

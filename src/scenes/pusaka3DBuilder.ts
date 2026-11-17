@@ -1,7 +1,11 @@
 import * as THREE from 'three';
 import type { BendaPusaka } from '../content/pusaka.ts';
 import { loadBudayaTextures } from './threeHelpers.ts';
-import { buildKidangKencana3D, buildSriRamaWayang3D } from './wayang3DBuilder.ts';
+import {
+  buildKidangKencana3D,
+  buildSriRamaWayang3D,
+  normalisasiUvExtrude,
+} from './wayang3DBuilder.ts';
 
 export type CoverflowArtefakId = BendaPusaka['id'] | 'kidang' | 'hanacaraka';
 
@@ -23,6 +27,19 @@ let cacheBatikKawung: PasanganTekstur | null = null;
 let cacheUkiranRancakan: PasanganTekstur | null = null;
 let cacheGentengAtap: PasanganTekstur | null = null;
 let cachePrasastiHanacaraka: PasanganTekstur | null = null;
+const cachePusakaExtrude = new Map<string, THREE.BufferGeometry>();
+
+function ambilAtauBuatPusakaExtrude(
+  kunci: string,
+  buat: () => THREE.BufferGeometry,
+): THREE.BufferGeometry {
+  let geo = cachePusakaExtrude.get(kunci);
+  if (!geo) {
+    geo = buat();
+    cachePusakaExtrude.set(kunci, geo);
+  }
+  return geo.clone();
+}
 
 export function buatTeksturPamorKeris(): {
   diffuse: THREE.CanvasTexture | null;
@@ -597,23 +614,20 @@ export function buildBlencongWayang3D(): {
   flame: THREE.Mesh;
   light: THREE.PointLight;
 } {
-  const kuninganMat = new THREE.MeshPhysicalMaterial({
+  const kuninganMat = new THREE.MeshStandardMaterial({
     color: 0xe6b655,
-    metalness: 0.92,
-    roughness: 0.18,
-    clearcoat: 0.4,
-    clearcoatRoughness: 0.16,
+    metalness: 0.9,
+    roughness: 0.2,
   });
   const perungguGelapMat = new THREE.MeshStandardMaterial({
     color: 0x4b3822,
     metalness: 0.76,
     roughness: 0.34,
   });
-  const minyakMat = new THREE.MeshPhysicalMaterial({
+  const minyakMat = new THREE.MeshStandardMaterial({
     color: 0xb45309,
-    metalness: 0.08,
-    roughness: 0.1,
-    clearcoat: 0.9,
+    metalness: 0.15,
+    roughness: 0.12,
   });
   const apiMat = new THREE.MeshStandardMaterial({
     color: 0xfff3c4,
@@ -661,24 +675,28 @@ export function buildBlencongWayang3D(): {
   light.position.set(0.34, 0.18, 0.04);
   blencong.add(light);
 
-  const sayapShape = new THREE.Shape();
-  sayapShape.moveTo(0, -0.02);
-  sayapShape.quadraticCurveTo(0.14, 0.04, 0.34, 0.18);
-  sayapShape.quadraticCurveTo(0.24, 0.34, 0.08, 0.38);
-  sayapShape.lineTo(0, 0.24);
-  sayapShape.lineTo(-0.08, 0.38);
-  sayapShape.quadraticCurveTo(-0.24, 0.34, -0.34, 0.18);
-  sayapShape.quadraticCurveTo(-0.14, 0.04, 0, -0.02);
+  const sayapGeo = ambilAtauBuatPusakaExtrude('blencong-sayap', () => {
+    const sayapShape = new THREE.Shape();
+    sayapShape.moveTo(0, -0.02);
+    sayapShape.quadraticCurveTo(0.14, 0.04, 0.34, 0.18);
+    sayapShape.quadraticCurveTo(0.24, 0.34, 0.08, 0.38);
+    sayapShape.lineTo(0, 0.24);
+    sayapShape.lineTo(-0.08, 0.38);
+    sayapShape.quadraticCurveTo(-0.24, 0.34, -0.34, 0.18);
+    sayapShape.quadraticCurveTo(-0.14, 0.04, 0, -0.02);
 
-  const sayap = new THREE.Mesh(
-    new THREE.ExtrudeGeometry(sayapShape, {
+    const g = new THREE.ExtrudeGeometry(sayapShape, {
       depth: 0.026,
       bevelEnabled: true,
       bevelThickness: 0.008,
       bevelSize: 0.008,
-    }),
-    kuninganMat,
-  );
+      bevelSegments: 1,
+      curveSegments: 10,
+    });
+    normalisasiUvExtrude(g);
+    return g;
+  });
+  const sayap = new THREE.Mesh(sayapGeo, kuninganMat);
   sayap.rotation.y = Math.PI / 2;
   sayap.position.set(-0.2, 0.08, 0);
   blencong.add(sayap);
@@ -701,38 +719,32 @@ export function buildKerisPusaka3D(): PaketModel3D {
   const tex = loadBudayaTextures();
   const pamor = buatTeksturPamorKeris();
 
-  const bilahMat = new THREE.MeshPhysicalMaterial({
+  const bilahMat = new THREE.MeshStandardMaterial({
     map: pamor.diffuse,
     bumpMap: pamor.bump,
     bumpScale: 0.042,
     color: 0xe5e7eb,
-    metalness: 0.94,
-    roughness: 0.2,
-    clearcoat: 0.5,
-    clearcoatRoughness: 0.16,
+    metalness: 0.92,
+    roughness: 0.22,
   });
-  const emasMat = new THREE.MeshPhysicalMaterial({
+  const emasMat = new THREE.MeshStandardMaterial({
     color: 0xf6c344,
-    metalness: 0.94,
-    roughness: 0.15,
-    clearcoat: 0.58,
-    clearcoatRoughness: 0.12,
+    metalness: 0.92,
+    roughness: 0.18,
   });
-  const mirahMat = new THREE.MeshPhysicalMaterial({
+  const mirahMat = new THREE.MeshStandardMaterial({
     color: 0xe11d48,
     emissive: 0x7f1d1d,
     emissiveIntensity: 0.48,
-    roughness: 0.08,
-    clearcoat: 1,
+    roughness: 0.12,
+    metalness: 0.35,
   });
-  const kayuKemuningMat = new THREE.MeshPhysicalMaterial({
+  const kayuKemuningMat = new THREE.MeshStandardMaterial({
     map: tex.kayuDiffuse,
     normalMap: tex.kayuNormal,
     color: 0x743c19,
-    roughness: 0.32,
-    metalness: 0.06,
-    clearcoat: 0.42,
-    clearcoatRoughness: 0.24,
+    roughness: 0.36,
+    metalness: 0.08,
   });
 
   // A. Wilah Luk 5 + Ada-Ada Tengah + Kembang Kacang + Pejetan + Greneng
@@ -740,7 +752,7 @@ export function buildKerisPusaka3D(): PaketModel3D {
   wilahGrup.userData.explodeVec = new THREE.Vector3(0, 0.72, 0.12);
 
   const wilahPoints: THREE.Vector3[] = [];
-  const steps = 76;
+  const steps = 44;
   for (let i = 0; i <= steps; i++) {
     const u = i / steps;
     const y = -0.3 + u * 2.18;
@@ -748,7 +760,7 @@ export function buildKerisPusaka3D(): PaketModel3D {
     wilahPoints.push(new THREE.Vector3(wave, y, 0));
   }
   const curve = new THREE.CatmullRomCurve3(wilahPoints);
-  const wilahGeo = new THREE.TubeGeometry(curve, 96, 0.122, 6, false);
+  const wilahGeo = new THREE.TubeGeometry(curve, 52, 0.122, 6, false);
   const pos = wilahGeo.attributes.position as THREE.BufferAttribute;
   for (let i = 0; i < pos.count; i++) {
     const y = pos.getY(i);
@@ -809,22 +821,26 @@ export function buildKerisPusaka3D(): PaketModel3D {
   }
 
   // B. Ganja Sebit Rontal / Kelap Lintah (Sirah Cecak -> Buntut Urang)
-  const ganjaShape = new THREE.Shape();
-  ganjaShape.moveTo(-0.27, -0.038);
-  ganjaShape.quadraticCurveTo(-0.16, 0.048, -0.04, 0.035);
-  ganjaShape.quadraticCurveTo(0.08, 0.048, 0.2, 0.018);
-  ganjaShape.lineTo(0.35, -0.012);
-  ganjaShape.quadraticCurveTo(0.14, -0.062, -0.25, -0.064);
-  ganjaShape.closePath();
-  const ganja = new THREE.Mesh(
-    new THREE.ExtrudeGeometry(ganjaShape, {
+  const ganjaGeo = ambilAtauBuatPusakaExtrude('keris-ganja', () => {
+    const ganjaShape = new THREE.Shape();
+    ganjaShape.moveTo(-0.27, -0.038);
+    ganjaShape.quadraticCurveTo(-0.16, 0.048, -0.04, 0.035);
+    ganjaShape.quadraticCurveTo(0.08, 0.048, 0.2, 0.018);
+    ganjaShape.lineTo(0.35, -0.012);
+    ganjaShape.quadraticCurveTo(0.14, -0.062, -0.25, -0.064);
+    ganjaShape.closePath();
+    const g = new THREE.ExtrudeGeometry(ganjaShape, {
       depth: 0.094,
       bevelEnabled: true,
       bevelThickness: 0.014,
       bevelSize: 0.011,
-    }),
-    bilahMat,
-  );
+      bevelSegments: 1,
+      curveSegments: 10,
+    });
+    normalisasiUvExtrude(g);
+    return g;
+  });
+  const ganja = new THREE.Mesh(ganjaGeo, bilahMat);
   ganja.position.set(0, -0.35, -0.047);
   ganja.castShadow = true;
   ganja.userData.explodeVec = new THREE.Vector3(-0.24, 0.18, 0.44);
@@ -885,23 +901,27 @@ export function buildKerisPusaka3D(): PaketModel3D {
   warangka.position.set(0.38, 0.18, -0.26);
   warangka.userData.explodeVec = new THREE.Vector3(0.55, 0.08, -0.42);
 
-  const gayamanShape = new THREE.Shape();
-  gayamanShape.moveTo(-0.49, 0.06);
-  gayamanShape.quadraticCurveTo(-0.58, 0.25, -0.18, 0.28);
-  gayamanShape.quadraticCurveTo(0.29, 0.29, 0.56, 0.15);
-  gayamanShape.quadraticCurveTo(0.44, -0.08, 0.16, -0.12);
-  gayamanShape.lineTo(-0.22, -0.12);
-  gayamanShape.quadraticCurveTo(-0.45, -0.08, -0.49, 0.06);
+  const gayamanGeo = ambilAtauBuatPusakaExtrude('keris-gayaman', () => {
+    const gayamanShape = new THREE.Shape();
+    gayamanShape.moveTo(-0.49, 0.06);
+    gayamanShape.quadraticCurveTo(-0.58, 0.25, -0.18, 0.28);
+    gayamanShape.quadraticCurveTo(0.29, 0.29, 0.56, 0.15);
+    gayamanShape.quadraticCurveTo(0.44, -0.08, 0.16, -0.12);
+    gayamanShape.lineTo(-0.22, -0.12);
+    gayamanShape.quadraticCurveTo(-0.45, -0.08, -0.49, 0.06);
 
-  const gayamanAtas = new THREE.Mesh(
-    new THREE.ExtrudeGeometry(gayamanShape, {
+    const g = new THREE.ExtrudeGeometry(gayamanShape, {
       depth: 0.135,
       bevelEnabled: true,
       bevelThickness: 0.022,
       bevelSize: 0.02,
-    }),
-    kayuKemuningMat,
-  );
+      bevelSegments: 1,
+      curveSegments: 10,
+    });
+    normalisasiUvExtrude(g);
+    return g;
+  });
+  const gayamanAtas = new THREE.Mesh(gayamanGeo, kayuKemuningMat);
   gayamanAtas.position.set(0, 0.18, -0.32);
 
   const gandarKayu = new THREE.Mesh(
@@ -937,39 +957,35 @@ export function buildSaronPusaka3D(): PaketModel3D {
   const gangsa = buatTeksturPerungguGangsa();
   const ukiran = buatTeksturUkiranRancakan();
 
-  const jatiMerahMat = new THREE.MeshPhysicalMaterial({
+  const jatiMerahMat = new THREE.MeshStandardMaterial({
     map: tex.kayuDiffuse,
     normalMap: tex.kayuNormal,
     color: 0x6b2414,
-    roughness: 0.4,
-    clearcoat: 0.34,
-    clearcoatRoughness: 0.24,
+    roughness: 0.44,
+    metalness: 0.1,
   });
-  const tebengReliefMat = new THREE.MeshPhysicalMaterial({
+  const tebengReliefMat = new THREE.MeshStandardMaterial({
     map: ukiran.diffuse,
     bumpMap: ukiran.bump,
     bumpScale: 0.025,
     color: 0xd9a84e,
-    roughness: 0.38,
+    roughness: 0.4,
     metalness: 0.42,
-    clearcoat: 0.3,
   });
-  const emasUkirMat = new THREE.MeshPhysicalMaterial({
+  const emasUkirMat = new THREE.MeshStandardMaterial({
     color: 0xf6c344,
-    metalness: 0.92,
-    roughness: 0.17,
-    clearcoat: 0.45,
+    metalness: 0.9,
+    roughness: 0.19,
   });
-  const gangsaTempaMat = new THREE.MeshPhysicalMaterial({
+  const gangsaTempaMat = new THREE.MeshStandardMaterial({
     map: gangsa.diffuse,
     bumpMap: gangsa.bump,
     bumpScale: 0.018,
     color: 0xf5a623,
     emissive: 0x3b1502,
     emissiveIntensity: 0.14,
-    metalness: 0.92,
-    roughness: 0.19,
-    clearcoat: 0.38,
+    metalness: 0.9,
+    roughness: 0.22,
   });
   const plisirMat = new THREE.MeshStandardMaterial({
     color: 0x1c1917,
@@ -1106,20 +1122,18 @@ export function buildBatikPusaka3D(): PaketModel3D {
   const tex = loadBudayaTextures();
   const kawung = buatTeksturBatikKawung();
 
-  const kainMat = new THREE.MeshPhysicalMaterial({
+  const kainMat = new THREE.MeshStandardMaterial({
     map: kawung.diffuse,
     bumpMap: kawung.bump,
     bumpScale: 0.032,
     side: THREE.DoubleSide,
-    roughness: 0.74,
-    sheen: 0.62,
-    sheenColor: new THREE.Color(0xfde68a),
+    roughness: 0.72,
+    metalness: 0.06,
   });
-  const tembagaMat = new THREE.MeshPhysicalMaterial({
+  const tembagaMat = new THREE.MeshStandardMaterial({
     color: 0xe08215,
-    metalness: 0.92,
-    roughness: 0.18,
-    clearcoat: 0.45,
+    metalness: 0.9,
+    roughness: 0.2,
   });
   const jatiMat = new THREE.MeshStandardMaterial({
     map: tex.kayuDiffuse,
@@ -1134,7 +1148,7 @@ export function buildBatikPusaka3D(): PaketModel3D {
     roughness: 0.14,
   });
 
-  const kainGeo = new THREE.PlaneGeometry(2.15, 1.65, 44, 34);
+  const kainGeo = new THREE.PlaneGeometry(2.15, 1.65, 22, 16);
   const pos = kainGeo.attributes.position as THREE.BufferAttribute;
   for (let i = 0; i < pos.count; i++) {
     const x = pos.getX(i);
@@ -1254,11 +1268,10 @@ export function buildJogloPusaka3D(): PaketModel3D {
     color: 0xb9471f,
     roughness: 0.56,
   });
-  const emasMat = new THREE.MeshPhysicalMaterial({
+  const emasMat = new THREE.MeshStandardMaterial({
     color: 0xf6c344,
     metalness: 0.9,
-    roughness: 0.18,
-    clearcoat: 0.45,
+    roughness: 0.2,
   });
 
   // Bebatur Andesit 2 Tingkat + Undakan Depan
@@ -1342,32 +1355,80 @@ export function buildJogloPusaka3D(): PaketModel3D {
   robyong.add(kapLampu, rantai);
   group.add(robyong);
 
+  const penanggapGrup = new THREE.Group();
+  penanggapGrup.position.y = 0.62;
+  penanggapGrup.userData.explodeVec = new THREE.Vector3(0, 0.88, 0);
   const penanggap = new THREE.Mesh(
     buatGeometriAtapTrapesiumTwin(2.75, 2.48, 1.52, 1.32, 0.46),
     gentengMat,
   );
-  penanggap.position.y = 0.62;
-  penanggap.userData.explodeVec = new THREE.Vector3(0, 0.88, 0);
+  penanggap.castShadow = true;
+  penanggapGrup.add(penanggap);
+  for (const [sx, sz] of [
+    [-1, 1],
+    [1, 1],
+    [1, -1],
+    [-1, -1],
+  ]) {
+    const juraiPenanggap = new THREE.Mesh(
+      new THREE.TubeGeometry(
+        new THREE.LineCurve3(
+          new THREE.Vector3(sx * 1.375, -0.23, sz * 1.24),
+          new THREE.Vector3(sx * 0.76, 0.23, sz * 0.66),
+        ),
+        4,
+        0.028,
+        8,
+        false,
+      ),
+      emasMat,
+    );
+    penanggapGrup.add(juraiPenanggap);
+  }
 
+  const brunjungGrup = new THREE.Group();
+  brunjungGrup.position.y = 1.32;
+  brunjungGrup.userData.explodeVec = new THREE.Vector3(0, 1.12, 0);
   const brunjung = new THREE.Mesh(
     buatGeometriAtapTrapesiumTwin(1.58, 1.36, 0.64, 0.16, 0.96),
     gentengMat,
   );
-  brunjung.position.y = 1.32;
-  brunjung.userData.explodeVec = new THREE.Vector3(0, 1.12, 0);
+  brunjung.castShadow = true;
+  brunjungGrup.add(brunjung);
+  for (const [sx, sz] of [
+    [-1, 1],
+    [1, 1],
+    [1, -1],
+    [-1, -1],
+  ]) {
+    const juraiBrunjung = new THREE.Mesh(
+      new THREE.TubeGeometry(
+        new THREE.LineCurve3(
+          new THREE.Vector3(sx * 0.79, -0.48, sz * 0.68),
+          new THREE.Vector3(sx * 0.32, 0.48, sz * 0.08),
+        ),
+        4,
+        0.026,
+        8,
+        false,
+      ),
+      emasMat,
+    );
+    brunjungGrup.add(juraiBrunjung);
+  }
 
   const wuwunganGrup = new THREE.Group();
   wuwunganGrup.position.y = 1.84;
   wuwunganGrup.userData.explodeVec = new THREE.Vector3(0, 1.36, 0);
   const bubungan = new THREE.Mesh(new THREE.BoxGeometry(0.78, 0.095, 0.14), emasMat);
   wuwunganGrup.add(bubungan);
-  for (const wx of [-0.32, 0.32]) {
-    const makuta = new THREE.Mesh(new THREE.ConeGeometry(0.055, 0.16, 6), emasMat);
-    makuta.position.set(wx, 0.1, 0);
+  for (const wx of [-0.32, 0, 0.32]) {
+    const makuta = new THREE.Mesh(new THREE.ConeGeometry(0.055, 0.18, 8), emasMat);
+    makuta.position.set(wx, 0.11, 0);
     wuwunganGrup.add(makuta);
   }
 
-  group.add(penanggap, brunjung, wuwunganGrup);
+  group.add(penanggapGrup, brunjungGrup, wuwunganGrup);
   return { group };
 }
 
@@ -1387,8 +1448,8 @@ export function buildWayangSriRamaDanBlencong3D(): PaketModel3D {
     new THREE.MeshStandardMaterial({ color: 0x5d6e3a, roughness: 0.78 }),
   );
   const ringGedebog = new THREE.Mesh(
-    new THREE.TorusGeometry(0.34, 0.022, 10, 28),
-    new THREE.MeshPhysicalMaterial({ color: 0xd9a84e, metalness: 0.85, roughness: 0.24 }),
+    new THREE.TorusGeometry(0.34, 0.022, 8, 22),
+    new THREE.MeshStandardMaterial({ color: 0xd9a84e, metalness: 0.85, roughness: 0.24 }),
   );
   ringGedebog.rotation.x = Math.PI / 2;
   ringGedebog.position.y = 0.08;
@@ -1441,32 +1502,30 @@ export function buildKidangDanBlencong3D(): PaketModel3D {
   };
 }
 
-/** 7. Prasasti Tembaga & Astrolabe Hanacaraka Unicode U+A980–U+A9DF (Lengkap dengan explodeVec CAD). */
+/** 7. Prasasti Tembaga & Astrolabe Hanacaraka Unicode U+A980-U+A9DF (Lengkap dengan explodeVec CAD). */
 export function buildPrasastiHanacaraka3D(): PaketModel3D {
   const group = new THREE.Group();
   const prasasti = buatTeksturPrasastiHanacaraka();
   const tex = loadBudayaTextures();
 
-  const perungguMat = new THREE.MeshPhysicalMaterial({
+  const perungguMat = new THREE.MeshStandardMaterial({
     map: prasasti.diffuse,
     bumpMap: prasasti.bump,
     bumpScale: 0.036,
     metalness: 0.74,
-    roughness: 0.32,
-    clearcoat: 0.42,
+    roughness: 0.3,
   });
-  const bingkaiJatiMat = new THREE.MeshPhysicalMaterial({
+  const bingkaiJatiMat = new THREE.MeshStandardMaterial({
     map: tex.kayuDiffuse,
     normalMap: tex.kayuNormal,
     color: 0x5c3018,
-    roughness: 0.42,
-    clearcoat: 0.28,
+    roughness: 0.44,
+    metalness: 0.1,
   });
-  const kuninganMat = new THREE.MeshPhysicalMaterial({
+  const kuninganMat = new THREE.MeshStandardMaterial({
     color: 0xe6b655,
-    metalness: 0.92,
-    roughness: 0.18,
-    clearcoat: 0.48,
+    metalness: 0.9,
+    roughness: 0.2,
   });
 
   // Bingkai Kayu Jati Ukir + 4 Ornamen Paku Sudut Kuningan
@@ -1513,13 +1572,12 @@ export function buildPrasastiHanacaraka3D(): PaketModel3D {
   ringDalam.rotation.x = Math.PI / 3;
   const intiPermata = new THREE.Mesh(
     new THREE.OctahedronGeometry(0.09, 0),
-    new THREE.MeshPhysicalMaterial({
+    new THREE.MeshStandardMaterial({
       color: 0xf06d3c,
       emissive: 0xd1491b,
       emissiveIntensity: 0.6,
-      metalness: 0.4,
+      metalness: 0.45,
       roughness: 0.15,
-      clearcoat: 1,
     }),
   );
   mahkotaOrb.add(ringLuar, ringDalam, intiPermata);

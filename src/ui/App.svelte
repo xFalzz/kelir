@@ -394,27 +394,56 @@
     ro.observe(node);
 
     let io: IntersectionObserver | null = null;
+    let scrollyRaf: number | null = null;
+    let langkahNodes: HTMLElement[] = [];
+
+    const sinkronkanBabAktifDariViewport = (): void => {
+      if (langkahNodes.length === 0) return;
+      const pusatY = window.innerHeight * 0.48;
+      let terbaikIdx = -1;
+      let jarakMin = Infinity;
+
+      for (const el of langkahNodes) {
+        const rect = el.getBoundingClientRect();
+        if (rect.bottom < 0 || rect.top > window.innerHeight) continue;
+        const val = Number(el.getAttribute('data-scrolly-idx'));
+        if (Number.isNaN(val)) continue;
+        const tengahEl = (rect.top + rect.bottom) * 0.5;
+        const jarak = Math.abs(tengahEl - pusatY);
+        if (jarak < jarakMin) {
+          jarakMin = jarak;
+          terbaikIdx = val;
+        }
+      }
+
+      if (terbaikIdx !== scrollyIndeksAktif) {
+        scrollyIndeksAktif = terbaikIdx;
+        dioramaStage?.aturProgresGulir(terbaikIdx);
+      }
+    };
+
+    const jadwalkanCekScroll = (): void => {
+      if (scrollyRaf !== null) return;
+      scrollyRaf = window.requestAnimationFrame(() => {
+        scrollyRaf = null;
+        sinkronkanBabAktifDariViewport();
+      });
+    };
+
+    window.addEventListener('scroll', jadwalkanCekScroll, { passive: true });
     void tick().then(() => {
-      const langkahNodes = document.querySelectorAll<HTMLElement>('[data-scrolly-idx]');
-      io = new IntersectionObserver(
-        (entries) => {
-          for (const entry of entries) {
-            if (entry.isIntersecting) {
-              const val = Number(entry.target.getAttribute('data-scrolly-idx'));
-              if (!Number.isNaN(val)) {
-                scrollyIndeksAktif = val;
-                dioramaStage?.aturProgresGulir(val);
-              }
-            }
-          }
-        },
-        { threshold: 0.45 },
-      );
+      langkahNodes = Array.from(document.querySelectorAll<HTMLElement>('[data-scrolly-idx]'));
+      io = new IntersectionObserver(jadwalkanCekScroll, {
+        threshold: [0.15, 0.45, 0.75],
+      });
       langkahNodes.forEach((n) => io?.observe(n));
+      sinkronkanBabAktifDariViewport();
     });
 
     return {
       destroy() {
+        window.removeEventListener('scroll', jadwalkanCekScroll);
+        if (scrollyRaf !== null) window.cancelAnimationFrame(scrollyRaf);
         io?.disconnect();
         ro.disconnect();
         dioramaStage?.destroy();
@@ -1153,14 +1182,14 @@
         if (prefetchDibatalkan || idxPrefetch >= antreanPrefetch.length) return;
         antreanPrefetch[idxPrefetch++]();
         if (idxPrefetch < antreanPrefetch.length) {
-          stepPrefetchTimer = window.setTimeout(jadwalkanLangkahPrefetch, 210);
+          stepPrefetchTimer = window.setTimeout(jadwalkanLangkahPrefetch, 360);
         }
       };
-      if (idleCb) idleCb(jalankanSatu, { timeout: 1400 });
+      if (idleCb) idleCb(jalankanSatu, { timeout: 1800 });
       else jalankanSatu();
     };
 
-    const prefetchTimer = window.setTimeout(jadwalkanLangkahPrefetch, 2200);
+    const prefetchTimer = window.setTimeout(jadwalkanLangkahPrefetch, 3200);
 
     const reduceMotion =
       typeof window !== 'undefined' &&

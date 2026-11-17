@@ -292,8 +292,6 @@ textarea {
   border-radius: 999px;
   background: var(--bg-pill);
   border: 1px solid var(--border-hairline);
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
   box-shadow: 0 10px 28px rgba(18, 19, 22, 0.09);
 }
 
@@ -1142,7 +1140,7 @@ html[data-theme='malam'] .diorama-sticky-stage {
   border-radius: 18px;
   background: var(--bg-card);
   border: 1px solid var(--border-hairline);
-  backdrop-filter: blur(8px);
+  box-shadow: 0 12px 30px rgba(18, 19, 22, 0.07);
   transition: border-color 0.3s ease, transform 0.3s ease;
 }
 
@@ -1172,7 +1170,6 @@ html[data-theme='malam'] .diorama-sticky-stage {
   border-radius: 16px;
   background: var(--bg-card);
   border: 1px solid var(--border-hairline);
-  backdrop-filter: blur(8px);
   box-shadow: 0 12px 30px rgba(18, 19, 22, 0.08);
 }
 
@@ -1232,7 +1229,7 @@ html[data-theme='malam'] .scrolly-narrative {
   border-radius: 16px;
   background: var(--bg-card);
   border: 1px solid var(--border-hairline);
-  backdrop-filter: blur(16px);
+  box-shadow: 0 10px 26px rgba(18, 19, 22, 0.08);
 }
 
 .chapter-rail-item {
@@ -2707,8 +2704,7 @@ html[data-theme='malam'] .cf-anatomy-panel {
   z-index: 300;
   background:
     radial-gradient(circle at 22% 38%, rgba(179, 48, 37, 0.08), transparent 46%),
-    rgba(246, 244, 239, 0.97);
-  backdrop-filter: blur(14px);
+    rgba(246, 244, 239, 0.985);
   color: var(--text-primary);
   padding: clamp(18px, 2.4vw, 32px) clamp(16px, 4vw, 52px);
   display: grid;
@@ -2751,7 +2747,6 @@ html[data-theme='malam'] .modal-suluk-backdrop {
   background: var(--bg-pill);
   border: 1px solid var(--border-strong);
   box-shadow: 0 8px 24px rgba(18, 19, 22, 0.12);
-  backdrop-filter: blur(16px);
 }
 
 .suluk-lang-btn {
@@ -2852,9 +2847,8 @@ html[data-theme='malam'] .modal-art-panel {
   gap: 6px;
   padding: 5px 11px;
   border-radius: 999px;
-  background: rgba(250, 248, 243, 0.86);
+  background: rgba(250, 248, 243, 0.94);
   border: 1px solid rgba(20, 21, 24, 0.12);
-  backdrop-filter: blur(10px);
   color: var(--text-primary);
   font-family: var(--font-mono);
   font-size: 0.66rem;
@@ -2893,9 +2887,8 @@ html[data-theme='malam'] .suluk-stage-pill.is-aksara {
   z-index: 4;
   padding: 10px 14px;
   border-radius: 14px;
-  background: rgba(250, 248, 243, 0.88);
+  background: rgba(250, 248, 243, 0.94);
   border: 1px solid rgba(20, 21, 24, 0.12);
-  backdrop-filter: blur(12px);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -4737,8 +4730,7 @@ html[data-theme='malam'] .footer-pwa-guide {
   padding: 15px 16px 13px;
   border-radius: 20px;
   border: 1px solid var(--border-strong);
-  background: rgba(252, 250, 245, 0.94);
-  backdrop-filter: blur(18px) saturate(145%);
+  background: rgba(252, 250, 245, 0.97);
   box-shadow:
     0 20px 48px rgba(20, 21, 24, 0.16),
     0 2px 8px rgba(20, 21, 24, 0.06);
@@ -5097,7 +5089,6 @@ html[data-theme='malam'] .pwa-install-toast {
     border-radius: 18px;
     background: var(--bg-pill);
     border: 1px solid var(--border-hairline);
-    backdrop-filter: blur(16px);
     box-shadow: 0 10px 28px rgba(18, 19, 22, 0.12);
   }
 
@@ -6241,8 +6232,7 @@ html[data-theme='malam'] .kelir-scroll-rail.is-dragging .kelir-scroll-track {
 
 .kelir-cursor-layer[data-mode='drag'] .kelir-ring-lens {
   border-width: 1.35px;
-  background: rgba(252, 250, 245, 0.65);
-  backdrop-filter: blur(6px);
+  background: rgba(252, 250, 245, 0.88);
   box-shadow: 0 6px 18px rgba(20, 21, 24, 0.1);
 }
 
@@ -6343,7 +6333,6 @@ html[data-theme='malam'] .kelir-scroll-rail.is-dragging .kelir-scroll-track {
   background: var(--bg-pill);
   border: 1px solid var(--ember-border);
   color: var(--text-primary);
-  backdrop-filter: blur(8px);
   box-shadow: 0 6px 16px rgba(18, 19, 22, 0.14);
   white-space: nowrap;
 }
@@ -6428,8 +6417,7 @@ html[data-theme='malam'] .kelir-scroll-rail.is-dragging .kelir-scroll-track {
   justify-content: center;
   align-items: flex-start;
   padding: clamp(48px, 7vh, 84px) 12px 24px;
-  background: rgba(10, 11, 14, 0.56);
-  backdrop-filter: blur(12px);
+  background: rgba(10, 11, 14, 0.72);
   overscroll-behavior: none;
 }
 
@@ -6856,7 +6844,6 @@ html[data-theme='malam'] .kelir-scroll-rail.is-dragging .kelir-scroll-track {
   background: var(--bg-pill);
   border: 1px solid var(--border-strong);
   box-shadow: 0 12px 32px rgba(0, 0, 0, 0.2);
-  backdrop-filter: blur(12px);
   max-width: 100%;
 }
 
@@ -6945,10 +6932,9 @@ html[data-theme='malam'] .kelir-scroll-rail.is-dragging .kelir-scroll-track {
   gap: 9px;
   padding: 14px;
   border-radius: 18px;
-  background: var(--bg-card);
+  background: var(--bg-pill);
   border: 1px solid var(--border-strong);
   box-shadow: 0 18px 48px rgba(0, 0, 0, 0.28);
-  backdrop-filter: blur(14px);
 }
 
 .karawitan-card-head {
@@ -7623,8 +7609,7 @@ html[data-theme='malam'] .kelir-scroll-rail.is-dragging .kelir-scroll-track {
   justify-content: center;
   align-items: center;
   padding: clamp(16px, 3vh, 32px) clamp(12px, 3vw, 24px);
-  background: rgba(10, 11, 14, 0.58);
-  backdrop-filter: blur(12px);
+  background: rgba(10, 11, 14, 0.72);
   overscroll-behavior: none;
 }
 
