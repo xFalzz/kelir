@@ -462,8 +462,11 @@ test.describe('Kelir Multi-Page Spasial 3D — Verifikasi 5 Halaman & Realisme 3
 
     const viewports = [
       { name: 'xs-320', width: 320, height: 568 },
+      { name: 'mob-360', width: 360, height: 740 },
       { name: 'mob-390', width: 390, height: 844 },
+      { name: 'land-667', width: 667, height: 375 },
       { name: 'tab-768', width: 768, height: 1024 },
+      { name: 'tab-820', width: 820, height: 1180 },
       { name: 'tab-1024', width: 1024, height: 768 },
       { name: 'lap-1200', width: 1200, height: 800 },
     ];
@@ -559,6 +562,29 @@ test.describe('Kelir Multi-Page Spasial 3D — Verifikasi 5 Halaman & Realisme 3
     expect(modalClip.docOverflow).toBe(false);
     expect(modalClip.barRight).toBeLessThanOrEqual(modalClip.vw + 2);
     await page.getByTestId('close-modal-suluk').click();
+
+    // Verifikasi SearchModal & LegalInfoModal pada ponsel sempit 320x568 bebas overflow
+    await page.getByTestId('btn-search-modal').click();
+    await expect(page.getByTestId('search-modal')).toBeVisible();
+    const searchBox320 = await page.locator('.search-modal-card').boundingBox();
+    expect(searchBox320).not.toBeNull();
+    if (searchBox320) {
+      expect(searchBox320.x).toBeGreaterThanOrEqual(0);
+      expect(searchBox320.x + searchBox320.width).toBeLessThanOrEqual(322);
+      expect(searchBox320.y + searchBox320.height).toBeLessThanOrEqual(570);
+    }
+    await page.getByTestId('search-modal-close').click();
+
+    await page.getByTestId('footer-link-kontak').click();
+    await expect(page.getByTestId('legal-info-modal')).toBeVisible();
+    const legalBox320 = await page.locator('.legal-modal-card').boundingBox();
+    expect(legalBox320).not.toBeNull();
+    if (legalBox320) {
+      expect(legalBox320.x).toBeGreaterThanOrEqual(0);
+      expect(legalBox320.x + legalBox320.width).toBeLessThanOrEqual(322);
+      expect(legalBox320.y + legalBox320.height).toBeLessThanOrEqual(570);
+    }
+    await page.getByTestId('legal-modal-close').click();
 
     // Tangkapan layar visual responsif Ponsel & Tablet
     await page.setViewportSize({ width: 390, height: 844 });
@@ -1197,6 +1223,37 @@ test.describe('Kelir Multi-Page Spasial 3D — Verifikasi 5 Halaman & Realisme 3
       expect(deskToastGeo.bottomGap).toBeLessThanOrEqual(36);
     }
     await page.screenshot({ path: `${ARTIFACT_DIR}/mp-22-desktop-pwa-install.png` });
+
+    // 10. Verifikasi Luring Penuh PWA (Service Worker Offline Cache di seluruh 5 Halaman & BM25 Lokal)
+    await page.goto('/?hal=beranda');
+    await expect(page.locator('.preloader-curtain')).toHaveAttribute('data-preloader-done', 'true', {
+      timeout: 10000,
+    });
+    const swControllerSiap = await page.evaluate(async () => {
+      if (!('serviceWorker' in navigator)) return false;
+      const reg = await navigator.serviceWorker.ready;
+      if (navigator.serviceWorker.controller) return true;
+      await new Promise((r) => setTimeout(r, 400));
+      return Boolean(reg.active);
+    });
+    expect(swControllerSiap).toBe(true);
+
+    await page.context().setOffline(true);
+    try {
+      await page.reload({ waitUntil: 'domcontentloaded' });
+      await expect(page.locator('#pendopo')).toBeVisible({ timeout: 10000 });
+
+      for (const route of ['twin', 'koleksi', 'pakeliran', 'kawruh'] as const) {
+        await page.goto(`/?hal=${route}`, { waitUntil: 'domcontentloaded' });
+        await expect(page.locator('main')).toHaveAttribute('data-active-page', route, {
+          timeout: 10000,
+        });
+      }
+      await expect(page.locator('#pamomong')).toBeVisible({ timeout: 10000 });
+      await expect(page.locator('#input-latin-aksara')).toBeVisible();
+    } finally {
+      await page.context().setOffline(false);
+    }
 
     expect(errors).toEqual([]);
   });

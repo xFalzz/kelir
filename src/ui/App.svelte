@@ -37,8 +37,12 @@
   } from '../lib/pencarianArsip.ts';
   import { canUseHoverPointer, pasangReveal } from '../lib/revealAnim.ts';
   import {
+    ambilStatusPwa,
+    berlanggananPwa,
+    bersihkanDeferredPrompt,
     cekIosSafari,
     cekModeStandalone,
+    inisialisasiPendengarPwa,
     picuInstalasiPwa,
     type PwaInstallPromptEvent,
   } from '../lib/pwa.ts';
@@ -157,6 +161,7 @@
     if (deferredInstallPrompt) {
       const outcome = await picuInstalasiPwa(deferredInstallPrompt);
       deferredInstallPrompt = null;
+      bersihkanDeferredPrompt();
       if (outcome === 'accepted') {
         pwaTerpasang = true;
         pwaPanduanTerbuka = false;
@@ -1140,20 +1145,22 @@
     };
     window.addEventListener('popstate', onPopState);
 
-    pwaTerpasang = cekModeStandalone();
+    inisialisasiPendengarPwa();
+    const awalPwa = ambilStatusPwa();
+    deferredInstallPrompt = awalPwa.deferredPrompt;
+    pwaTerpasang = awalPwa.terpasang || cekModeStandalone();
     pwaIosSafari = cekIosSafari();
-    const onBeforeInstallPrompt = (e: Event) => {
-      e.preventDefault();
-      deferredInstallPrompt = e as PwaInstallPromptEvent;
-      pwaPanduanTerbuka = false;
-    };
-    const onAppInstalled = () => {
-      pwaTerpasang = true;
-      deferredInstallPrompt = null;
-      pwaPanduanTerbuka = false;
-    };
-    window.addEventListener('beforeinstallprompt', onBeforeInstallPrompt);
-    window.addEventListener('appinstalled', onAppInstalled);
+    const unsubPwa = berlanggananPwa((st) => {
+      pwaTerpasang = st.terpasang;
+      if (st.deferredPrompt) {
+        deferredInstallPrompt = st.deferredPrompt;
+        pwaPanduanTerbuka = false;
+        pwaBannerDismissed = false;
+      } else if (st.terpasang) {
+        deferredInstallPrompt = null;
+        pwaPanduanTerbuka = false;
+      }
+    });
 
     // Preload malas berjeda satu per satu saat idle agar scroll Beranda tetap mulus tanpa lonjakan parse
     let prefetchDibatalkan = false;
@@ -1216,8 +1223,7 @@
       window.clearTimeout(prefetchTimer);
       if (stepPrefetchTimer !== null) window.clearTimeout(stepPrefetchTimer);
       window.removeEventListener('popstate', onPopState);
-      window.removeEventListener('beforeinstallprompt', onBeforeInstallPrompt);
-      window.removeEventListener('appinstalled', onAppInstalled);
+      unsubPwa();
       smoothScrollCtrl?.destroy();
       smoothScrollCtrl = null;
     };

@@ -1,3 +1,5 @@
+import { createHash } from 'node:crypto';
+import fs from 'node:fs';
 import path from 'node:path';
 import { defineConfig, loadEnv, type Connect, type Plugin } from 'vite';
 import { svelte } from '@sveltejs/vite-plugin-svelte';
@@ -191,6 +193,58 @@ function apiTanyaLocalPlugin(serverEnv: Record<string, string | undefined>): Plu
   };
 }
 
+function kelirPwaPrecachePlugin(): Plugin {
+  let outDir = 'dist';
+
+  return {
+    name: 'kelir-pwa-precache',
+    apply: 'build',
+    configResolved(resolved) {
+      outDir = path.resolve(resolved.root, resolved.build.outDir);
+    },
+    closeBundle() {
+      const swPath = path.join(outDir, 'sw.js');
+      const assetsDir = path.join(outDir, 'assets');
+      if (!fs.existsSync(swPath) || !fs.existsSync(assetsDir)) return;
+
+      const coreUrls = [
+        '/',
+        '/index.html',
+        '/manifest.webmanifest',
+        '/favicon.svg',
+        '/icons/icon-192.png',
+        '/icons/icon-512.png',
+        '/icons/icon-maskable-512.png',
+        '/icons/apple-touch-icon-180.png',
+        '/og-kelir.svg',
+      ];
+
+      const assetFiles = fs
+        .readdirSync(assetsDir)
+        .filter((f) => /\.(js|css|woff2)$/i.test(f))
+        .sort();
+
+      const hasher = createHash('sha256');
+      for (const f of assetFiles) {
+        const st = fs.statSync(path.join(assetsDir, f));
+        hasher.update(`${f}:${st.size};`);
+      }
+      const buildHash = hasher.digest('hex').slice(0, 8);
+      const precacheList = [...coreUrls, ...assetFiles.map((f) => `/assets/${f}`)];
+
+      const rawSw = fs.readFileSync(swPath, 'utf8');
+      const updatedSw = rawSw
+        .replace(/const CACHE_VERSION = ['"][^'"]+['"];/, `const CACHE_VERSION = 'kelir-pwa-${buildHash}';`)
+        .replace(
+          /const APP_SHELL_URLS = \[[\s\S]*?\];/,
+          `const APP_SHELL_URLS = ${JSON.stringify(precacheList, null, 2)};`,
+        );
+
+      fs.writeFileSync(swPath, updatedSw, 'utf8');
+    },
+  };
+}
+
 export default defineConfig(({ mode }) => {
   const parentEnv = loadEnv(mode, path.resolve(process.cwd(), '..'), '');
   const localEnv = loadEnv(mode, process.cwd(), '');
@@ -201,7 +255,7 @@ export default defineConfig(({ mode }) => {
   };
 
   return {
-    plugins: [svelte(), apiTanyaLocalPlugin(serverEnv)],
+    plugins: [svelte(), apiTanyaLocalPlugin(serverEnv), kelirPwaPrecachePlugin()],
     build: {
       rolldownOptions: {
         output: {

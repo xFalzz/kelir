@@ -15,8 +15,10 @@ import '@fontsource/noto-sans-javanese/javanese-400.css';
 import '@fontsource/noto-sans-javanese/javanese-700.css';
 import './app.css';
 import { mount } from 'svelte';
-import { daftarkanServiceWorker } from './lib/pwa.ts';
+import { daftarkanServiceWorker, inisialisasiPendengarPwa } from './lib/pwa.ts';
 import App from './ui/App.svelte';
+
+inisialisasiPendengarPwa();
 
 const target = document.getElementById('app');
 if (target) {

@@ -4,7 +4,10 @@ import { describe, expect, it, vi } from 'vitest';
 import type { BahasaAktif } from '../../src/content/pusaka.ts';
 import { tI18n } from '../../src/lib/i18n.ts';
 import {
+  ambilStatusPwa,
+  bersihkanDeferredPrompt,
   daftarkanServiceWorker,
+  inisialisasiPendengarPwa,
   picuInstalasiPwa,
   type PwaInstallPromptEvent,
 } from '../../src/lib/pwa.ts';
@@ -66,7 +69,11 @@ describe('PWA Installability & Footer Hak Cipta Tahun Otomatis', () => {
     expect(fs.existsSync(swPath)).toBe(true);
     const swSrc = fs.readFileSync(swPath, 'utf8');
     expect(swSrc).toContain("url.pathname.startsWith('/api/')");
+    expect(swSrc).toContain("url.pathname === '/sw.js'");
     expect(swSrc).toContain('/icons/icon-192.png');
+    expect(swSrc).toContain('/icons/icon-maskable-512.png');
+    expect(swSrc).toContain('ignoreSearch: true');
+    expect(swSrc).toContain('buatOfflineResponse');
   });
 
   it('menangani registrasi Service Worker dan pemanggilan prompt PWA dengan aman', async () => {
@@ -81,5 +88,8 @@ describe('PWA Installability & Footer Hak Cipta Tahun Otomatis', () => {
 
     expect(await picuInstalasiPwa(fakeEvent)).toBe('accepted');
     expect(promptMock).toHaveBeenCalledTimes(1);
+    expect(typeof inisialisasiPendengarPwa).toBe('function');
+    expect(typeof ambilStatusPwa).toBe('function');
+    expect(typeof bersihkanDeferredPrompt).toBe('function');
   });
 });

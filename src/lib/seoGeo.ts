@@ -251,6 +251,7 @@ export function sinkronkanSeoHalaman(hal: HalamanSeoId, bahasa: BahasaAktif = 'i
 export function sinkronkanTemaBrowser(tema: 'malam' | 'terang'): void {
   if (typeof document === 'undefined') return;
   setMetaContent('meta[name="theme-color"]', tema === 'malam' ? '#12100e' : '#f6f4ef');
+  setMetaContent('meta[name="apple-mobile-web-app-status-bar-style"]', tema === 'malam' ? 'black' : 'default');
 }
 
 /**
