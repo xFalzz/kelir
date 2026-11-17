@@ -1262,4 +1262,87 @@ test.describe('Kelir Multi-Page Spasial 3D — Verifikasi 5 Halaman & Realisme 3
 
     expect(errors).toEqual([]);
   });
+
+  test('memverifikasi halaman galat 404 Not Found untuk pathname dan parameter salah di tema Terang, Malam & Mobile 320px', async ({
+    page,
+  }) => {
+    const errors: string[] = [];
+    page.on('pageerror', (err) => errors.push(err.message));
+
+    await page.setViewportSize({ width: 1200, height: 800 });
+    await page.goto('/tidak-ditemukan/keris-palsu');
+    await expect(page.locator('.preloader-curtain')).toHaveAttribute('data-preloader-done', 'true', {
+      timeout: 10000,
+    });
+
+    await expect(page.locator('main')).toHaveAttribute('data-active-page', 'notfound');
+    await expect(page.getByTestId('notfound-page')).toBeVisible();
+    await expect(page.locator('h1')).toHaveCount(1);
+    await expect(page.locator('.nav-page-tab.is-active')).toHaveCount(0);
+    await expect(page.getByTestId('notfound-url-chip')).toContainText('/tidak-ditemukan/keris-palsu');
+    await expect(page.getByTestId('notfound-suggest-btn')).toContainText('Keris Luk 5');
+
+    const robots404 = await page
+      .locator('meta[name="robots"]')
+      .getAttribute('content');
+    expect(robots404).toContain('noindex');
+
+    for (const tid of ['notfound-home-btn', 'notfound-search-btn', 'notfound-room-beranda']) {
+      const box = await page.getByTestId(tid).boundingBox();
+      expect(box).not.toBeNull();
+      expect(box!.height).toBeGreaterThanOrEqual(44);
+    }
+
+    await page.screenshot({ path: `${ARTIFACT_DIR}/mp-24-404-terang.png` });
+
+    await page.getByTestId('toggle-tema').click();
+    await expect(page.locator('html')).toHaveAttribute('data-theme', 'malam');
+    await page.waitForTimeout(200);
+    await page.screenshot({ path: `${ARTIFACT_DIR}/mp-24b-404-malam.png` });
+    await page.getByTestId('toggle-tema').click();
+    await expect(page.locator('html')).toHaveAttribute('data-theme', 'terang');
+
+    await page.getByTestId('notfound-search-btn').click();
+    await expect(page.getByTestId('search-modal')).toBeVisible();
+    await page.keyboard.press('Escape');
+    await expect(page.getByTestId('search-modal')).toHaveCount(0);
+
+    await page.getByTestId('notfound-suggest-btn').click();
+    await expect(page.locator('main')).toHaveAttribute('data-active-page', 'twin');
+    await expect(page.getByTestId('notfound-page')).toHaveCount(0);
+    expect(new URL(page.url()).pathname).toBe('/');
+    await expect(page).toHaveURL(/benda=keris/);
+
+    await page.setViewportSize({ width: 320, height: 568 });
+    await page.goto('/?hal=nyasar');
+    await expect(page.locator('.preloader-curtain')).toHaveAttribute('data-preloader-done', 'true', {
+      timeout: 10000,
+    });
+    await expect(page.getByTestId('notfound-page')).toBeVisible();
+    await expect(page.getByTestId('notfound-url-chip')).toContainText('?hal=nyasar');
+
+    const mobileOverflow = await page.evaluate(
+      () => document.documentElement.scrollWidth > window.innerWidth,
+    );
+    expect(mobileOverflow).toBe(false);
+
+    const mobileRoomBox = await page.getByTestId('notfound-room-koleksi').boundingBox();
+    expect(mobileRoomBox).not.toBeNull();
+    expect(mobileRoomBox!.height).toBeGreaterThanOrEqual(44);
+
+    await page.screenshot({ path: `${ARTIFACT_DIR}/mp-24c-404-mobile.png` });
+
+    await page.getByTestId('notfound-home-btn').click();
+    await expect(page.locator('main')).toHaveAttribute('data-active-page', 'beranda');
+    await expect(page.locator('#pendopo')).toBeVisible();
+    expect(new URL(page.url()).pathname).toBe('/');
+    const robotsRestored = await page
+      .locator('meta[name="robots"]')
+      .getAttribute('content');
+    expect(robotsRestored).toContain('index');
+
+    await page.goBack();
+    await expect(page.getByTestId('notfound-page')).toBeVisible();
+    expect(errors).toEqual([]);
+  });
 });

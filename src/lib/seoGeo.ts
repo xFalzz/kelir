@@ -228,6 +228,7 @@ export function sinkronkanSeoHalaman(hal: HalamanSeoId, bahasa: BahasaAktif = 'i
         : info.title;
 
   document.title = localizedTitle;
+  setMetaContent('meta[name="robots"]', 'index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1');
   setMetaContent('meta[name="description"]', info.description);
   setMetaContent('meta[name="keywords"]', info.keywords);
   setMetaContent('meta[property="og:title"]', localizedTitle);
@@ -243,6 +244,26 @@ export function sinkronkanSeoHalaman(hal: HalamanSeoId, bahasa: BahasaAktif = 'i
   if (jsonLdScript) {
     jsonLdScript.textContent = JSON.stringify(bangunJsonLdGraph(hal, origin));
   }
+}
+
+/**
+ * Mengatur metadata dokumen untuk halaman galat 404 agar mesin pencari tidak mengindeks rute salah.
+ */
+export function sinkronkanSeo404(bahasa: BahasaAktif = 'id', urlDiminta = '/404'): void {
+  if (typeof document === 'undefined') return;
+  const titleMap: Record<BahasaAktif, string> = {
+    id: '404 · Layar Tidak Ditemukan · KELIR',
+    en: '404 · Page Not Found · KELIR',
+    jw: '404 · Kelir Mboten Pinanggih · KELIR',
+    aks: '404 · ꦏꦼꦭꦶꦂ ꦩ꧀ꦧꦺꦴꦠꦼꦤ꧀ ꦥꦶꦤꦁꦒꦶꦃ · KELIR',
+  };
+  const desc = `Alamat ${urlDiminta} tidak ditemukan pada arsip 5 ruang pameran KELIR.`;
+  const pageTitle = titleMap[bahasa] ?? titleMap.id;
+  document.title = pageTitle;
+  setMetaContent('meta[name="robots"]', 'noindex, nofollow');
+  setMetaContent('meta[name="description"]', desc);
+  setMetaContent('meta[property="og:title"]', pageTitle);
+  setMetaContent('meta[name="twitter:title"]', pageTitle);
 }
 
 /**

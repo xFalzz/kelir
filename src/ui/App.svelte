@@ -47,7 +47,11 @@
     picuInstalasiPwa,
     type PwaInstallPromptEvent,
   } from '../lib/pwa.ts';
-  import { sinkronkanSeoHalaman, sinkronkanTemaBrowser } from '../lib/seoGeo.ts';
+  import { sinkronkanSeo404, sinkronkanSeoHalaman, sinkronkanTemaBrowser } from '../lib/seoGeo.ts';
+  import {
+    evaluasiRuteUrl,
+    type HasilEvaluasiRute,
+  } from '../lib/routeGuard.ts';
   import {
     apakahTargetGulirInternal,
     pasangSmoothScroll,
@@ -68,6 +72,7 @@
   import FooterSection from './components/FooterSection.svelte';
   import KarawitanBar from './components/KarawitanBar.svelte';
   import KelirCursor from './components/KelirCursor.svelte';
+  import NotFoundPage from './components/NotFoundPage.svelte';
   import PixelNumber from './PixelNumber.svelte';
 
   // Arsitektur 5 halaman terpadu
@@ -90,7 +95,20 @@
     { id: 'kawruh', nomor: '05', aksara: 'ꦲꦤꦕꦫꦏ' },
   ];
 
-  let halamanAktif: HalamanId = $state('beranda');
+  const BENDA_VALID_IDS = DAFTAR_BEDAH_TWIN.map((b) => b.id);
+  const ruteAwal: HasilEvaluasiRute =
+    typeof window !== 'undefined'
+      ? evaluasiRuteUrl(
+          window.location.pathname,
+          window.location.search,
+          BENDA_VALID_IDS,
+          LAKON_KIJANG_KENCANA.daftarBabak.length,
+        )
+      : { valid: true, halaman: 'beranda', urlDiminta: '/' };
+
+  let halamanAktif: HalamanId = $state(ruteAwal.halaman);
+  let ruteTidakDitemukan = $state(!ruteAwal.valid);
+  let infoRute404: HasilEvaluasiRute | null = $state(ruteAwal.valid ? null : ruteAwal);
   let tema: 'malam' | 'terang' = $state('terang');
   let bahasa: BahasaAktif = $state('id');
   let langMenuBuka = $state(false);
@@ -246,6 +264,11 @@
     if (!LegalModalComp) {
       void import('./components/LegalInfoModal.svelte').then((m) => (LegalModalComp = m.default));
     }
+  }
+
+  function bukaSearchModal(): void {
+    searchModalBuka = true;
+    pastikanSearchModal();
   }
 
   function bukaLegalModal(tab: TabLegalModal = 'syarat'): void {
@@ -600,7 +623,10 @@
   // Navigasi antar-halaman & sinkronisasi URL
   function sinkronkanUrlDeepLink(): void {
     if (typeof window === 'undefined') return;
+    ruteTidakDitemukan = false;
+    infoRute404 = null;
     const url = new URL(window.location.href);
+    url.pathname = '/';
     url.searchParams.set('hal', halamanAktif);
     if (halamanAktif === 'twin') {
       url.searchParams.set('benda', bendaAktifId);
@@ -751,6 +777,8 @@
       twinStage?.matikanGesturTangan();
     }
     halamanAktif = id;
+    ruteTidakDitemukan = false;
+    infoRute404 = null;
     wallTiltX = 0;
     wallTiltY = 0;
     if (id === 'twin') catatSpesimen(bendaAktifId);
@@ -758,6 +786,7 @@
     sinkronkanSeoHalaman(id, bahasa);
     if (typeof window !== 'undefined') {
       const url = new URL(window.location.href);
+      url.pathname = '/';
       url.searchParams.set('hal', id);
       if (id === 'twin') {
         url.searchParams.set('benda', bendaAktifId);
@@ -804,7 +833,11 @@
     if (typeof document !== 'undefined') {
       document.documentElement.setAttribute('data-lang', nextLang);
     }
-    sinkronkanSeoHalaman(halamanAktif, nextLang);
+    if (ruteTidakDitemukan && infoRute404) {
+      sinkronkanSeo404(nextLang, infoRute404.urlDiminta);
+    } else {
+      sinkronkanSeoHalaman(halamanAktif, nextLang);
+    }
 
     const qTrim = pertanyaanInput.trim();
     const defaultIdx = bendaPamomongAktif.pertanyaanContoh.findIndex(
@@ -1178,10 +1211,17 @@
 
     jejakKurasi = bacaJejakKurasi();
 
-    const terapkanUrlParams = (urlParams: URLSearchParams) => {
-      const halParam = urlParams.get('hal') as HalamanId | null;
-      halamanAktif =
-        halParam && PAGE_META_STATIC.some((h) => h.id === halParam) ? halParam : 'beranda';
+    const terapkanUrlParams = (pathname: string, urlParams: URLSearchParams) => {
+      const evalHasil = evaluasiRuteUrl(
+        pathname,
+        urlParams.toString() ? `?${urlParams.toString()}` : '',
+        BENDA_VALID_IDS,
+        LAKON_KIJANG_KENCANA.daftarBabak.length,
+      );
+      ruteTidakDitemukan = !evalHasil.valid;
+      infoRute404 = evalHasil.valid ? null : evalHasil;
+      halamanAktif = evalHasil.halaman;
+      if (!evalHasil.valid) return;
 
       const bendaParam = urlParams.get('benda') as SpesimenBedahId | null;
       const titikParam = urlParams.get('titik');
@@ -1213,14 +1253,21 @@
       }
     };
 
-    // Baca parameter halaman & spesimen deep-link dari URL (?hal=twin&benda=joglo&titik=...)
-    terapkanUrlParams(new URLSearchParams(window.location.search));
-    sinkronkanSeoHalaman(halamanAktif, bahasa);
+    const sinkronkanSeoDariRute = () => {
+      if (ruteTidakDitemukan && infoRute404) {
+        sinkronkanSeo404(bahasa, infoRute404.urlDiminta);
+      } else {
+        sinkronkanSeoHalaman(halamanAktif, bahasa);
+      }
+    };
+
+    terapkanUrlParams(window.location.pathname, new URLSearchParams(window.location.search));
+    sinkronkanSeoDariRute();
 
     const onPopState = () => {
       hentikanSuaraDalang();
-      terapkanUrlParams(new URLSearchParams(window.location.search));
-      sinkronkanSeoHalaman(halamanAktif, bahasa);
+      terapkanUrlParams(window.location.pathname, new URLSearchParams(window.location.search));
+      sinkronkanSeoDariRute();
       void tick().then(() => smoothScrollCtrl?.sync());
     };
     window.addEventListener('popstate', onPopState);
@@ -1425,8 +1472,8 @@
       <button
         type="button"
         class="nav-page-tab"
-        class:is-active={halamanAktif === hal.id}
-        aria-current={halamanAktif === hal.id ? 'page' : undefined}
+        class:is-active={!ruteTidakDitemukan && halamanAktif === hal.id}
+        aria-current={!ruteTidakDitemukan && halamanAktif === hal.id ? 'page' : undefined}
         onpointerenter={() => pastikanKomponenHalaman(hal.id)}
         onclick={() => pindahHalaman(hal.id)}
         data-testid="page-tab-{hal.id}"
@@ -1442,7 +1489,7 @@
       type="button"
       class="util-pill nav-search-btn"
       onpointerenter={pastikanSearchModal}
-      onclick={() => (searchModalBuka = true)}
+      onclick={bukaSearchModal}
       aria-label={tI18n(bahasa, 'nav.searchAria')}
       title={tI18n(bahasa, 'nav.searchAria')}
       data-testid="btn-search-modal"
@@ -1605,8 +1652,8 @@
     <button
       type="button"
       class="mobile-page-btn"
-      class:is-active={halamanAktif === hal.id}
-      aria-current={halamanAktif === hal.id ? 'page' : undefined}
+      class:is-active={!ruteTidakDitemukan && halamanAktif === hal.id}
+      aria-current={!ruteTidakDitemukan && halamanAktif === hal.id ? 'page' : undefined}
       onclick={() => pindahHalaman(hal.id)}
       data-testid="mobile-dock-{hal.id}"
     >
@@ -1667,8 +1714,19 @@
   {/each}
 </nav>
 
-<main class="page-stage-shell" data-active-page={halamanAktif}>
-  {#if halamanAktif !== 'beranda'}
+<main class="page-stage-shell" data-active-page={ruteTidakDitemukan ? 'notfound' : halamanAktif}>
+  {#if ruteTidakDitemukan && infoRute404}
+    <NotFoundPage
+      {bahasa}
+      infoRute={infoRute404}
+      {daftarHalaman}
+      onKembaliBeranda={() => pindahHalaman('beranda')}
+      onPindahHalaman={(id) => pindahHalaman(id)}
+      onPilihPusaka={(id, bukaTwin) => pilihPusaka(id, bukaTwin)}
+      onBukaSearch={bukaSearchModal}
+    />
+  {:else}
+    {#if halamanAktif !== 'beranda'}
     <!-- Header Status Halaman Selaras untuk Halaman 02..05 -->
     <div class="subpage-status-strip">
       <div class="subpage-status-inner">
@@ -2214,6 +2272,7 @@
       </button>
     </div>
   </section>
+  {/if}
 </main>
 
 <FooterSection
