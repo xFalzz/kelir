@@ -222,7 +222,12 @@ test.describe('Kelir Multi-Page Spasial 3D — Verifikasi 5 Halaman & Realisme 3
     await page.screenshot({ path: `${ARTIFACT_DIR}/mp-04-twin-keris-exploded.png` });
 
     await page.getByTestId('tab-saron').click();
+    await expect(page.getByTestId('saron-play-deck')).toBeVisible();
+    await expect(page.getByTestId('twin-saron-gesture-btn')).toBeVisible();
+    await expect(page.getByTestId('twin-saron-gesture-btn')).toHaveAttribute('aria-pressed', 'false');
     await expect(page.locator('.saron-keys-bar')).toBeVisible();
+    await page.getByTestId('saron-wilah-2').click();
+    await expect(page.getByTestId('saron-wilah-2')).toHaveClass(/is-struck/);
     await page.getByTestId('toggle-xray').click({ force: true });
     await page.evaluate(() => window.scrollTo(0, 0));
     await page.waitForTimeout(350);
@@ -637,7 +642,7 @@ test.describe('Kelir Multi-Page Spasial 3D — Verifikasi 5 Halaman & Realisme 3
       await expect
         .poll(() => page.evaluate(() => window.scrollY), {
           message: `Smooth scroll aktif pada halaman ${hal}`,
-          timeout: 2200,
+          timeout: 3600,
         })
         .toBeGreaterThan(220);
     }

@@ -14,6 +14,8 @@ export interface PaketModel3D {
   blencongFlame?: THREE.Mesh | null;
   blencongLight?: THREE.PointLight | null;
   orbitAccent?: THREE.Object3D | null;
+  saronWilahs?: THREE.Group[];
+  saronGandhen?: THREE.Group | null;
 }
 
 interface PasanganTekstur {
@@ -1062,6 +1064,7 @@ export function buildSaronPusaka3D(): PaketModel3D {
   group.add(buatSayapRancakan(-1), buatSayapRancakan(1));
 
   // 6 Bilah Slendro (1-2-3-5-6-i) Tempa Gangsa Cembung Bergradasi
+  const saronWilahs: THREE.Group[] = [];
   for (let i = 0; i < 6; i++) {
     const wilahGrup = new THREE.Group();
     const lebar = 0.285 - i * 0.01;
@@ -1069,11 +1072,12 @@ export function buildSaronPusaka3D(): PaketModel3D {
     const tebal = 0.054 + i * 0.004;
     const xPos = -0.875 + i * 0.35;
 
-    const bilah = new THREE.Mesh(new THREE.BoxGeometry(lebar, tebal, panjang), gangsaTempaMat);
+    const wilahMat = gangsaTempaMat.clone();
+    const bilah = new THREE.Mesh(new THREE.BoxGeometry(lebar, tebal, panjang), wilahMat);
     bilah.castShadow = true;
     const punggung = new THREE.Mesh(
       new THREE.CylinderGeometry(lebar * 0.34, lebar * 0.4, panjang * 0.94, 14),
-      gangsaTempaMat,
+      wilahMat,
     );
     punggung.rotation.x = Math.PI / 2;
     punggung.scale.y = 0.38;
@@ -1082,6 +1086,9 @@ export function buildSaronPusaka3D(): PaketModel3D {
     wilahGrup.add(bilah, punggung);
     wilahGrup.position.set(xPos, 0.15, 0);
     wilahGrup.userData.explodeVec = new THREE.Vector3(0, 0.52 + i * 0.08, 0);
+    wilahGrup.userData.baseY = 0.15;
+    wilahGrup.userData.wilahMat = wilahMat;
+    saronWilahs.push(wilahGrup);
     group.add(wilahGrup);
   }
 
@@ -1105,15 +1112,15 @@ export function buildSaronPusaka3D(): PaketModel3D {
     new THREE.Vector2(0.032, 0.36),
   ];
   const gagang = new THREE.Mesh(new THREE.LatheGeometry(gagangProfil, 16), jatiMerahMat);
-  gagang.position.set(0.06, -0.35, 0);
-  gagang.rotation.z = 0.2;
+  gagang.position.set(0.04, -0.2, 0.24);
+  gagang.rotation.set(0.95, 0, 0.12);
   ganden.add(kepalaPalu, cincinPalu, gagang);
   ganden.position.set(1.18, 0.72, 0.48);
-  ganden.rotation.z = 0.38;
+  ganden.rotation.set(-0.22, 0.18, 0.36);
   ganden.userData.explodeVec = new THREE.Vector3(0.64, 0.48, 0.52);
   group.add(ganden);
 
-  return { group };
+  return { group, saronWilahs, saronGandhen: ganden };
 }
 
 /** 3. Batik Tulis Kawung: Kain Primissima, Gawangan Bubut, Canting Tulis Nyamplung, Wajan Terangkat & Tungku Anglo Bara. */

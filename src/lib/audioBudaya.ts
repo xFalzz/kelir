@@ -191,6 +191,14 @@ class MesinAudioBudaya {
     }
   }
 
+  /** Membuka AudioContext saat interaksi gestur atau klik wilah tanpa memaksa Gending latar menyala. */
+  public izinkanEfekSuara(): boolean {
+    this.aktif = true;
+    const ctx = this.pastikanKonteks();
+    this.kabariListeners();
+    return Boolean(ctx);
+  }
+
   /**
    * Meredupkan volume Gending latar secara halus saat narator AI berbicara, lalu memulihkannya.
    */

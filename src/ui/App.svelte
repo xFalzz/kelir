@@ -22,10 +22,11 @@
   import { DAFTAR_CARAKAN, latinKeAksaraJawa, type KartuCarakan } from '../lib/aksara.ts';
   import type { TabLegalModal } from '../content/legalInfo.ts';
   import type { LangkahRuteTur } from '../lib/aiStudio.ts';
-  import { audioBudaya } from '../lib/audioBudaya.ts';
+  import { audioBudaya, NADA_SARON_SLENDRO } from '../lib/audioBudaya.ts';
   import { mintaSuaraDalangBabak } from '../lib/dalangVoice.ts';
   import { type GendingId } from '../lib/gendingJawa.ts';
   import type { FrameTangan, PengelolaTangan, StatusKamera } from '../lib/handTracker.ts';
+  import type { KinetikSaronGestur } from '../lib/saronGestur.ts';
   import { DAFTAR_BAHASA, setI18nLanguage, tI18n } from '../lib/i18n.ts';
   import {
     bacaJejakKurasi,
@@ -337,6 +338,14 @@
   let gesturTerkini = $state('-');
   let jumlahTanganTerdeteksi = $state(0);
   let videoKameraEl: HTMLVideoElement | undefined = $state();
+  let saronHoverWilahIdx: number | null = $state(null);
+  let saronStruckWilahIdx: number | null = $state(null);
+  let saronStruckTimer: number | null = null;
+  let lastTwinKepal = false;
+  let saronGesturEval: {
+    prosesFrame: (frame: FrameTangan) => KinetikSaronGestur;
+    reset: () => void;
+  } | null = null;
 
   // Instance Panggung WebGL Aktif (dimuat malas sesuai halaman aktif)
   let dioramaStage: LivingPendopoStage | null = null;
@@ -734,6 +743,13 @@
 
   function pindahHalaman(id: HalamanId, targetAnchorId?: string): void {
     if (id !== 'pakeliran') hentikanSuaraDalang();
+    if (id !== 'twin') {
+      saronGesturEval?.reset();
+      saronHoverWilahIdx = null;
+      saronStruckWilahIdx = null;
+      lastTwinKepal = false;
+      twinStage?.matikanGesturTangan();
+    }
     halamanAktif = id;
     wallTiltX = 0;
     wallTiltY = 0;
@@ -889,6 +905,10 @@
 
     if (audioAktif) picuSuaraBenda(id);
     catatSpesimen(id);
+    saronGesturEval?.reset();
+    saronHoverWilahIdx = null;
+    saronStruckWilahIdx = null;
+    twinStage?.matikanGesturTangan();
 
     if (bukaHalamanTwin) {
       pindahHalaman('twin');
@@ -897,8 +917,22 @@
     }
   }
 
-  function picuSuaraBenda(id: SpesimenBedahId): void {
-    if (!audioAktif) return;
+  function sorotWilahDipukul(idx: number): void {
+    saronStruckWilahIdx = idx;
+    if (saronStruckTimer !== null && typeof window !== 'undefined') {
+      window.clearTimeout(saronStruckTimer);
+    }
+    if (typeof window !== 'undefined') {
+      saronStruckTimer = window.setTimeout(() => {
+        saronStruckWilahIdx = null;
+        saronStruckTimer = null;
+      }, 240);
+    }
+  }
+
+  function picuSuaraBenda(id: SpesimenBedahId, paksa = false): void {
+    if (!audioAktif && !paksa) return;
+    if (paksa) audioBudaya.izinkanEfekSuara();
     if (id === 'keris' || id === 'hanacaraka') audioBudaya.bunyikanHunusKeris();
     else if (id === 'saron') audioBudaya.bunyikanWilahSaron(3);
     else if (id === 'batik') audioBudaya.bunyikanCantingMalam();
@@ -907,12 +941,13 @@
   }
 
   function bunyikanWilahTwin(idx: number): void {
+    audioBudaya.izinkanEfekSuara();
     if (!audioAktif) {
       audioAktif = true;
-      audioBudaya.aturAktif(true);
     }
     audioBudaya.bunyikanWilahSaron(idx);
-    twinStage?.picuEfekKhusus3D();
+    twinStage?.pukulWilahSaron(idx, 1);
+    sorotWilahDipukul(idx);
   }
 
   function bukaSulukSpesimen(id: SpesimenBedahId): void {
@@ -1017,13 +1052,25 @@
   async function toggleKameraTangan(): Promise<void> {
     if (statusKamera === 'aktif' || statusKamera === 'memuat') {
       pengelolaTangan?.matikan();
+      saronGesturEval?.reset();
+      saronHoverWilahIdx = null;
+      saronStruckWilahIdx = null;
+      lastTwinKepal = false;
+      twinStage?.matikanGesturTangan();
       return;
     }
     if (!videoKameraEl) return;
-    if (!pengelolaTangan) {
+    // Buka AudioContext pada interaksi klik agar Saron & efek 3D langsung bersuara saat digerakkan
+    audioBudaya.izinkanEfekSuara();
+
+    if (!pengelolaTangan || !saronGesturEval) {
       statusKamera = 'memuat';
-      const { PengelolaTangan } = await import('../lib/handTracker.ts');
-      pengelolaTangan = new PengelolaTangan();
+      const [{ PengelolaTangan }, { EvaluatorGesturSaron }] = await Promise.all([
+        import('../lib/handTracker.ts'),
+        import('../lib/saronGestur.ts'),
+      ]);
+      if (!pengelolaTangan) pengelolaTangan = new PengelolaTangan();
+      if (!saronGesturEval) saronGesturEval = new EvaluatorGesturSaron();
     }
     await pengelolaTangan.mulai(
       videoKameraEl,
@@ -1031,15 +1078,41 @@
         jumlahTanganTerdeteksi = frame.jumlahTangan;
         const kanan = frame.tanganKanan;
         const kiri = frame.tanganKiri;
-        gesturTerkini = kanan?.gestur ?? kiri?.gestur ?? '-';
+        const utama = frame.tanganUtama ?? kanan ?? kiri;
+        gesturTerkini = utama?.gestur ?? '-';
+
+        if (halamanAktif === 'twin' && twinStage) {
+          if (bendaAktifId === 'saron' && saronGesturEval) {
+            const kinetik = saronGesturEval.prosesFrame(frame);
+            saronHoverWilahIdx = kinetik.hoverWilahIdx;
+            twinStage.terapkanGesturSaron(kinetik);
+            if (kinetik.pukulWilahIdx !== null) {
+              audioBudaya.izinkanEfekSuara();
+              audioBudaya.bunyikanWilahSaron(kinetik.pukulWilahIdx, kinetik.amplitudoPukul);
+              sorotWilahDipukul(kinetik.pukulWilahIdx);
+            }
+          } else {
+            saronHoverWilahIdx = null;
+            if (utama) {
+              const zoom = utama.gestur === 'cubit' ? 1.38 : 1.0;
+              twinStage.terapkanGesturTanganUmum(utama.pusatX, utama.pusatY, utama.kemiringan, zoom);
+              if (utama.gestur === 'kepal' && !lastTwinKepal) {
+                twinStage.picuEfekKhusus3D();
+                picuSuaraBenda(bendaAktifId, true);
+              }
+              lastTwinKepal = utama.gestur === 'kepal';
+            } else {
+              lastTwinKepal = false;
+              twinStage.matikanGesturTangan();
+            }
+          }
+        }
 
         if (kiri) {
           posKidang = Math.max(-0.85, Math.min(0.85, (kiri.pusatX - 0.5) * 1.8));
         }
         if (kanan) {
           posRama = Math.max(-0.85, Math.min(0.85, (kanan.pusatX - 0.5) * 1.8));
-          const zoom = kanan.gestur === 'cubit' ? 1.4 : 1.0;
-          twinStage?.aturPutaranTangan((kanan.pusatX - 0.5) * 1.2, zoom);
           wayangStage?.terapkanGesturPanggung({
             kemiringan: kanan.kemiringan,
             intensitasSabetan: kanan.gestur === 'kepal' ? 1 : 0,
@@ -1049,6 +1122,13 @@
       },
       (st) => {
         statusKamera = st;
+        if (st !== 'aktif' && st !== 'memuat') {
+          saronGesturEval?.reset();
+          saronHoverWilahIdx = null;
+          saronStruckWilahIdx = null;
+          lastTwinKepal = false;
+          twinStage?.matikanGesturTangan();
+        }
       },
     );
   }
@@ -1856,6 +1936,10 @@
         onTangkapPotret={() => twinStage?.tangkapPotretPng() ?? null}
         onPindahHalaman={(hal, anchor) => pindahHalaman(hal, anchor)}
         onScrollProgres={(p) => twinStage?.aturProgresGulir(p)}
+        {statusKamera}
+        saronHoverIdx={saronHoverWilahIdx}
+        saronStruckIdx={saronStruckWilahIdx}
+        onToggleKamera={toggleKameraTangan}
       />
     {:else}
       <section class="band-section" style="min-height: 68vh;" aria-busy="true"></section>
@@ -2236,11 +2320,31 @@
 {/if}
 
 <!-- Umpan Kamera MediaPipe 21-Titik Lokal (Tersembunyi jika nonaktif) -->
-<div class="webcam-pip" style:display={statusKamera === 'nonaktif' ? 'none' : 'block'}>
+<div
+  class="webcam-pip"
+  class:has-audio-bar={audioAktif || suasanaPendopoAktif}
+  style:display={statusKamera === 'aktif' || statusKamera === 'memuat' ? 'block' : 'none'}
+>
   <video bind:this={videoKameraEl} autoplay muted playsinline></video>
-  <div style="padding: 8px 10px; display: flex; justify-content: space-between;">
+  {#if halamanAktif === 'twin' && bendaAktifId === 'saron' && statusKamera === 'aktif'}
+    <div class="webcam-saron-strip" aria-hidden="true">
+      {#each NADA_SARON_SLENDRO as nada, nIdx}
+        <span
+          class:is-hovered={saronHoverWilahIdx === nIdx}
+          class:is-struck={saronStruckWilahIdx === nIdx}
+        >
+          {nada.angka}
+        </span>
+      {/each}
+    </div>
+  {/if}
+  <div style="padding: 8px 10px; display: flex; justify-content: space-between; gap: 6px;">
     <span>{tI18n(bahasa, 'webcam.hands', { count: jumlahTanganTerdeteksi })}</span>
-    <span>{gesturTerkini}</span>
+    <span>
+      {halamanAktif === 'twin' && bendaAktifId === 'saron' && saronHoverWilahIdx !== null
+        ? `${NADA_SARON_SLENDRO[saronHoverWilahIdx].angka} · ${gesturTerkini}`
+        : gesturTerkini}
+    </span>
   </div>
 </div>
 

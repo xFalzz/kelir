@@ -58,6 +58,10 @@
     onTangkapPotret: () => string | null;
     onPindahHalaman: (halaman: 'koleksi' | 'pakeliran' | 'kawruh', anchor?: string) => void;
     onScrollProgres: (progres: number) => void;
+    statusKamera?: 'nonaktif' | 'memuat' | 'aktif' | 'ditolak' | 'tidak-didukung';
+    saronHoverIdx?: number | null;
+    saronStruckIdx?: number | null;
+    onToggleKamera?: () => void;
   }
 
   let {
@@ -89,6 +93,10 @@
     onTangkapPotret,
     onPindahHalaman,
     onScrollProgres,
+    statusKamera = 'nonaktif',
+    saronHoverIdx = null,
+    saronStruckIdx = null,
+    onToggleKamera,
   }: Props = $props();
 
   let sectionEl: HTMLElement | undefined = $state();
@@ -649,14 +657,51 @@
       </div>
 
       {#if bendaAktif.id === 'saron'}
-        <div>
-          <div class="eyebrow-mono" style="margin-bottom: 8px;">{tI18n(bahasa, 'twin.saronKeys')}</div>
+        <div class="saron-play-deck" data-testid="saron-play-deck">
+          <div class="saron-play-head">
+            <span class="eyebrow-mono">{tI18n(bahasa, 'twin.saronKeys')}</span>
+            {#if onToggleKamera}
+              <button
+                type="button"
+                class="util-pill"
+                class:is-active={statusKamera === 'aktif'}
+                onclick={onToggleKamera}
+                data-testid="twin-saron-gesture-btn"
+                aria-pressed={statusKamera === 'aktif'}
+              >
+                {statusKamera === 'aktif'
+                  ? tI18n(bahasa, 'twin.saronGestureStop')
+                  : tI18n(bahasa, 'twin.saronGestureStart')}
+              </button>
+            {/if}
+          </div>
+
+          {#if statusKamera === 'aktif'}
+            <div class="saron-gesture-status" data-testid="saron-gesture-status">
+              <span>{tI18n(bahasa, 'twin.saronGestureHint')}</span>
+              {#if saronHoverIdx !== null && NADA_SARON_SLENDRO[saronHoverIdx]}
+                <strong class="saron-active-note">
+                  {tI18n(bahasa, 'twin.saronActiveKey', {
+                    key: NADA_SARON_SLENDRO[saronHoverIdx].angka,
+                  })}
+                  · {NADA_SARON_SLENDRO[saronHoverIdx].namaJawa}
+                </strong>
+              {/if}
+            </div>
+          {:else if statusKamera === 'ditolak' || statusKamera === 'tidak-didukung'}
+            <p class="saron-gesture-warn">{tI18n(bahasa, 'twin.saronGestureDenied')}</p>
+          {/if}
+
           <div class="saron-keys-bar">
             {#each NADA_SARON_SLENDRO as nada, nIdx}
               <button
                 type="button"
                 class="wilah-key"
+                class:is-hovered={saronHoverIdx === nIdx}
+                class:is-struck={saronStruckIdx === nIdx}
                 onclick={() => onBunyikanWilah(nIdx)}
+                data-testid="saron-wilah-{nIdx}"
+                aria-label="Saron {nada.angka} {nada.namaJawa}"
               >
                 {nada.angka}
               </button>

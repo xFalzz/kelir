@@ -6,6 +6,7 @@ import type {
   SpesimenBedahTwin,
   TitikInfoPusaka,
 } from '../content/pusaka.ts';
+import { SARON_WILAH_X, type KinetikSaronGestur } from '../lib/saronGestur.ts';
 import {
   applyStudioHDR,
   attachCadWireframeLayer,
@@ -120,6 +121,28 @@ export class DigitalTwinStage {
   private blencongFlame: THREE.Mesh | null = null;
   private blencongLight: THREE.PointLight | null = null;
   private orbitAccent: THREE.Object3D | null = null;
+  private saronWilahs: THREE.Group[] = [];
+  private saronGandhen: THREE.Group | null = null;
+  private saronStrikeRing: THREE.Mesh | null = null;
+  private readonly wilahVib = new Float32Array(6);
+  private hoveredWilahIdx: number | null = null;
+  private gesturSaronAktif = false;
+  private gesturUmumAktif = false;
+  private gesturUmumYaw = 0;
+  private gesturUmumPitch = 0;
+  private readonly gandhenTargetPos = new THREE.Vector3(1.18, 0.72, 0.48);
+  private readonly gandhenCurPos = new THREE.Vector3(1.18, 0.72, 0.48);
+  private gandhenTargetRotX = -0.22;
+  private gandhenTargetRotZ = 0.36;
+  private gandhenCurRotX = -0.22;
+  private gandhenCurRotZ = 0.36;
+  private gandhenStrikeDip = 0;
+  private gandhenManualTimer = 0;
+  private saronYawTarget = 0;
+  private saronPitchTarget = 0;
+  private saronRingPulse = 0;
+  private saronRingX = 0;
+  private lastFrameMs = 0;
   private solidMaterials: THREE.Material[] = [];
 
   private targetExplode = 0;
@@ -221,6 +244,20 @@ export class DigitalTwinStage {
     this.blencongFlame = null;
     this.blencongLight = null;
     this.orbitAccent = null;
+    this.saronWilahs = [];
+    this.saronGandhen = null;
+    this.saronStrikeRing = null;
+    this.wilahVib.fill(0);
+    this.hoveredWilahIdx = null;
+    this.gandhenStrikeDip = 0;
+    this.gandhenManualTimer = 0;
+    this.saronRingPulse = 0;
+    this.gandhenTargetPos.set(1.18, 0.72, 0.48);
+    this.gandhenCurPos.set(1.18, 0.72, 0.48);
+    this.gandhenTargetRotX = -0.22;
+    this.gandhenTargetRotZ = 0.36;
+    this.gandhenCurRotX = -0.22;
+    this.gandhenCurRotZ = 0.36;
 
     const id = benda.id;
     const paket =
@@ -242,6 +279,24 @@ export class DigitalTwinStage {
     this.blencongFlame = paket.blencongFlame ?? null;
     this.blencongLight = paket.blencongLight ?? null;
     this.orbitAccent = paket.orbitAccent ?? null;
+    this.saronWilahs = paket.saronWilahs ?? [];
+    this.saronGandhen = paket.saronGandhen ?? null;
+
+    if (id === 'saron') {
+      const ringGeo = new THREE.TorusGeometry(0.18, 0.015, 10, 32);
+      const ringMat = new THREE.MeshBasicMaterial({
+        color: 0xf59e0b,
+        transparent: true,
+        opacity: 0,
+        depthWrite: false,
+      });
+      this.saronStrikeRing = new THREE.Mesh(ringGeo, ringMat);
+      this.saronStrikeRing.rotation.x = Math.PI / 2;
+      this.saronStrikeRing.position.set(0, 0.21, 0);
+      this.saronStrikeRing.userData.skipCad = true;
+      this.saronStrikeRing.visible = false;
+      this.artifactGroup.add(this.saronStrikeRing);
+    }
 
     this.artifactGroup.traverse((child) => {
       if (child.userData.explodeVec) {
@@ -364,6 +419,78 @@ export class DigitalTwinStage {
     const baseFov = THREE.MathUtils.clamp(37 / this.zoomRatio, 22, 54);
     this.camera.fov = hitungFovResponsif(baseFov, this.camera.aspect, 1.22, 60);
     this.camera.updateProjectionMatrix();
+  }
+
+  /** Menggerakkan Tabuh Gandhen 3D & getaran wilah 1:1 mengikuti koordinat tangan di panggung Saron. */
+  public terapkanGesturSaron(kinetik: KinetikSaronGestur): void {
+    this.gesturSaronAktif = kinetik.aktif;
+    this.gesturUmumAktif = false;
+    this.hoveredWilahIdx = kinetik.hoverWilahIdx;
+    this.saronYawTarget = kinetik.saronYawY;
+    this.saronPitchTarget = kinetik.saronPitchX;
+
+    if (kinetik.aktif) {
+      this.gandhenTargetPos.set(...kinetik.malletPos);
+      this.gandhenTargetRotZ = kinetik.malletTiltZ;
+      this.gandhenTargetRotX = kinetik.malletTiltX;
+      if (kinetik.pukulWilahIdx !== null) {
+        this.pukulWilahSaron(kinetik.pukulWilahIdx, 1.08);
+      }
+    } else {
+      this.gandhenTargetPos.set(1.18, 0.72, 0.48);
+      this.gandhenTargetRotZ = 0.36;
+      this.gandhenTargetRotX = -0.22;
+    }
+  }
+
+  /** Memukul satu bilah Saron Slendro spesifik beserta ayunan Gandhen & halo resonansi 3D. */
+  public pukulWilahSaron(idx: number, intensitas = 1): void {
+    const k = Math.max(0, Math.min(SARON_WILAH_X.length - 1, Math.floor(idx)));
+    this.wilahVib[k] = Math.min(1.3, Math.max(this.wilahVib[k], intensitas));
+    this.gandhenStrikeDip = 1;
+    this.spesialPulse = Math.max(this.spesialPulse, 0.45);
+    this.saronRingPulse = 1;
+    this.saronRingX = SARON_WILAH_X[k];
+
+    if (!this.gesturSaronAktif) {
+      this.gandhenTargetPos.set(SARON_WILAH_X[k], 0.35, 0.06);
+      this.gandhenTargetRotZ = 0.14;
+      this.gandhenTargetRotX = 0.28;
+      this.gandhenManualTimer = 0.45;
+    }
+  }
+
+  /** Memutar & memiringkan artefak Digital Twin non-Saron secara 1:1 mengikuti arah tangan pengguna. */
+  public terapkanGesturTanganUmum(
+    normX: number,
+    normY: number,
+    tiltRad: number,
+    zoomRatio: number,
+  ): void {
+    this.gesturUmumAktif = true;
+    this.gesturSaronAktif = false;
+    this.gesturUmumYaw = (normX - 0.5) * Math.PI * 1.4;
+    const tiltOffset = THREE.MathUtils.clamp(tiltRad + Math.PI / 2, -0.6, 0.6);
+    this.gesturUmumPitch = THREE.MathUtils.clamp((normY - 0.5) * 0.72 + tiltOffset * 0.18, -0.55, 0.55);
+
+    const nextZoom = zoomRatio || 1;
+    if (Math.abs(nextZoom - this.zoomRatio) > 0.02) {
+      this.zoomRatio = nextZoom;
+      const baseFov = THREE.MathUtils.clamp(37 / this.zoomRatio, 22, 54);
+      this.camera.fov = hitungFovResponsif(baseFov, this.camera.aspect, 1.22, 60);
+      this.camera.updateProjectionMatrix();
+    }
+  }
+
+  public matikanGesturTangan(): void {
+    this.gesturSaronAktif = false;
+    this.gesturUmumAktif = false;
+    this.hoveredWilahIdx = null;
+    this.gandhenTargetPos.set(1.18, 0.72, 0.48);
+    this.gandhenTargetRotZ = 0.36;
+    this.gandhenTargetRotX = -0.22;
+    this.saronYawTarget = 0;
+    this.saronPitchTarget = 0;
   }
 
   public onProyeksiPin(cb: (pins: ProyeksiPinTwin[]) => void): void {
@@ -499,17 +626,36 @@ export class DigitalTwinStage {
     }
     this.rafId = window.requestAnimationFrame(this.loop);
 
-    this.curExplode += (this.targetExplode - this.curExplode) * 0.1;
+    const nowMs = performance.now();
+    const dt =
+      this.lastFrameMs > 0
+        ? Math.min(Math.max((nowMs - this.lastFrameMs) * 0.001, 0.008), 0.08)
+        : 1 / 60;
+    this.lastFrameMs = nowMs;
+    const t = nowMs * 0.001;
+
+    this.curExplode += (this.targetExplode - this.curExplode) * Math.min(1, 6.5 * dt);
 
     const scrollDelta = this.scrollProgress - this.prevScrollProgress;
-    this.prevScrollProgress += scrollDelta * 0.16;
+    this.prevScrollProgress += scrollDelta * Math.min(1, 9.5 * dt);
 
     if (this.artifactGroup) {
-      if (this.aksiHidup) {
-        this.artifactGroup.rotation.y += 0.005 + this.spesialPulse * 0.028;
-      }
-      if (Math.abs(scrollDelta) > 0.0002) {
-        this.artifactGroup.rotation.y += scrollDelta * 0.35;
+      if (this.gesturSaronAktif && this.bendaIdAktif === 'saron') {
+        const rotAlpha = 1 - Math.exp(-10 * dt);
+        this.artifactGroup.rotation.y += (this.saronYawTarget - this.artifactGroup.rotation.y) * rotAlpha;
+        this.artifactGroup.rotation.x += (this.saronPitchTarget - this.artifactGroup.rotation.x) * rotAlpha;
+      } else if (this.gesturUmumAktif && this.bendaIdAktif !== 'saron') {
+        const rotAlpha = 1 - Math.exp(-9 * dt);
+        this.artifactGroup.rotation.y += (this.gesturUmumYaw - this.artifactGroup.rotation.y) * rotAlpha;
+        this.artifactGroup.rotation.x += (this.gesturUmumPitch - this.artifactGroup.rotation.x) * rotAlpha;
+      } else {
+        this.artifactGroup.rotation.x += (0 - this.artifactGroup.rotation.x) * Math.min(1, 8 * dt);
+        if (this.aksiHidup) {
+          this.artifactGroup.rotation.y += 0.005 + this.spesialPulse * 0.028;
+        }
+        if (Math.abs(scrollDelta) > 0.0002) {
+          this.artifactGroup.rotation.y += scrollDelta * 0.35;
+        }
       }
 
       if (Math.abs(this.curExplode - this.lastExplodeApplied) > 0.0004) {
@@ -521,6 +667,86 @@ export class DigitalTwinStage {
             item.base.y + item.vec.y * skalaLedak,
             item.base.z + item.vec.z * skalaLedak,
           );
+        }
+      }
+
+      if (this.bendaIdAktif === 'saron') {
+        const skalaLedak = this.curExplode * 0.58;
+        for (let i = 0; i < this.saronWilahs.length; i++) {
+          const w = this.saronWilahs[i];
+          const vib = this.wilahVib[i];
+          const isHover = this.gesturSaronAktif && this.hoveredWilahIdx === i;
+          const baseY = (w.userData.baseY as number | undefined) ?? 0.15;
+          const expVec = w.userData.explodeVec as THREE.Vector3 | undefined;
+          const expY = expVec ? expVec.y * skalaLedak : 0;
+          const dipOffset = -0.026 * vib + Math.sin(t * 62 + i) * 0.006 * vib;
+          const hoverLift = isHover ? 0.012 : 0;
+          w.position.y = baseY + expY + dipOffset + hoverLift;
+
+          const mat = w.userData.wilahMat as THREE.MeshStandardMaterial | undefined;
+          if (mat) {
+            mat.emissive.setHex(vib > 0.1 || isHover ? 0xb45309 : 0x3b1502);
+            mat.emissiveIntensity = 0.14 + (isHover ? 0.34 : 0) + vib * 0.9;
+          }
+          if (vib > 0.001) {
+            this.wilahVib[i] = vib * Math.exp(-3.9 * dt);
+          } else {
+            this.wilahVib[i] = 0;
+          }
+        }
+
+        if (this.gandhenManualTimer > 0) {
+          this.gandhenManualTimer = Math.max(0, this.gandhenManualTimer - dt);
+          if (this.gandhenManualTimer === 0 && !this.gesturSaronAktif) {
+            this.gandhenTargetPos.set(1.18, 0.72, 0.48);
+            this.gandhenTargetRotZ = 0.36;
+            this.gandhenTargetRotX = -0.22;
+          }
+        }
+        this.gandhenStrikeDip *= Math.exp(-14 * dt);
+
+        if (this.saronGandhen) {
+          const expVec = this.saronGandhen.userData.explodeVec as THREE.Vector3 | undefined;
+          const expX = expVec && !this.gesturSaronAktif && this.gandhenManualTimer <= 0 ? expVec.x * skalaLedak : 0;
+          const expY = expVec && !this.gesturSaronAktif && this.gandhenManualTimer <= 0 ? expVec.y * skalaLedak : 0;
+          const expZ = expVec && !this.gesturSaronAktif && this.gandhenManualTimer <= 0 ? expVec.z * skalaLedak : 0;
+
+          const followAlpha = this.gesturSaronAktif ? 1 - Math.exp(-22 * dt) : 1 - Math.exp(-12 * dt);
+          this.gandhenCurPos.lerp(this.gandhenTargetPos, followAlpha);
+          this.gandhenCurRotX += (this.gandhenTargetRotX + this.gandhenStrikeDip * 0.42 - this.gandhenCurRotX) * followAlpha;
+          this.gandhenCurRotZ += (this.gandhenTargetRotZ - this.gandhenCurRotZ) * followAlpha;
+
+          this.saronGandhen.position.set(
+            this.gandhenCurPos.x + expX,
+            Math.max(0.24, this.gandhenCurPos.y - this.gandhenStrikeDip * 0.14) + expY,
+            this.gandhenCurPos.z + expZ,
+          );
+          this.saronGandhen.rotation.set(this.gandhenCurRotX, 0.16, this.gandhenCurRotZ);
+        }
+
+        if (this.saronStrikeRing) {
+          const ringMat = this.saronStrikeRing.material as THREE.MeshBasicMaterial;
+          if (this.saronRingPulse > 0.02) {
+            const prog = 1 - this.saronRingPulse;
+            this.saronStrikeRing.visible = true;
+            this.saronStrikeRing.position.set(this.saronRingX, 0.215 + skalaLedak * 0.65, 0);
+            const sc = 0.72 + prog * 0.95;
+            this.saronStrikeRing.scale.setScalar(sc);
+            ringMat.opacity = this.saronRingPulse * 0.85;
+            this.saronRingPulse *= Math.exp(-5.4 * dt);
+          } else if (this.gesturSaronAktif && this.hoveredWilahIdx !== null) {
+            this.saronStrikeRing.visible = true;
+            this.saronStrikeRing.position.set(
+              SARON_WILAH_X[this.hoveredWilahIdx],
+              0.21 + skalaLedak * 0.65,
+              0,
+            );
+            this.saronStrikeRing.scale.setScalar(0.92 + Math.sin(t * 7) * 0.05);
+            ringMat.opacity = 0.48;
+          } else {
+            this.saronStrikeRing.visible = false;
+            ringMat.opacity = 0;
+          }
         }
       }
     }

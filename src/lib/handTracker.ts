@@ -17,6 +17,7 @@ export interface TanganTerdeteksi {
 
 export interface FrameTangan {
   jumlahTangan: number;
+  tanganUtama: TanganTerdeteksi | null;
   tanganKiri: TanganTerdeteksi | null;
   tanganKanan: TanganTerdeteksi | null;
   waktuMs: number;
@@ -68,7 +69,8 @@ function klasifikasiTangan(lm: NormalizedLandmark[]): TanganTerdeteksi {
 
   const pusatX = 1 - (pergelangan.x + lm[9].x) * 0.5;
   const pusatY = (pergelangan.y + lm[9].y) * 0.5;
-  const kemiringan = Math.atan2(lm[9].y - pergelangan.y, lm[9].x - pergelangan.x);
+  // Delta X dicerminkan agar sudut kemiringan 1:1 searah pratinjau cermin dan objek 3D
+  const kemiringan = Math.atan2(lm[9].y - pergelangan.y, pergelangan.x - lm[9].x);
 
   return {
     pusatX,
@@ -159,9 +161,11 @@ export class PengelolaTangan {
       const daftar = hasil.landmarks ?? [];
       let tanganKiri: TanganTerdeteksi | null = null;
       let tanganKanan: TanganTerdeteksi | null = null;
+      let tanganUtama: TanganTerdeteksi | null = null;
 
       if (daftar.length === 1) {
         const d = klasifikasiTangan(daftar[0]);
+        tanganUtama = d;
         if (d.pusatX < 0.5) tanganKiri = d;
         else tanganKanan = d;
       } else if (daftar.length >= 2) {
@@ -174,10 +178,12 @@ export class PengelolaTangan {
           tanganKiri = t2;
           tanganKanan = t1;
         }
+        tanganUtama = tanganKanan;
       }
 
       this.onFrameCb?.({
         jumlahTangan: daftar.length,
+        tanganUtama,
         tanganKiri,
         tanganKanan,
         waktuMs: waktu,
