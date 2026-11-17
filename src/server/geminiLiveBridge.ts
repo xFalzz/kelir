@@ -153,7 +153,7 @@ export async function panggilGemini38Live(opts: OpsiPanggilLive): Promise<HasilP
         const wavBase64 = opts.includeWavAudio ? pcm24kMonoKeWavBase64(pcmChunks) : null;
         const rawText = transcript.trim() ? transcript : directText;
         resolve({
-          transcript: rawText.replace(/\s+/g, ' ').replace(/\u2014/g, ', ').trim(),
+          transcript: rawText.replace(/[ \t]+/g, ' ').replace(/\n{3,}/g, '\n\n').trim(),
           wavBase64,
           mimeType: wavBase64 ? 'audio/wav' : null,
         });

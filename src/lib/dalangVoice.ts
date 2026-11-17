@@ -6,7 +6,7 @@ import {
 } from '../content/pusaka.ts';
 import { tentukanBahasaSuara } from './sulukNarasi.ts';
 
-export const MODEL_AI_STUDIO = 'gemini-3.8-live' as const;
+export const MODEL_AI_STUDIO = 'Pamomong Nusantara' as const;
 
 export interface DalangSuaraResult {
   babakIdx: number;
@@ -15,7 +15,7 @@ export interface DalangSuaraResult {
   kodeBcp47: 'id-ID' | 'en-US' | 'jv-ID';
   audioBase64: string | null;
   mimeType: string | null;
-  modePenyedia: 'gemini-3.8-live-audio' | 'web-speech-fallback';
+  modePenyedia: 'pamomong-live-audio' | 'web-speech-fallback';
   modelNama: typeof MODEL_AI_STUDIO;
   sumber: KodeSumber[];
 }

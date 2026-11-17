@@ -94,7 +94,7 @@ export async function hasilkanSuaraSulukGemini(
         audioBase64: hit.audioBase64,
         mimeType: hit.mimeType,
         modelNama: MODEL_TTS_SULUK,
-        modePenyedia: 'gemini-3.8-live',
+        modePenyedia: 'pamomong-live',
       };
     }
   }
@@ -161,7 +161,7 @@ export async function hasilkanSuaraSulukGemini(
       audioBase64: res.wavBase64,
       mimeType,
       modelNama: MODEL_TTS_SULUK,
-      modePenyedia: 'gemini-3.8-live',
+      modePenyedia: 'pamomong-live',
     };
   } catch {
     return {

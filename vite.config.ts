@@ -143,17 +143,23 @@ function apiTanyaLocalPlugin(serverEnv: Record<string, string | undefined>): Plu
             bendaId?: BendaPusaka['id'];
             pertanyaan?: string;
             bahasa?: BahasaAktif;
+            konteksUnsur?: { judulUnsur?: string; material?: string; fungsiTeknis?: string; ringkasan?: string };
           };
           const bendaId: BendaPusaka['id'] = DAFTAR_BENDA.some((b) => b.id === body.bendaId)
             ? (body.bendaId as BendaPusaka['id'])
             : 'keris';
           const bahasa: BahasaAktif =
             body.bahasa && BAHASA_VALID.has(body.bahasa) ? body.bahasa : 'id';
+          const konteksUnsur =
+            body.konteksUnsur && typeof body.konteksUnsur === 'object' && !Array.isArray(body.konteksUnsur)
+              ? body.konteksUnsur
+              : undefined;
 
           const hasil = await jawabDenganGemini38Flash({
             bendaId,
             pertanyaan: typeof body.pertanyaan === 'string' ? body.pertanyaan.slice(0, 640) : '',
             bahasa,
+            konteksUnsur,
             apiKey: apiKeyServer,
             timeoutMs,
           });

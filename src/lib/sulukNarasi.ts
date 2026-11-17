@@ -6,9 +6,9 @@ import {
 } from '../content/pusaka.ts';
 import { konversiTeksKeAksaraAman } from './aksara.ts';
 
-export const MODEL_TTS_SULUK = 'gemini-3.8-live' as const;
+export const MODEL_TTS_SULUK = 'Pamomong Nusantara' as const;
 
-export type ModeSuaraSuluk = 'gemini-3.8-live' | 'web-speech-fallback';
+export type ModeSuaraSuluk = 'pamomong-live' | 'web-speech-fallback';
 
 export interface HasilSuaraSuluk {
   artefakId: SpesimenBedahId;
@@ -170,8 +170,8 @@ export async function ambilSuaraSuluk(
           mimeType: data.mimeType ?? null,
           modelNama: MODEL_TTS_SULUK,
           modePenyedia:
-            data.audioBase64 && data.modePenyedia === 'gemini-3.8-live'
-              ? 'gemini-3.8-live'
+            data.audioBase64 && data.modePenyedia === 'pamomong-live'
+              ? 'pamomong-live'
               : 'web-speech-fallback',
         };
         if (hasil.audioBase64) {

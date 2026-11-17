@@ -172,14 +172,14 @@ export const PASAL_SYARAT_KETENTUAN: PasalDokumenLegal[] = [
   {
     kode: 'PASAL 04',
     judul: {
-      id: 'Layanan Asisten AI Budaya Nusantara (Gemini 3.8 Live)',
-      en: 'Cultural AI Assistant Disclaimer (Gemini 3.8 Live)',
-      jw: 'Layanan Asisten AI Budaya Nuswantara (Gemini 3.8 Live)',
+      id: 'Layanan Asisten AI Budaya Nusantara (Pamomong Nusantara)',
+      en: 'Cultural AI Assistant Disclaimer (Pamomong Nusantara)',
+      jw: 'Layanan Asisten AI Budaya Nuswantara (Pamomong Nusantara)',
     },
     isi: {
-      id: 'Asisten Pamomong & AI Studio memanfaatkan model Gemini 3.8 Live dan korpus lokal terindeks BM25 guna memberikan penjelasan lintas budaya Nusantara. Khusus topik di luar 6 koleksi spesimen inti museum, AI berstatus Eksplorasi Nusantara dan tidak menggantikan konsultasi arsip fisik apabila dikutip dalam publikasi ilmiah tingkat lanjut.',
-      en: 'The Pamomong Assistant & AI Studio combines Gemini 3.8 Live with a local BM25 S1–S7 corpus to support nationwide Indonesian cultural inquiry. General Nusantara explorations outside the six core specimens serve as educational synthesis rather than formal primary manuscript citations.',
-      jw: 'Asisten Pamomong & AI Studio nggunakake model Gemini 3.8 Live lan indeks BM25 kangge njlentrehake kabudayan Nuswantara. Topik njabaning enem koleksi inti museum kalebu Eksplorasi Nuswantara kangge pasinaon umum.',
+      id: 'Asisten Pamomong & AI Studio memanfaatkan agen AI Pamomong Nusantara dan korpus lokal terindeks BM25 guna memberikan penjelasan lintas budaya Nusantara. Khusus topik di luar 6 koleksi spesimen inti museum, AI berstatus Eksplorasi Nusantara dan tidak menggantikan konsultasi arsip fisik apabila dikutip dalam publikasi ilmiah tingkat lanjut.',
+      en: 'The Pamomong Assistant & AI Studio combines the Pamomong Nusantara AI agent with a local BM25 S1–S7 corpus to support nationwide Indonesian cultural inquiry. General Nusantara explorations outside the six core specimens serve as educational synthesis rather than formal primary manuscript citations.',
+      jw: 'Asisten Pamomong & AI Studio nggunakake agen AI Pamomong Nusantara lan indeks BM25 kangge njlentrehake kabudayan Nuswantara. Topik njabaning enem koleksi inti museum kalebu Eksplorasi Nuswantara kangge pasinaon umum.',
     },
   },
   {
@@ -258,9 +258,9 @@ export const PASAL_KEBIJAKAN_PRIVASI: PasalDokumenLegal[] = [
       jw: 'Pangolahan Pitakenan AI Budaya & Pagar Keamanan',
     },
     isi: {
-      id: 'Saat Anda mengirimkan pertanyaan atau tema pada Asisten Pamomong dan AI Studio, teks kueri budaya, mode analisis, dan bahasa terpilih dikirim ke endpoint API Gemini untuk menghasilkan jawaban maupun audio narasi. Mohon tidak memasukkan informasi sensitif pribadi (NIK, kata sandi, nomor rekening) ke kolom kueri budaya.',
-      en: 'When you submit a cultural question or prompt to Pamomong AI or AI Studio, only the cultural prompt text, active tool mode, and language preference are sent to the Gemini API endpoint. Please avoid entering personal sensitive identifiers in cultural query fields.',
-      jw: 'Nalika panjenengan ngirim pitakenan kabudayan dhateng Asisten Pamomong saha AI Studio, namung teks pitakenan budaya, mode, lan basa ingkang kakirim menyang API Gemini. Nyuwun sampun nglebokake data pribadi rahasia ing kolom pitakenan.',
+      id: 'Saat Anda mengirimkan pertanyaan atau tema pada Asisten Pamomong dan AI Studio, teks kueri budaya, mode analisis, dan bahasa terpilih dikirim ke mesin inferensi Pamomong Nusantara untuk menghasilkan jawaban maupun audio narasi. Mohon tidak memasukkan informasi sensitif pribadi (NIK, kata sandi, nomor rekening) ke kolom kueri budaya.',
+      en: 'When you submit a cultural question or prompt to Pamomong AI or AI Studio, only the cultural prompt text, active tool mode, and language preference are sent to the Pamomong Nusantara inference service. Please avoid entering personal sensitive identifiers in cultural query fields.',
+      jw: 'Nalika panjenengan ngirim pitakenan kabudayan dhateng Asisten Pamomong saha AI Studio, namung teks pitakenan budaya, mode, lan basa ingkang kakirim menyang layanan Pamomong Nusantara. Nyuwun sampun nglebokake data pribadi rahasia ing kolom pitakenan.',
     },
   },
   {

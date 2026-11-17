@@ -197,7 +197,14 @@
           ? bendaAktif.id
           : 'keris';
     partAiBusy = true;
-    partAiResult = await tanyakanKeAsisten(targetBendaId, kueri, bahasa);
+    partAiResult = await tanyakanKeAsisten(targetBendaId, kueri, bahasa, {
+      judulUnsur: judulPart,
+      material: titikAktif.material ? ambilTeks(titikAktif.material, bahasa) : undefined,
+      fungsiTeknis: titikAktif.fungsiTeknis
+        ? ambilTeks(titikAktif.fungsiTeknis, bahasa)
+        : undefined,
+      ringkasan: ambilTeks(titikAktif.ringkasan, bahasa),
+    });
     partAiBusy = false;
   }
 
@@ -595,16 +602,18 @@
                   {partAiResult.statusGrounding === 'luar-korpus'
                     ? tI18n(bahasa, 'kawruh.statusAbstain')
                     : partAiResult.statusGrounding === 'eksplorasi-nusantara'
-                      ? partAiResult.mode === 'gemini-3.8-live'
+                      ? partAiResult.mode === 'pamomong-live'
                         ? tI18n(bahasa, 'kawruh.statusNusantaraGemini')
                         : tI18n(bahasa, 'kawruh.statusNusantaraOffline')
-                      : partAiResult.mode === 'gemini-3.8-live'
+                      : partAiResult.mode === 'pamomong-live'
                         ? tI18n(bahasa, 'kawruh.statusGemini')
                         : tI18n(bahasa, 'kawruh.statusVerified')}
                 </span>
                 <span class="rag-model-pill">{partAiResult.modelNama}</span>
               </div>
-              <p class="twin-part-ai-copy">{partAiResult.jawaban}</p>
+              {#each partAiResult.jawaban.split('\n\n').filter(Boolean) as paragraf}
+                <p class="twin-part-ai-copy">{paragraf}</p>
+              {/each}
             </div>
           {/if}
         </div>

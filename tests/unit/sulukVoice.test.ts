@@ -93,11 +93,11 @@ describe('Narasi Suara Layar Penuh Suluk (Gemini 3.8 Live Unlimited Multibahasa)
       liveClientFactory: () => liveFake,
     });
 
-    expect(MODEL_TTS_SULUK).toBe('gemini-3.8-live');
+    expect(MODEL_TTS_SULUK).toBe('Pamomong Nusantara');
     expect(capturedModel).toBe('gemini-3.8-live');
     expect(capturedVoice).toBe('Kore');
     expect(sendSpy).toHaveBeenCalledTimes(1);
-    expect(resEn.modePenyedia).toBe('gemini-3.8-live');
+    expect(resEn.modePenyedia).toBe('pamomong-live');
     expect(resEn.mimeType).toBe('audio/wav');
     expect(resEn.audioBase64).toBeTruthy();
 

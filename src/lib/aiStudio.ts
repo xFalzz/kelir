@@ -39,7 +39,7 @@ export interface KomparasiResult {
   titikTemuFilosofi: string;
   sumber: KodeSumber[];
   modelNama: typeof MODEL_AI_STUDIO;
-  mode: 'gemini-3.8-live' | 'kurasi-lokal';
+  mode: 'pamomong-live' | 'kurasi-lokal';
   latensiMs: number;
 }
 
@@ -54,7 +54,7 @@ export interface PujanggaResult {
   kodeBcp47: 'id-ID' | 'en-US' | 'jv-ID';
   audioBase64: string | null;
   mimeType: string | null;
-  modePenyedia: 'gemini-3.8-live-audio' | 'web-speech-fallback';
+  modePenyedia: 'pamomong-live-audio' | 'web-speech-fallback';
   sumber: KodeSumber[];
   modelNama: typeof MODEL_AI_STUDIO;
   latensiMs: number;
@@ -73,7 +73,7 @@ export interface KramaAksaraResult {
   kodeBcp47: 'id-ID' | 'en-US' | 'jv-ID';
   audioBase64: string | null;
   mimeType: string | null;
-  modePenyedia: 'gemini-3.8-live-audio' | 'web-speech-fallback';
+  modePenyedia: 'pamomong-live-audio' | 'web-speech-fallback';
   sumber: KodeSumber[];
   modelNama: typeof MODEL_AI_STUDIO;
   latensiMs: number;
@@ -105,7 +105,7 @@ export interface RuteTurResult {
   langkah: LangkahRuteTur[];
   sumber: KodeSumber[];
   modelNama: typeof MODEL_AI_STUDIO;
-  mode: 'gemini-3.8-live' | 'kurasi-lokal';
+  mode: 'pamomong-live' | 'kurasi-lokal';
   latensiMs: number;
   statusAman?: boolean;
   pesanKeamanan?: string;
@@ -336,8 +336,16 @@ export function bandingkanPusakaLokal(
 
   const matA = a.titikInfo[0]?.material ? ambilTeks(a.titikInfo[0].material, bahasa) : katA;
   const matB = b.titikInfo[0]?.material ? ambilTeks(b.titikInfo[0].material, bahasa) : katB;
-  const cadA = a.parameterCad?.[0] ? `${ambilTeks(a.parameterCad[0].label, bahasa)}: ${ambilTeks(a.parameterCad[0].nilai, bahasa)}` : '';
-  const cadB = b.parameterCad?.[0] ? `${ambilTeks(b.parameterCad[0].label, bahasa)}: ${ambilTeks(b.parameterCad[0].nilai, bahasa)}` : '';
+  const tekA = a.titikInfo[0]?.fungsiTeknis ? ambilTeks(a.titikInfo[0].fungsiTeknis, bahasa) : '';
+  const tekB = b.titikInfo[0]?.fungsiTeknis ? ambilTeks(b.titikInfo[0].fungsiTeknis, bahasa) : '';
+  const cadA = (a.parameterCad ?? [])
+    .slice(0, 2)
+    .map((p) => `${ambilTeks(p.label, bahasa)}: ${ambilTeks(p.nilai, bahasa)}`)
+    .join('; ');
+  const cadB = (b.parameterCad ?? [])
+    .slice(0, 2)
+    .map((p) => `${ambilTeks(p.label, bahasa)}: ${ambilTeks(p.nilai, bahasa)}`)
+    .join('; ');
 
   if (bahasa === 'en') {
     return {
@@ -348,10 +356,10 @@ export function bandingkanPusakaLokal(
       judulB,
       persamaan:
         a.id === b.id
-          ? `${judulA} shares its own unified ${katA} engineering discipline documented across ${sumber.join(', ')}, linking precision handcraft with living community ritual.`
-          : `Both ${judulA} (${katA}) and ${judulB} (${katB}) preserve disciplined multi-stage Javanese craftsmanship curated across ${sumber.join(', ')}. Each specimen pairs structural tolerances (${cadA || asalA}; ${cadB || asalB}) with ethical contemplation.`,
-      perbedaanMaterial: `${judulA} primarily centers on ${matA} sourced around ${asalA}, whereas ${judulB} relies on ${matB} centered around ${asalB}.`,
-      titikTemuFilosofi: `${judulA}: "${ambilTeks(a.filosofi, 'en')}" — mirrored by ${judulB}: "${ambilTeks(b.filosofi, 'en')}"`,
+          ? `${judulA} embodies a unified ${katA} discipline documented across ${sumber.join(', ')}, uniting rigorous physical tolerances (${cadA || asalA}) with ceremonial symbolism and community transmission.`
+          : `Both ${judulA} (${katA}) and ${judulB} (${katB}) exemplify patient multi-stage Nusantara craftsmanship grounded in ${sumber.join(', ')}. Each integrates material proportioning and ergonomic balance with enduring social-ethical instruction.`,
+      perbedaanMaterial: `${judulA} centers on ${matA} (${cadA || asalA})${tekA ? ` engineered to ${tekA.toLowerCase()}` : ''}; by contrast, ${judulB} is formed from ${matB} (${cadB || asalB})${tekB ? ` designed for ${tekB.toLowerCase()}` : ''}. Conservation therefore differs markedly between their surfaces.`,
+      titikTemuFilosofi: `${judulA}: ${ambilTeks(a.filosofi, 'en')} In dialogue with ${judulB}: ${ambilTeks(b.filosofi, 'en')}`,
       sumber,
       modelNama: MODEL_AI_STUDIO,
       mode: 'kurasi-lokal',
@@ -360,7 +368,7 @@ export function bandingkanPusakaLokal(
   }
 
   if (bahasa === 'jw' || bahasa === 'aks') {
-    const hasilJw: KomparasiResult = {
+    return {
       idA: a.id,
       idB: b.id,
       bahasa,
@@ -368,16 +376,15 @@ export function bandingkanPusakaLokal(
       judulB,
       persamaan:
         a.id === b.id
-          ? `${judulA} kagungan disiplin kriya ${katA} ingkang utuh miturut arsip ${sumber.join(', ')}.`
-          : `Kalih-kalihipun — ${judulA} (${katA}) saha ${judulB} (${katB}) — sami-sami nyawijekake rekayasa presisi lan piwulang luhur miturut pustaka ${sumber.join(', ')}.`,
-      perbedaanMaterial: `${judulA} ngandelake ${matA} (${asalA}), dene ${judulB} kagawe saking ${matB} (${asalB}).`,
-      titikTemuFilosofi: `${judulA}: "${ambilTeks(a.filosofi, 'jw')}" — jumbuh kalih ${judulB}: "${ambilTeks(b.filosofi, 'jw')}"`,
+          ? `${judulA} kagungan disiplin kriya ${katA} ingkang utuh miturut arsip ${sumber.join(', ')} kanthi presisi ukuran (${cadA || asalA}) saha piwulang luhur.`
+          : `Kalih-kalihipun — ${judulA} (${katA}) lan ${judulB} (${katB}) — sami-sami ngutamakaken kasabaran garap empu, presisi konstruksi, saha selaras kalih alam miturut pustaka ${sumber.join(', ')}.`,
+      perbedaanMaterial: `${judulA} ngandelake ${matA} (${cadA || asalA}), dene ${judulB} kagawe saking ${matB} (${cadB || asalB}) ingkang mbutuhake tata pangreksan beda.`,
+      titikTemuFilosofi: `${judulA}: ${ambilTeks(a.filosofi, 'jw')} Jumbuh kalih ${judulB}: ${ambilTeks(b.filosofi, 'jw')}`,
       sumber,
       modelNama: MODEL_AI_STUDIO,
       mode: 'kurasi-lokal',
       latensiMs: 8,
     };
-    return hasilJw;
   }
 
   return {
@@ -388,10 +395,10 @@ export function bandingkanPusakaLokal(
     judulB,
     persamaan:
       a.id === b.id
-        ? `${judulA} merepresentasikan satu kesatuan utuh disiplin ${katA} dalam arsip ${sumber.join(', ')}, menggabungkan presisi teknis (${cadA || asalA}) dan laku filosofis.`
-        : `Keduanya — ${judulA} (${katA}) dan ${judulB} (${katB}) — bertumpu pada kesabaran proses bertahap serta keselarasan manusia dengan alam menurut catatan ${sumber.join(', ')}.`,
-    perbedaanMaterial: `${judulA} bertumpu pada material ${matA} (${cadA || asalA}), sedangkan ${judulB} dibangun dengan ${matB} (${cadB || asalB}).`,
-    titikTemuFilosofi: `${judulA}: "${ambilTeks(a.filosofi, 'id')}" Bersanding dengan ${judulB}: "${ambilTeks(b.filosofi, 'id')}"`,
+        ? `${judulA} merupakan satu kesatuan utuh disiplin ${katA} dalam arsip ${sumber.join(', ')} yang memadukan presisi rekayasa fisik (${cadA || asalA}) dengan kesadaran budaya turun-temurun.`
+        : `Keduanya — ${judulA} (${katA}) dan ${judulB} (${katB}) — sama-sama menuntut penguasaan teknik bertahap lintas generasi, ketelitian proporsi material, serta fungsi edukasi nilai budaya menurut pustaka ${sumber.join(', ')}.`,
+    perbedaanMaterial: `${judulA} bertumpu pada ${matA} (${cadA || asalA})${tekA ? ` dengan fungsi teknis ${tekA.toLowerCase()}` : ''}, sedangkan ${judulB} dibangun menggunakan ${matB} (${cadB || asalB})${tekB ? ` yang menonjolkan ${tekB.toLowerCase()}` : ''}. Konservasi material keduanya menuntut perlakuan pelestarian yang khas.`,
+    titikTemuFilosofi: `${judulA}: ${ambilTeks(a.filosofi, 'id')} Bersanding erat dengan ${judulB}: ${ambilTeks(b.filosofi, 'id')}`,
     sumber,
     modelNama: MODEL_AI_STUDIO,
     mode: 'kurasi-lokal',
@@ -399,7 +406,7 @@ export function bandingkanPusakaLokal(
   };
 }
 
-/** Pembuat bait puitik Jawa, konversi aksara U+A980, dan naskah suara deterministik S1-S7. */
+/** Pembuat bait puitik Jawa, konversi aksara U+A980, dan naskah suara deterministik. */
 export function susunPujanggaLokal(temaInput: string, bahasa: BahasaAktif): PujanggaResult {
   const validasi = validasiTemaPujangga(temaInput, bahasa);
   const temaBersih = validasi.temaBersih;
@@ -410,13 +417,13 @@ export function susunPujanggaLokal(temaInput: string, bahasa: BahasaAktif): Puja
   let artiId =
     'Menyadari asal dan tujuan hidup dengan sikap eling serta waspada;\nMemperindah harmoni dunia, menjaga warisan budaya nusantara.';
   let artiEn =
-    'Remember origin and destination with mindful vigilance;\nSteward the beauty and balance of our living heritage.';
+    'Remember origin and destination with mindful vigilance;\nSteward the beauty and balance of our living archipelago heritage.';
   let maknaId =
-    'Terinspirasi konsep Sangkan Paraning Dumadi (S1, S3) & Memayu Hayuning Bawana (S2, S4, S6).';
+    'Pitutur luhur ini memadukan kesadaran diri Sangkan Paraning Dumadi dan tanggung jawab ekologis-sosial Memayu Hayuning Bawana (S1, S2, S6).';
   let maknaEn =
-    'Inspired by Sangkan Paraning Dumadi (S1, S3) and Memayu Hayuning Bawana (S2, S4, S6).';
+    'Synthesizes self-awareness (Sangkan Paraning Dumadi) with stewardship toward earthly harmony (Memayu Hayuning Bawana) across S1, S2, and S6.';
   let maknaJw =
-    'Kapetik saking piwulang Sangkan Paraning Dumadi (S1, S3) lan Memayu Hayuning Bawana (S2, S4, S6).';
+    'Nyawijekake piwulang Sangkan Paraning Dumadi lan kewajiban Memayu Hayuning Bawana kangge njagi kabudayan Jawi (S1, S2, S6).';
   let sumber: KodeSumber[] = ['S1', 'S2', 'S6'];
 
   if (low.includes('keris') || low.includes('pamor') || low.includes('besi') || low.includes('blade')) {
@@ -426,31 +433,40 @@ export function susunPujanggaLokal(temaInput: string, bahasa: BahasaAktif): Puja
       'Besi dan pamor menyatu di perapian kesabaran;\nLengkung lima melambangkan kelapangan budi seorang kesatria.';
     artiEn =
       'Steel and meteoric nickel unite inside the forge of patience;\nFive curved waves embody a knight’s broad temperance.';
-    maknaId = 'Selaras dengan disiplin tempa Tosan Aji Mataram dan luk Pandawa Lima (S1).';
-    maknaEn = 'Grounded in Mataram laminated keris metallurgy and Luk Lima philosophy (S1).';
-    maknaJw = 'Selaras kalih teknik tempa Tosan Aji Mataram lan filsafat Luk Gangsal (S1).';
+    maknaId =
+      'Pencampuran besi inti dan nikel meteorit lewat lipatan tempa berulang mencerminkan penyatuan keteguhan hati dan kerendahan budi dalam etika Tosan Aji (S1).';
+    maknaEn =
+      'Mirroring laminated steel and meteoric nickel forging, the verse equates metallurgical endurance with balanced leadership under Luk Lima ethics (S1).';
+    maknaJw =
+      'Penyatuan wesi lan pamor nikel ing pawon empu nglambangaken keteguhan manah lan budi pekerti luhur Tosan Aji (S1).';
     sumber = ['S1'];
-  } else if (low.includes('batik') || low.includes('kawung') || low.includes('soga') || low.includes('kain')) {
+  } else if (low.includes('batik') || low.includes('kawung') || low.includes('soga') || low.includes('kain') || low.includes('tenun')) {
     guritJawa =
       'Titik pancer ing tengahing kiblat papat,\nCanting malam ngukir rasa kanthi taliti lan tepat.';
     artiId =
       'Satu titik pusat di antara empat penjuru angin;\nCanting malam mengukir ketulusan batin dengan ketelitian tinggi.';
     artiEn =
-      'One centered awareness holding the four compass points;\nCopper canting wax inscribes patient beauty onto cotton cloth.';
-    maknaId = 'Berakar pada motif Batik Kawung & pewarnaan soga alam (S2).';
-    maknaEn = 'Rooted in Batik Kawung Kiblat Papat geometry and natural soga dyes (S2).';
-    maknaJw = 'Kados piwulang Batik Tulis Kawung lan celup soga alam (S2).';
-    sumber = ['S2'];
-  } else if (low.includes('gamelan') || low.includes('saron') || low.includes('slendro') || low.includes('musik')) {
+      'One centered awareness holding the four compass points;\nWax and handwoven dye inscribe patient beauty onto cloth.';
+    maknaId =
+      'Geometri empat elips mengelilingi pusat melambangkan keseimbangan batin dari segala arah, ditempa ketelatenan torehan malam dan celupan pewarna alam (S2).';
+    maknaEn =
+      'Rooted in Kiblat Papat Lima Pancer symmetry and painstaking natural soga dyeing, reminding artisans that beauty arises from patience (S2).';
+    maknaJw =
+      'Pola Kiblat Papat Lima Pancer lan telatenipun mbatik malam saha soga alam mulangaken katentremaning jiwa (S2).';
+    sumber = low.includes('tenun') ? [] : ['S2'];
+  } else if (low.includes('gamelan') || low.includes('saron') || low.includes('slendro') || low.includes('musik') || low.includes('angklung') || low.includes('sasando')) {
     guritJawa =
       'Nem wilah gangsa muni selaras ing laras slendro,\nPijetan kiwa njaga tentrem tanpa ngalahake swara liya.';
     artiId =
       'Enam bilah perunggu bernada sejajar dalam laras Slendro;\nPijetan tangan kiri merawat harmoni tanpa meniadakan suara sesama.';
     artiEn =
-      'Six bronze bars sing in mutual Slendro alignment;\nLeft-hand damping guards harmony without drowning neighbor tones.';
-    maknaId = 'Mengacu pada etika musikal Saron Barung & pengendalian gema (S4).';
-    maknaEn = 'Reflects Saron Barung Slendro acoustic discipline and mutual listening (S4).';
-    maknaJw = 'Miturut tatanan karawitan Saron Slendro lan teknik pijetan (S4).';
+      'Six bronze bars sing in mutual alignment;\nCareful damping guards shared harmony without drowning neighbor voices.';
+    maknaId =
+      'Dalam tradisi ansambel Nusantara, keindahan suara tidak lahir dari satu pemain paling keras, melainkan pengendalian gema (pijetan) demi ruang dialog bersama (S4).';
+    maknaEn =
+      'Across archipelago ensemble ethics, musical grace depends on mutual damping (pijetan) and listening so every voice shines harmoniously (S4).';
+    maknaJw =
+      'Ing jagad karawitan, kaendahan swara tuwuh saking pangendhalian gema supados saben instrumen saged muni kanthi selaras (S4).';
     sumber = ['S4'];
   } else if (low.includes('wayang') || low.includes('kelir') || low.includes('dalang') || low.includes('rama')) {
     guritJawa =
@@ -459,10 +475,55 @@ export function susunPujanggaLokal(temaInput: string, bahasa: BahasaAktif): Puja
       'Cahaya pelita blencong menerangi layar blacu putih;\nGerak wayang menuntun jiwa manusia menuju kejernihan budi.';
     artiEn =
       'Warm Blencong flame animates shadows on the pure white screen;\nThe puppeteer’s grace guides human spirit toward clarity.';
-    maknaId = 'Berpijak pada simfoni bayangan Blencong & epos Pakeliran (S3, S5).';
-    maknaEn = 'Grounded in Pakeliran shadow philosophy and Ramayana ethics (S3, S5).';
-    maknaJw = 'Adhedhasar falsafah Blencong saha pagelaran Ringgit Wacucal (S3, S5).';
+    maknaId =
+      'Layar kelir menjadi cermin kehidupan tempat bayangan baik-buruk bertemu cahaya pelita Blencong sebagai lambang kebijaksanaan ilahi (S3, S5).';
+    maknaEn =
+      'Grounded in Pakeliran shadow philosophy where the flickering oil lamp illuminates moral choices projected across the white cloth screen (S3, S5).';
+    maknaJw =
+      'Kelir dados pangilon gesang nalika sorot Blencong nuntun pambeda antarane watak luhur lan angkara ing lakon purwa (S3, S5).';
     sumber = ['S3', 'S5'];
+  } else if (low.includes('joglo') || low.includes('pendopo') || low.includes('pendhapa') || low.includes('rumah') || low.includes('gadang') || low.includes('tongkonan')) {
+    guritJawa =
+      'Saka guru ngadeg jejeg tanpa paku wesi,\nTumpang sari ngayomi sesami ing bumi kang lestari.';
+    artiId =
+      'Tiang utama berdiri kokoh tanpa paku besi;\nSusunan atap bertumpuk menaungi sesama di bumi yang lestari.';
+    artiEn =
+      'Main pillars stand upright on stone footings without rigid iron;\nStepped timber rafters shelter community in harmony with the earth.';
+    maknaId =
+      'Arsitektur tradisional Nusantara memilih kelenturan sambungan kayu dan sendi batu agar menyelaraskan diri dengan dinamika bumi dan ruang musyawarah terbuka (S6).';
+    maknaEn =
+      'Traditional archipelago timber architecture embraces ductile joinery and open gathering spaces to live in resilience alongside seismic terrain (S6).';
+    maknaJw =
+      'Arsitektur Jawi lan Nuswantara ngutamakaken kelenturan sambungan kayu saha papan musyawarah terbuka tumrap bebrayan (S6).';
+    sumber = low.includes('gadang') || low.includes('tongkonan') ? [] : ['S6'];
+  } else if (low.includes('aksara') || low.includes('hanacaraka') || low.includes('lontara') || low.includes('sastra')) {
+    guritJawa =
+      'Aksara kalih dasa nyimpen piwulang rasa,\nNgrakit tembung luhur dadi pepadhang jaman langgeng ing mangsa.';
+    artiId =
+      'Dua puluh aksara menyimpan kearifan budi;\nMerangkai tutur luhur menjadi pelita pengetahuan melintasi zaman.';
+    artiEn =
+      'Twenty foundational glyphs preserve ancestral wisdom;\nWeaving noble words into timeless illumination across generations.';
+    maknaId =
+      'Tradisi tulis Hanacaraka hingga aksara Nusantara menjadi jembatan memori sejarah, etika sastra, dan identitas literasi peradaban (S7).';
+    maknaEn =
+      'Archipelagic writing systems bridge historical manuscripts, ethical literature, and enduring cultural literacy (S7).';
+    maknaJw =
+      'Aksara Hanacaraka lan aksara Nuswantara dados jembatan memori sejarah, kasusastran, saha jatidiri bangsa (S7).';
+    sumber = low.includes('lontara') ? [] : ['S7'];
+  } else if (low.includes('tari') || low.includes('saman') || low.includes('nusantara') || low.includes('laut') || low.includes('maritim') || low.includes('pinisi')) {
+    guritJawa =
+      'Saka Sabang nganti Merauke manunggal ing rasa,\nOmbak lan gending nyawiji njaga marwah bangsa.';
+    artiId =
+      'Dari Sabang hingga Merauke menyatu dalam keselarasan rasa;\nGelombang samudra dan irama seni bersatu menjaga martabat bangsa.';
+    artiEn =
+      'From Sabang to Merauke, diverse rhythms meet in shared grace;\nOcean waves and communal arts safeguard the dignity of our archipelago.';
+    maknaId =
+      'Menggemakan nilai persaudaraan Nusantara—dari kekompakan seni gerak kolektif hingga kearifan pelaut dan gotong royong penjaga warisan Indonesia.';
+    maknaEn =
+      'Celebrates Nusantara unity across diverse regional dances, seafaring crafts, and communal stewardship from Sumatra to Papua.';
+    maknaJw =
+      'Nglairaken semangat paseduluran Nuswantara saking Sabang dumugi Merauke ingkang njagi warisan seni lan samudra bangsa.';
+    sumber = [];
   }
 
   const { kodeBcp47 } = tentukanBahasaSuara(bahasa);
@@ -518,17 +579,25 @@ export async function mintaKomparasiAI(
     diffClean &&
     memilikiJangkarBudaya(`${persClean} ${diffClean} ${data.titikTemuFilosofi ?? ''}`)
   ) {
+    const philClean = auditDanBersihkanOutputAI(data.titikTemuFilosofi, {
+      minKarakter: 10,
+      maxKarakter: 1000,
+      wajibJangkarBudaya: false,
+    });
     return {
       ...data,
       persamaan: persClean,
       perbedaanMaterial: diffClean,
+      titikTemuFilosofi: philClean ?? data.titikTemuFilosofi,
+      modelNama: MODEL_AI_STUDIO,
+      mode: data.mode === 'pamomong-live' ? 'pamomong-live' : 'kurasi-lokal',
       latensiMs: Math.max(12, Math.round((typeof performance !== 'undefined' ? performance.now() : Date.now()) - start)),
     };
   }
   return bandingkanPusakaLokal(idA, idB, bahasa);
 }
 
-/** Meminta gubahan puitik Jawa, Hanacaraka, dan suara WAV dari gemini-3.8-live dengan fallback lokal. */
+/** Meminta gubahan puitik Jawa, Hanacaraka, dan suara WAV via Agen Pamomong Nusantara dengan fallback lokal. */
 export async function mintaPujanggaAI(
   tema: string,
   bahasa: BahasaAktif,
@@ -549,11 +618,13 @@ export async function mintaPujanggaAI(
   if (
     data &&
     auditDanBersihkanOutputAI(data.guritJawa, { minKarakter: 8, wajibJangkarBudaya: false }) &&
-    auditDanBersihkanOutputAI(data.catatanMakna, { minKarakter: 8, wajibJangkarBudaya: true }) &&
+    auditDanBersihkanOutputAI(data.catatanMakna, { minKarakter: 8, maxKarakter: 520, wajibJangkarBudaya: true }) &&
     data.aksaraJawa
   ) {
     return {
       ...data,
+      modelNama: MODEL_AI_STUDIO,
+      modePenyedia: data.audioBase64 ? 'pamomong-live-audio' : 'web-speech-fallback',
       statusAman: data.statusAman ?? true,
       latensiMs: Math.max(12, Math.round((typeof performance !== 'undefined' ? performance.now() : Date.now()) - start)),
     };
@@ -582,32 +653,41 @@ export function susunKramaLokal(
 
   if (low.includes('terima kasih') || low.includes('thank') || low.includes('matur')) {
     ngoko = 'Matur nuwun banget ya kanggo ilmune.';
-    kramaInggil = 'Matur sembah nuwun sanget awit piwulangipun.';
+    kramaInggil = 'Matur sembah nuwun sanget awit piwulang saha pitedahipun.';
     etikaId =
-      'Ungkapan terima kasih bertingkat memperhalus hubungan murid, empu, maupun sesepuh karawitan (S5, S7).';
+      'Ungkapan matur sembah nuwun memadukan kata halus (krama andhap) untuk merendahkan hati di hadapan sesepuh, guru, maupun empu pengrajin tradisi (S5, S7). Diucapkan dengan sikap tenang tanpa tergesa-gesa.';
     etikaEn =
-      'Matur sembah nuwun elevates gratitude toward elders, master artisans, and puppeteers (S5, S7).';
+      'Pairing matur sembah nuwun expresses humble reverence (krama andhap) toward elders, master artisans, and teachers (S5, S7), reserving refined krama nouns such as piwulang for their wisdom.';
     etikaJw =
-      'Tembung matur sembah nuwun ngurmati para empu lan sesepuh seni tradisi (S5, S7).';
-  } else if (low.includes('keris') || low.includes('batik') || low.includes('pusaka')) {
-    ngoko = 'Aku kepengin weruh filosofi keris lan batik kawung.';
-    kramaInggil = 'Kula kapengin nyumerepi falsafah dhuwung saha sinjang kawung.';
+      'Tembung matur sembah nuwun minangka wujuding andhap-asor dhumateng sesepuh lan para empu seni tradisi (S5, S7).';
+  } else if (low.includes('maaf') || low.includes('sorry') || low.includes('permisi') || low.includes('nuwun sewu') || low.includes('pangapunten')) {
+    ngoko = 'Sepurane ya yen aku ana luput utawa arep nyuwun pirsa.';
+    kramaInggil = 'Nuwun sewu, kula nyuwun gunging pangapunten menawi wonten lepatipun.';
     etikaId =
-      'Penyebutan pusaka dalam Krama memakai kata halus dhuwung dan sinjang sebagai wujud penghormatan kriya leluhur (S1, S2, S7).';
+      'Ungkapan Nuwun sewu dan nyuwun pangapunten mengawali sapaan dengan rasa tepa salira ketika memasuki ruang adat, pameran keraton, atau bertanya kepada sesepuh (S5, S7).';
     etikaEn =
-      'Refined speech pairs dhuwung (keris) and sinjang (batik cloth) to honor master artisans (S1, S2, S7).';
+      'Opening with Nuwun sewu (excuse me politely) and nyuwun gunging pangapunten honors spatial courtesy before addressing elders or entering cultural sanctuaries (S5, S7).';
     etikaJw =
-      'Tembung krama dhuwung lan sinjang nglairaken pakurmatan dhumateng karya empu lan pambatik (S1, S2, S7).';
-    sumber = ['S1', 'S2', 'S7'];
-  } else if (low.includes('selamat') || low.includes('pagi') || low.includes('sore') || low.includes('greeting')) {
+      'Ukara nuwun sewu lan nyuwun pangapunten nedahaken tata krama alus nalika sowan utawa matur pitakenan (S5, S7).';
+  } else if (low.includes('keris') || low.includes('batik') || low.includes('pusaka') || low.includes('gamelan')) {
+    ngoko = 'Aku kepengin weruh filosofi keris, gamelan, lan batik kawung.';
+    kramaInggil = 'Kula kepareng nyuwun pirsa falsafah dhuwung, gangsa, saha sinjang kawung.';
+    etikaId =
+      'Basa Krama mengganti kata benda sehari-hari dengan kosakata takzim: dhuwung (keris), gangsa (gamelan perunggu), dan sinjang (kain batik) sebagai hormat pada keluhuran kriya leluhur (S1, S2, S4, S7).';
+    etikaEn =
+      'Refined Krama Inggil elevates heirloom nouns — dhuwung (keris), gangsa (bronze gamelan), and sinjang (batik) — plus nyuwun pirsa rather than plain takon when inquiring respectfully (S1, S2, S4, S7).';
+    etikaJw =
+      'Tembung krama dhuwung, gangsa, lan sinjang nglairaken pakurmatan dhumateng karya empu, pengrawit, lan pambatik (S1, S2, S4, S7).';
+    sumber = ['S1', 'S2', 'S4', 'S7'];
+  } else if (low.includes('selamat') || low.includes('pagi') || low.includes('sore') || low.includes('greeting') || low.includes('sugeng')) {
     ngoko = 'Sugeng rawuh ing pendhapa, muga tansah rahayu.';
     kramaInggil = 'Sugeng rawuh wonten ing pendhapa, mugi tansah pinaringan karaharjan.';
     etikaId =
-      'Sapaan pembuka Pendopo mendoakan keselamatan (rahayu) sebelum pergelaran atau perbincangan dimulai (S5, S6).';
+      'Sapaan pembuka Pendopo memakai kata kerja hormat rawuh bagi tamu sekaligus mendoakan keselamatan bersama (karaharjan) sebelum pergelaran atau musyawarah dimulai (S5, S6).';
     etikaEn =
-      'A classic Pendopo greeting invoking harmony and well-being (karaharjan) before entering conversation (S5, S6).';
+      'A classic Pendopo greeting pairs honorific rawuh (arrival of an esteemed guest) with a shared blessing of karaharjan (peaceful well-being) before entering dialogue (S5, S6).';
     etikaJw =
-      'Atur pambagyaharja ing pendhapa tansah nyenyuwun karaharjan sadaya tamu (S5, S6).';
+      'Atur pambagyaharja ing pendhapa migunakaken tembung rawuh kangge tamu lan nyenyuwun karaharjan sadaya (S5, S6).';
     sumber = ['S5', 'S6'];
   }
 
@@ -920,9 +1000,29 @@ export function susunRuteTurLokal(
     ],
   };
 
-  const langkahDasar = langkahMap[minat] ?? langkahMap.semua;
+  const catatanLow = catatanBersih.toLowerCase();
+  let langkahDasar = langkahMap[minat] ?? langkahMap.semua;
+  if (catatanLow.includes('umpak') || catatanLow.includes('gempa')) {
+    langkahDasar = langkahMap.arsitektur;
+  } else if (catatanLow.includes('blencong') || catatanLow.includes('kidang')) {
+    langkahDasar = langkahMap.pakeliran;
+  } else if (catatanLow.includes('slendro') || catatanLow.includes('gangsa')) {
+    langkahDasar = langkahMap.karawitan;
+  } else if (catatanLow.includes('pamor') || catatanLow.includes('warangka')) {
+    langkahDasar = langkahMap.tosan;
+  }
   const langkah = isMendalam ? langkahDasar : langkahDasar.slice(0, 2);
   const sumber = [...new Set(langkah.flatMap((l) => l.sumber))];
+  const catatanLabel = catatanBersih
+    ? ambilTeks(
+        {
+          id: ` Fokus khusus pada "${catatanBersih}".`,
+          en: ` Tailored around "${catatanBersih}".`,
+          jw: ` Dipuntujokaken dhateng "${catatanBersih}".`,
+        },
+        bahasa,
+      )
+    : '';
 
   return {
     minat,
@@ -931,9 +1031,9 @@ export function susunRuteTurLokal(
     bahasa,
     ringkasanRute: ambilTeks(
       {
-        id: `Rute kurasi ${isMendalam ? 'mendalam' : 'kilat'} (±${estimasiMenit} menit) menyoroti ${langkah.length} titik warisan S1–S7.`,
-        en: `Curated ${isMendalam ? 'deep' : 'express'} spatial itinerary (~${estimasiMenit} min) spanning ${langkah.length} verified S1–S7 rooms.`,
-        jw: `Rute kurasi ${isMendalam ? 'jembar' : 'rikat'} (±${estimasiMenit} menit) ngliwati ${langkah.length} papan warisan S1–S7.`,
+        id: `Rute kurasi ${isMendalam ? 'mendalam' : 'kilat'} (±${estimasiMenit} menit) menyoroti ${langkah.length} titik warisan terverifikasi S1–S7.${catatanLabel}`,
+        en: `Curated ${isMendalam ? 'deep' : 'express'} spatial itinerary (~${estimasiMenit} min) spanning ${langkah.length} verified S1–S7 rooms.${catatanLabel}`,
+        jw: `Rute kurasi ${isMendalam ? 'jembar' : 'rikat'} (±${estimasiMenit} menit) ngliwati ${langkah.length} papan warisan S1–S7.${catatanLabel}`,
       },
       bahasa,
     ),
@@ -948,7 +1048,7 @@ export function susunRuteTurLokal(
   };
 }
 
-/** Meminta panduan Krama Inggil + Hanacaraka + Audio WAV dari gemini-3.8-live dengan fallback lokal. */
+/** Meminta panduan Krama Inggil + Hanacaraka + Audio WAV via Agen Pamomong Nusantara dengan fallback lokal. */
 export async function mintaKramaAI(
   frasa: string,
   bahasa: BahasaAktif,
@@ -969,11 +1069,13 @@ export async function mintaKramaAI(
   if (
     data &&
     auditDanBersihkanOutputAI(data.kramaInggil, { minKarakter: 6, wajibJangkarBudaya: false }) &&
-    auditDanBersihkanOutputAI(data.catatanEtika, { minKarakter: 8, wajibJangkarBudaya: true }) &&
+    auditDanBersihkanOutputAI(data.catatanEtika, { minKarakter: 8, maxKarakter: 520, wajibJangkarBudaya: true }) &&
     data.aksaraJawa
   ) {
     return {
       ...data,
+      modelNama: MODEL_AI_STUDIO,
+      modePenyedia: data.audioBase64 ? 'pamomong-live-audio' : 'web-speech-fallback',
       statusAman: data.statusAman ?? true,
       latensiMs: Math.max(12, Math.round((typeof performance !== 'undefined' ? performance.now() : Date.now()) - start)),
     };
@@ -981,7 +1083,7 @@ export async function mintaKramaAI(
   return susunKramaLokal(frasa, bahasa);
 }
 
-/** Meminta rekomendasi rute tur spasial terkurasi dari gemini-3.8-live dengan fallback S1-S7. */
+/** Meminta rekomendasi rute tur spasial terkurasi via Agen Pamomong Nusantara dengan fallback S1-S7. */
 export async function mintaRuteTurAI(
   minat: MinatTurId,
   durasi: DurasiTurId,
@@ -1007,10 +1109,12 @@ export async function mintaRuteTurAI(
     data &&
     Array.isArray(data.langkah) &&
     data.langkah.length > 0 &&
-    auditDanBersihkanOutputAI(data.ringkasanRute, { minKarakter: 12, wajibJangkarBudaya: true })
+    auditDanBersihkanOutputAI(data.ringkasanRute, { minKarakter: 12, maxKarakter: 520, wajibJangkarBudaya: true })
   ) {
     return {
       ...data,
+      modelNama: MODEL_AI_STUDIO,
+      mode: data.mode === 'pamomong-live' ? 'pamomong-live' : 'kurasi-lokal',
       statusAman: data.statusAman ?? true,
       latensiMs: Math.max(12, Math.round((typeof performance !== 'undefined' ? performance.now() : Date.now()) - start)),
     };

@@ -14,8 +14,8 @@ describe('Integrasi Otomatis Model Unlimited Gemini 3.8 Live (gemini-3.8-live)',
   });
 
   it('mengunci model AI secara otomatis dan eksklusif ke gemini-3.8-live (Unlimited RPM/RPD)', () => {
-    expect(MODEL_AI_PAMOMONG).toBe('gemini-3.8-live');
-    expect(MODEL_GEMINI_TETAP).toBe('gemini-3.8-live');
+    expect(MODEL_AI_PAMOMONG).toBe('Pamomong Nusantara');
+    expect(MODEL_GEMINI_TETAP).toBe('Pamomong Nusantara');
 
     const konfLegacy = bacaKonfigurasiGemini({
       GEMINI_API_KEY: 'dummy-key',
@@ -70,8 +70,8 @@ describe('Integrasi Otomatis Model Unlimited Gemini 3.8 Live (gemini-3.8-live)',
     expect(capturedModel).toBe('gemini-3.8-live');
     expect(sendSpy).toHaveBeenCalledTimes(1);
     expect(closeSpy).toHaveBeenCalled();
-    expect(res.mode).toBe('gemini-3.8-live');
-    expect(res.modelNama).toBe('gemini-3.8-live');
+    expect(res.mode).toBe('pamomong-live');
+    expect(res.modelNama).toBe('Pamomong Nusantara');
     expect(res.statusGrounding).toBe('terbukti');
     expect(res.sumber).toContain('S6');
     expect(res.jawaban).toContain('Joglo');
@@ -104,12 +104,12 @@ describe('Integrasi Otomatis Model Unlimited Gemini 3.8 Live (gemini-3.8-live)',
 
     expect(connectSpy).not.toHaveBeenCalled();
     expect(res.statusGrounding).toBe('luar-korpus');
-    expect(res.modelNama).toBe('gemini-3.8-live');
+    expect(res.modelNama).toBe('Pamomong Nusantara');
   });
 
   it('tetap menjaga label model gemini-3.8-live dan mengonversi output AKS ke Hanacaraka', async () => {
     const resLokal = jawabDariKurasiLokal('keris', 'Apa arti luk keris Pandawa?', 'id');
-    expect(resLokal.modelNama).toBe('gemini-3.8-live');
+    expect(resLokal.modelNama).toBe('Pamomong Nusantara');
 
     const liveFake: LiveClientLike = {
       live: {
@@ -140,8 +140,8 @@ describe('Integrasi Otomatis Model Unlimited Gemini 3.8 Live (gemini-3.8-live)',
       liveClientFactory: () => liveFake,
     });
 
-    expect(resAks.mode).toBe('gemini-3.8-live');
-    expect(resAks.modelNama).toBe('gemini-3.8-live');
+    expect(resAks.mode).toBe('pamomong-live');
+    expect(resAks.modelNama).toBe('Pamomong Nusantara');
     expect(resAks.jawaban).toMatch(/[\uA980-\uA9DF]/);
     expect(resAks.jawaban).toContain('S1');
   });
@@ -198,8 +198,8 @@ describe('Integrasi Otomatis Model Unlimited Gemini 3.8 Live (gemini-3.8-live)',
         liveClientFactory: () => liveFake,
       });
 
-      expect(res.mode).toBe('gemini-3.8-live');
-      expect(res.modelNama).toBe('gemini-3.8-live');
+      expect(res.mode).toBe('pamomong-live');
+      expect(res.modelNama).toBe('Pamomong Nusantara');
       expect(res.statusGrounding).toBe('eksplorasi-nusantara');
       expect(res.sumber).toEqual([]);
       expect(res.butirBukti).toEqual([]);

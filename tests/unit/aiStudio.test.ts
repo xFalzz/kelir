@@ -124,7 +124,7 @@ describe('Pencarian Arsip Global, Kuis S1–S7 & AI Studio Gemini 3.8 Live', () 
     });
 
     expect(mock.models).toEqual(['gemini-3.8-live']);
-    expect(liveRes.mode).toBe('gemini-3.8-live');
+    expect(liveRes.mode).toBe('pamomong-live');
     expect(liveRes.persamaan).toContain('kesabaran presisi');
   });
 
@@ -147,7 +147,7 @@ describe('Pencarian Arsip Global, Kuis S1–S7 & AI Studio Gemini 3.8 Live', () 
     });
 
     expect(mock.models).toEqual(['gemini-3.8-live']);
-    expect(liveRes.modePenyedia).toBe('gemini-3.8-live-audio');
+    expect(liveRes.modePenyedia).toBe('pamomong-live-audio');
     expect(liveRes.mimeType).toBe('audio/wav');
     expect(liveRes.audioBase64).toBeTruthy();
     expect(liveRes.aksaraJawa).toMatch(/[\uA980-\uA9DF]/);
@@ -170,7 +170,7 @@ describe('Pencarian Arsip Global, Kuis S1–S7 & AI Studio Gemini 3.8 Live', () 
       liveClientFactory: mock.factory,
     });
     expect(mock.models).toEqual(['gemini-3.8-live']);
-    expect(suaraRes.modePenyedia).toBe('gemini-3.8-live-audio');
+    expect(suaraRes.modePenyedia).toBe('pamomong-live-audio');
     expect(suaraRes.mimeType).toBe('audio/wav');
   });
 
@@ -197,7 +197,7 @@ describe('Pencarian Arsip Global, Kuis S1–S7 & AI Studio Gemini 3.8 Live', () 
       liveClientFactory: mock.factory,
     });
     expect(mock.models).toEqual(['gemini-3.8-live']);
-    expect(liveKrama.modePenyedia).toBe('gemini-3.8-live-audio');
+    expect(liveKrama.modePenyedia).toBe('pamomong-live-audio');
     expect(liveKrama.aksaraJawa).toMatch(/[\uA980-\uA9DF]/);
     expect(liveKrama.statusAman).toBe(true);
   });
@@ -235,7 +235,7 @@ describe('Pencarian Arsip Global, Kuis S1–S7 & AI Studio Gemini 3.8 Live', () 
       liveClientFactory: mock.factory,
     });
     expect(mock.models).toEqual(['gemini-3.8-live']);
-    expect(liveTur.mode).toBe('gemini-3.8-live');
+    expect(liveTur.mode).toBe('pamomong-live');
     expect(liveTur.langkah).toHaveLength(2);
     expect(liveTur.statusAman).toBe(true);
   });

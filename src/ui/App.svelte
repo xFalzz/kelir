@@ -224,7 +224,7 @@
       jawaban: `${ambilTeks(benda.nama, nextLang)}: ${ambilTeks(benda.filosofi, nextLang)}`,
       sumber: benda.sumber,
       mode: 'bm25-kurasi-lokal',
-      modelNama: 'gemini-3.8-live',
+      modelNama: 'Pamomong Nusantara',
       statusGrounding: 'terbukti',
       skorKeyakinan: 98,
       kataKunciCocok: [benda.id],

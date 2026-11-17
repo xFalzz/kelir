@@ -55,7 +55,12 @@ export default async function handler(req: VercelReq, res: VercelRes): Promise<v
     return;
   }
 
-  let body: { bendaId?: BendaPusaka['id']; pertanyaan?: string; bahasa?: BahasaAktif };
+  let body: {
+    bendaId?: BendaPusaka['id'];
+    pertanyaan?: string;
+    bahasa?: BahasaAktif;
+    konteksUnsur?: { judulUnsur?: string; material?: string; fungsiTeknis?: string; ringkasan?: string };
+  };
   try {
     const parsed = typeof req.body === 'string' ? JSON.parse(req.body || '{}') : req.body ?? {};
     if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
@@ -66,6 +71,7 @@ export default async function handler(req: VercelReq, res: VercelRes): Promise<v
       bendaId?: BendaPusaka['id'];
       pertanyaan?: string;
       bahasa?: BahasaAktif;
+      konteksUnsur?: { judulUnsur?: string; material?: string; fungsiTeknis?: string; ringkasan?: string };
     };
   } catch {
     res.status(400).json({ error: 'Format JSON tubuh permintaan tidak valid.' });
@@ -78,6 +84,10 @@ export default async function handler(req: VercelReq, res: VercelRes): Promise<v
   const pertanyaanBersih = bersihkanInputPengguna(pertanyaanRaw, BATAS_KARAKTER_TANYA);
   const bahasa: BahasaAktif =
     body.bahasa && BAHASA_VALID.has(body.bahasa) ? body.bahasa : 'id';
+  const konteksUnsur =
+    body.konteksUnsur && typeof body.konteksUnsur === 'object' && !Array.isArray(body.konteksUnsur)
+      ? body.konteksUnsur
+      : undefined;
 
   const { apiKey } = bacaKonfigurasiGemini();
 
@@ -87,6 +97,7 @@ export default async function handler(req: VercelReq, res: VercelRes): Promise<v
       bendaId,
       pertanyaan: pertanyaanRaw.slice(0, 640),
       bahasa,
+      konteksUnsur,
       apiKey,
     });
     res.status(200).json({

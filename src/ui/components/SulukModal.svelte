@@ -72,7 +72,7 @@
 
   let narasiAktif = $state(true);
   let statusSuara = $state<'siap' | 'memuat' | 'berbicara' | 'jeda'>('siap');
-  let modeSuaraAktual = $state<ModeSuaraSuluk>('gemini-3.8-live');
+  let modeSuaraAktual = $state<ModeSuaraSuluk>('pamomong-live');
   let narasiServerTeks = $state<string | null>(null);
   let teksNarasiTampil = $derived(narasiServerTeks ?? draftNarasi.tampilNaskah);
   let naratorAudioEl: HTMLAudioElement | undefined;
@@ -208,7 +208,7 @@
 
       narasiServerTeks = hasil.tampilNaskah;
       if (hasil.audioBase64 && naratorAudioEl) {
-        modeSuaraAktual = 'gemini-3.8-live';
+        modeSuaraAktual = 'pamomong-live';
         const url = base64AudioKeBlobUrl(hasil.audioBase64, hasil.mimeType || 'audio/wav');
         activeAudioUrl = url;
         naratorAudioEl.src = url;
@@ -552,7 +552,7 @@
       </div>
     </div>
 
-    <!-- Konsol Pemutar Suluk, Narator Suara AI Gemini 3.8 Flash TTS & Gamelan Slendro -->
+    <!-- Konsol Pemutar Suluk, Narator Suara AI Pamomong Nusantara & Gamelan Slendro -->
     <div class="crimson-player-bar">
       <div class="suluk-progress-track" aria-hidden="true">
         <div class="suluk-progress-fill" style="width: {progressPersen}%;"></div>

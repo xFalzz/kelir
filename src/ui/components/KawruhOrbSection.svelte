@@ -295,10 +295,10 @@
     jawabanPamomong.statusGrounding === 'luar-korpus'
       ? tI18n(bahasa, 'kawruh.statusAbstain')
       : jawabanPamomong.statusGrounding === 'eksplorasi-nusantara'
-        ? jawabanPamomong.mode === 'gemini-3.8-live'
+        ? jawabanPamomong.mode === 'pamomong-live'
           ? tI18n(bahasa, 'kawruh.statusNusantaraGemini')
           : tI18n(bahasa, 'kawruh.statusNusantaraOffline')
-        : jawabanPamomong.mode === 'gemini-3.8-live'
+        : jawabanPamomong.mode === 'pamomong-live'
           ? tI18n(bahasa, 'kawruh.statusGemini')
           : jawabanPamomong.statusGrounding === 'terbukti'
             ? tI18n(bahasa, 'kawruh.statusVerified')
@@ -317,7 +317,7 @@
         {tI18n(bahasa, 'kawruh.lead')}
       </p>
 
-      <!-- Tab Bar Multi-Fitur AI Studio Gemini 3.8 Live -->
+      <!-- Tab Bar Multi-Fitur AI Studio Pamomong Nusantara -->
       <div class="studio-tab-bar" role="tablist" aria-label={tI18n(bahasa, 'aiStudio.tabAria')}>
         <button
           type="button"
@@ -487,9 +487,6 @@
             >
               {statusLabel}
             </span>
-            <span class="rag-metric">
-              {tI18n(bahasa, 'kawruh.confidence')} <strong>{jawabanPamomong.skorKeyakinan}%</strong> · {jawabanPamomong.latensiMs} ms
-            </span>
           </div>
 
           <div style="display: flex; flex-wrap: wrap; gap: 6px;">
@@ -566,7 +563,6 @@
                 <span class="rag-model-pill">
                   {tI18n(bahasa, 'kawruh.modelBadge', { model: hasilKomparasi.modelNama })}
                 </span>
-                <span class="rag-metric">{hasilKomparasi.latensiMs} ms</span>
               </div>
             </div>
             {#if studioBusy}
@@ -596,7 +592,6 @@
                   <span class="source-badge">{ks}</span>
                 {/each}
               </div>
-              <span class="rag-metric">{hasilKomparasi.latensiMs} ms</span>
             </div>
           </div>
         </div>

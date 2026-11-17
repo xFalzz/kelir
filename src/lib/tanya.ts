@@ -12,6 +12,7 @@ import {
   type MultiTeks,
   type TeksLokal,
 } from '../content/pusaka.ts';
+import { cariKonteksNusantara } from '../content/nusantaraKB.ts';
 import {
   BATAS_KARAKTER_TANYA,
   apakahAdaSinyalArsipS1S7,
@@ -22,12 +23,19 @@ import {
   pesanPenolakanKeamanan,
 } from './aiGuardrail.ts';
 
-export const MODEL_AI_PAMOMONG = 'gemini-3.8-live' as const;
+export const MODEL_AI_PAMOMONG = 'Pamomong Nusantara' as const;
 
 export type ModePenyediaPamomong =
-  | 'gemini-3.8-live'
+  | 'pamomong-live'
   | 'bm25-kurasi-lokal'
   | 'bm25-api-terverifikasi';
+
+export interface KonteksUnsurKurasi {
+  judulUnsur?: string;
+  material?: string;
+  fungsiTeknis?: string;
+  ringkasan?: string;
+}
 
 export interface ButirBuktiTanya {
   id: string;
@@ -453,11 +461,42 @@ export function jawabDariKurasiLokal(
 
   if (!lolosValidasiKorpus) {
     if (infoNusantara.relevanBudaya) {
+      const entriNusantara = cariKonteksNusantara(pertanyaan, 2);
+      if (entriNusantara.length > 0) {
+        const utama = entriNusantara[0];
+        const judul = ambilTeks(utama.judul, bahasa);
+        const wil = ambilTeks(utama.wilayah, bahasa);
+        const sejarah = ambilTeks(utama.intiSejarah, bahasa);
+        const teknis = ambilTeks(utama.unsurTeknis, bahasa);
+        const filosofi = ambilTeks(utama.maknaFilosofis, bahasa);
+        const kedua = entriNusantara[1];
+        const sambunganKedua = kedua
+          ? `\n\n${ambilTeks(kedua.judul, bahasa)} (${ambilTeks(kedua.wilayah, bahasa)}): ${ambilTeks(kedua.intiSejarah, bahasa)} ${ambilTeks(kedua.maknaFilosofis, bahasa)}`
+          : '';
+        return {
+          jawaban: `${judul} (${wil}): ${sejarah}\n\n${teknis}\n\n${filosofi}${sambunganKedua}`,
+          sumber: [],
+          mode: 'bm25-kurasi-lokal',
+          modelNama: MODEL_AI_PAMOMONG,
+          statusGrounding: 'eksplorasi-nusantara',
+          skorKeyakinan: 92,
+          kataKunciCocok: [
+            ...new Set([
+              ...infoNusantara.kataKunciTerdeteksi,
+              ...entriNusantara.flatMap((e) => e.kataKunci.slice(0, 2)),
+            ]),
+          ].slice(0, 6),
+          latensiMs: selesai(),
+          butirBukti: [],
+          rujukan: [],
+        };
+      }
+
       const pesanEksplorasi = ambilTeks(
         {
-          id: 'Topik budaya Nusantara ini berada di luar enam spesimen inti arsip luring S1–S7. Jalankan melalui server aktif Gemini 3.8 Live untuk memperoleh kajian mendalam mengenai tradisi, sejarah, dan makna budayanya secara akurat tanpa mencatut rujukan S1–S7.',
-          en: 'This Indonesian cultural topic extends beyond the six offline S1–S7 museum specimens. Connect to active Gemini 3.8 Live synthesis to explore its regional history, artistry, and philosophy accurately without fabricated S1–S7 citations.',
-          jw: 'Topik kabudayan Nuswantara punika dumunung ing njaba nem koleksi inti arsip luring S1–S7. Lumantar layanan aktif Gemini 3.8 Live, Pamomong badhe njlentrehaken sejarah, kagunan, saha maknanipun kanthi cetha tanpa ngarang rujukan S1–S7.',
+          id: 'Topik warisan budaya Nusantara ini tercakup dalam mode Eksplorasi Pamomong Nusantara. Untuk elaborasi sejarah, teknik kriya, dan filosofinya yang lebih lengkap di luar 6 spesimen S1–S7, jalankan kueri dengan layanan aktif Pamomong Nusantara.',
+          en: 'This Indonesian heritage topic falls within Pamomong Nusantara exploration beyond the six offline S1–S7 specimens. Connect to the live Pamomong Nusantara engine for full historical, technical, and philosophical analysis.',
+          jw: 'Topik warisan budaya Nuswantara punika kalebet cakupan Eksplorasi Pamomong Nusantara ing njaba nem koleksi S1–S7. Aktifaken layanan Pamomong Nusantara kangge andharan sejarah lan filosofi ingkang langkung jangkep.',
         },
         bahasa,
       );
@@ -493,22 +532,40 @@ export function jawabDariKurasiLokal(
   const buktiPilihan = terperingkat.slice(0, 3);
   const utama = buktiPilihan[0];
   const kedua = buktiPilihan[1];
+  const ketiga = buktiPilihan[2];
 
   const sumberGabungan: KodeSumber[] = [
     ...new Set(buktiPilihan.flatMap((item) => item.doc.sumber)),
   ];
 
-  const sintesisTeks =
-    kedua && kedua.skor >= topSkor * 0.62 && kedua.doc.id !== utama.doc.id
-      ? `${ambilTeks(utama.doc.judul, bahasa)}: ${ambilTeks(utama.doc.teks, bahasa)}\n\n${ambilTeks(
-          {
-            id: `Konteks penguat dari arsip ${kedua.doc.judul.id}: ${kedua.doc.teks.id}`,
-            en: `Corroborating passage from ${kedua.doc.judul.en}: ${kedua.doc.teks.en}`,
-            jw: `Katrangan panyengkuyung saking arsip ${kedua.doc.judul.jw}: ${kedua.doc.teks.jw}`,
-          },
-          bahasa,
-        )}`
-      : `${ambilTeks(utama.doc.judul, bahasa)}: ${ambilTeks(utama.doc.teks, bahasa)}`;
+  const bagianParagraf: string[] = [
+    `${ambilTeks(utama.doc.judul, bahasa)}: ${ambilTeks(utama.doc.teks, bahasa)}`,
+  ];
+  if (kedua && kedua.skor >= topSkor * 0.56 && kedua.doc.id !== utama.doc.id) {
+    bagianParagraf.push(
+      ambilTeks(
+        {
+          id: `Konteks pelengkap (${kedua.doc.judul.id}): ${kedua.doc.teks.id}`,
+          en: `Corroborating archive context (${kedua.doc.judul.en}): ${kedua.doc.teks.en}`,
+          jw: `Katrangan panyengkuyung (${kedua.doc.judul.jw}): ${kedua.doc.teks.jw}`,
+        },
+        bahasa,
+      ),
+    );
+  }
+  if (ketiga && ketiga.skor >= topSkor * 0.58 && ketiga.doc.id !== utama.doc.id && ketiga.doc.id !== kedua?.doc.id) {
+    bagianParagraf.push(
+      ambilTeks(
+        {
+          id: `Sudut kajian tambahan (${ketiga.doc.judul.id}): ${ketiga.doc.teks.id}`,
+          en: `Additional perspective (${ketiga.doc.judul.en}): ${ketiga.doc.teks.en}`,
+          jw: `Sudhut kajian tambahan (${ketiga.doc.judul.jw}): ${ketiga.doc.teks.jw}`,
+        },
+        bahasa,
+      ),
+    );
+  }
+  const sintesisTeks = bagianParagraf.join('\n\n');
 
   const skorKeyakinan = Math.min(99, Math.max(54, Math.round(52 + Math.min(topSkor, 9.5) * 4.9)));
 
@@ -542,6 +599,7 @@ export async function tanyakanKeAsisten(
   bendaId: BendaPusaka['id'],
   pertanyaan: string,
   bahasa: BahasaAktif = 'id',
+  konteksUnsur?: KonteksUnsurKurasi,
 ): Promise<HasilTanya> {
   const pemeriksaan = deteksiSeranganAtauLuarTopik(pertanyaan, BATAS_KARAKTER_TANYA);
   if (!pemeriksaan.aman && pemeriksaan.kategori !== 'kosong') {
@@ -553,28 +611,28 @@ export async function tanyakanKeAsisten(
     const resp = await fetch('/api/tanya', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ bendaId, pertanyaan: pertanyaanBersih, bahasa }),
+      body: JSON.stringify({ bendaId, pertanyaan: pertanyaanBersih, bahasa, konteksUnsur }),
     });
     if (resp.ok) {
       const data = (await resp.json()) as Partial<HasilTanya>;
       if (data && typeof data.jawaban === 'string' && Array.isArray(data.butirBukti)) {
         const audited = auditDanBersihkanOutputAI(data.jawaban, {
           minKarakter: 18,
-          maxKarakter: 1450,
+          maxKarakter: 2500,
           wajibJangkarBudaya: data.statusGrounding !== 'luar-korpus',
         });
         if (audited) {
           return {
             ...(data as HasilTanya),
             jawaban: audited,
-            mode: data.mode === 'gemini-3.8-live' ? 'gemini-3.8-live' : 'bm25-api-terverifikasi',
+            mode: data.mode === 'pamomong-live' ? 'pamomong-live' : 'bm25-api-terverifikasi',
             modelNama: MODEL_AI_PAMOMONG,
           };
         }
       }
     }
   } catch {
-    // Mode pratinjau statis atau luring: gunakan indeks BM25 lokal tanpa mengganti model AI
+    // Mode pratinjau statis atau luring: gunakan indeks BM25 & Ensiklopedia Nusantara lokal
   }
 
   return jawabDariKurasiLokal(bendaId, pertanyaanBersih, bahasa);
