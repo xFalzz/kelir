@@ -39,6 +39,9 @@ interface SlotCoverflow3D {
 const PAD_TOP_Y = -0.725;
 const MAX_BOUND_W = 2.24;
 const MAX_BOUND_H = 2.28;
+const ORBIT_CENTER_Z = -2.5;
+const ORBIT_RADIUS = 4.65;
+const ORBIT_FLOOR_Y = -1.055;
 
 const URUTAN_MODEL: Array<{ id: CoverflowArtefakId }> = [
   { id: 'keris' },
@@ -117,8 +120,8 @@ export class CoverflowStage {
     this.renderer = createSafeWebGLRenderer(container, { alpha: true, antialias: true, shadows: true });
     if (!this.renderer) return;
 
-    this.camera.position.set(0, 1.38, 8.85);
-    this.camera.lookAt(0, 0.14, 0.25);
+    this.camera.position.set(0, 2.18, 9.8);
+    this.camera.lookAt(0, -0.08, -0.95);
     void applyStudioHDR(this.renderer, this.scene, {
       signal: this.abortCtrl.signal,
       delayMs: 140,
@@ -187,15 +190,18 @@ export class CoverflowStage {
     floorMesh.receiveShadow = true;
     this.scene.add(floorMesh);
 
-    // Garis panduan lintasan galeri kurva di lantai pameran
+    // Garis panduan lintasan lingkaran pameran sebidang tepat di bawah ketujuh pedestal
     this.arcTrackMat = new THREE.MeshBasicMaterial({
       color: 0x9a6c1d,
       transparent: true,
-      opacity: 0.22,
+      opacity: 0.28,
     });
-    const arcTrack = new THREE.Mesh(new THREE.TorusGeometry(4.9, 0.014, 8, 96), this.arcTrackMat);
+    const arcTrack = new THREE.Mesh(
+      new THREE.TorusGeometry(ORBIT_RADIUS, 0.018, 10, 128),
+      this.arcTrackMat,
+    );
     arcTrack.rotation.x = Math.PI / 2;
-    arcTrack.position.set(0, -1.055, -2.55);
+    arcTrack.position.set(0, ORBIT_FLOOR_Y, ORBIT_CENTER_Z);
     this.scene.add(arcTrack);
 
     // Lingkar aura cahaya halus di sekitar pedestal tengah aktif
@@ -207,7 +213,7 @@ export class CoverflowStage {
     });
     this.focusHaloMesh = new THREE.Mesh(new THREE.RingGeometry(1.18, 1.36, 48), haloMat);
     this.focusHaloMesh.rotation.x = -Math.PI / 2;
-    this.focusHaloMesh.position.set(0, -1.052, 2.15);
+    this.focusHaloMesh.position.set(0, ORBIT_FLOOR_Y + 0.003, ORBIT_CENTER_Z + ORBIT_RADIUS);
     this.scene.add(this.focusHaloMesh);
 
     // Partikel debu museum tipis melayang
@@ -371,19 +377,22 @@ export class CoverflowStage {
 
   private posisikanSlot(slot: SlotCoverflow3D, instan = false): void {
     const len = URUTAN_MODEL.length;
-    const isNarrow = (this.container.clientWidth || 1000) < 680;
-    const xStep = isNarrow ? 2.5 : 3.05;
+    const halfLen = len / 2;
 
     let delta = slot.indeks - this.continuousIdx;
-    if (delta > len / 2) delta -= len;
-    if (delta < -len / 2) delta += len;
+    if (delta > halfLen) delta -= len;
+    if (delta < -halfLen) delta += len;
 
     const abs = Math.abs(delta);
-    slot.targetX = delta * xStep;
-    slot.targetY = abs * 0.04;
-    slot.targetZ = 2.15 - Math.min(abs, 2.35) * 1.38 - abs * abs * 0.14;
-    slot.targetRotY = -delta * 0.36;
-    slot.targetScale = Math.max(0.46, 1.14 - abs * 0.22);
+    const norm = Math.min(1, abs / halfLen);
+    // Semua 7 objek selalu menempati keliling lingkaran ORBIT_RADIUS secara akurat
+    const angle = Math.sign(delta) * Math.PI * Math.pow(norm, 1.24);
+
+    slot.targetScale = Math.max(0.64, 1.08 - abs * 0.145);
+    slot.targetX = Math.sin(angle) * ORBIT_RADIUS;
+    slot.targetZ = ORBIT_CENTER_Z + Math.cos(angle) * ORBIT_RADIUS;
+    slot.targetY = ORBIT_FLOOR_Y * (1 - slot.targetScale);
+    slot.targetRotY = -angle * 0.32;
 
     if (instan) {
       slot.root.position.set(slot.targetX, slot.targetY, slot.targetZ);
@@ -510,7 +519,7 @@ export class CoverflowStage {
     const w = Math.max(this.container.clientWidth || 960, 1);
     const h = Math.max(this.container.clientHeight || 440, 1);
     this.camera.aspect = w / h;
-    this.camera.fov = hitungFovResponsif(35, this.camera.aspect, 1.5, 52);
+    this.camera.fov = hitungFovResponsif(36, this.camera.aspect, 1.55, 56);
     this.camera.updateProjectionMatrix();
     this.renderer.setSize(w, h, false);
   }
@@ -583,14 +592,14 @@ export class CoverflowStage {
       this.focusHaloMesh.material.opacity = 0.16 + Math.sin(t * 2.2) * 0.05;
     }
 
-    // Kamera pameran menjaga pedestal menjejak utuh penuh + merespons gulir & paralaks halus
+    // Kamera pameran menjaga lintasan lingkaran 7 pedestal utuh & merespons gulir + paralaks halus
     const goalCamX = this.pointerX * 0.36;
-    const goalCamY = 1.38 + this.scrollProgress * 0.42 - this.pointerY * 0.16;
-    const goalCamZ = 8.85 - this.scrollProgress * 0.45;
+    const goalCamY = 2.18 + this.scrollProgress * 0.44 - this.pointerY * 0.16;
+    const goalCamZ = 9.8 - this.scrollProgress * 0.45;
     this.camera.position.x += (goalCamX - this.camera.position.x) * 0.08;
     this.camera.position.y += (goalCamY - this.camera.position.y) * 0.08;
     this.camera.position.z += (goalCamZ - this.camera.position.z) * 0.08;
-    this.camera.lookAt(0, 0.14 - this.scrollProgress * 0.08, 0.25);
+    this.camera.lookAt(0, -0.08 - this.scrollProgress * 0.08, -0.95);
 
     if (this.partikel) {
       this.partikel.rotation.y = t * 0.025;
