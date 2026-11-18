@@ -1092,32 +1092,55 @@ export function buildSaronPusaka3D(): PaketModel3D {
     group.add(wilahGrup);
   }
 
-  // Tabuh Gandhen Kayu Sawo Bubut Presisi + Ring Tembaga
+  // Tabuh Gandhen Kayu Sawo Bubut Presisi + Ring Tembaga (gagang tertanam utuh di kepala palu)
   const ganden = new THREE.Group();
   const kepalaProfil = [
-    new THREE.Vector2(0.001, -0.2),
-    new THREE.Vector2(0.095, -0.18),
-    new THREE.Vector2(0.115, 0),
-    new THREE.Vector2(0.1, 0.18),
-    new THREE.Vector2(0.001, 0.2),
+    new THREE.Vector2(0.001, -0.18),
+    new THREE.Vector2(0.072, -0.165),
+    new THREE.Vector2(0.092, 0),
+    new THREE.Vector2(0.074, 0.165),
+    new THREE.Vector2(0.001, 0.18),
   ];
   const kepalaPalu = new THREE.Mesh(new THREE.LatheGeometry(kepalaProfil, 24), jatiMerahMat);
   kepalaPalu.rotation.z = Math.PI / 2;
-  const cincinPalu = new THREE.Mesh(new THREE.TorusGeometry(0.106, 0.014, 12, 24), emasUkirMat);
-  cincinPalu.rotation.y = Math.PI / 2;
+  kepalaPalu.castShadow = true;
+
+  for (const xRing of [-0.075, 0.075]) {
+    const cincinBarrel = new THREE.Mesh(new THREE.TorusGeometry(0.088, 0.011, 10, 24), emasUkirMat);
+    cincinBarrel.rotation.y = Math.PI / 2;
+    cincinBarrel.position.x = xRing;
+    ganden.add(cincinBarrel);
+  }
+
+  // Gagang berporos tepat di titik pusat kepala palu (0, 0, 0) sehingga mustahil terpisah
+  const gagangUnit = new THREE.Group();
+  gagangUnit.rotation.x = 1.62;
+
+  const leherTembaga = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.032, 0.044, 0.055, 16),
+    emasUkirMat,
+  );
+  leherTembaga.position.y = 0.09;
+
   const gagangProfil = [
-    new THREE.Vector2(0.026, -0.36),
-    new THREE.Vector2(0.036, -0.15),
-    new THREE.Vector2(0.024, 0.15),
-    new THREE.Vector2(0.032, 0.36),
+    new THREE.Vector2(0.034, 0),
+    new THREE.Vector2(0.03, 0.09),
+    new THREE.Vector2(0.023, 0.24),
+    new THREE.Vector2(0.024, 0.42),
+    new THREE.Vector2(0.032, 0.51),
+    new THREE.Vector2(0.02, 0.56),
+    new THREE.Vector2(0.001, 0.575),
   ];
-  const gagang = new THREE.Mesh(new THREE.LatheGeometry(gagangProfil, 16), jatiMerahMat);
-  gagang.position.set(0.04, -0.2, 0.24);
-  gagang.rotation.set(0.95, 0, 0.12);
-  ganden.add(kepalaPalu, cincinPalu, gagang);
-  ganden.position.set(1.18, 0.72, 0.48);
-  ganden.rotation.set(-0.22, 0.18, 0.36);
-  ganden.userData.explodeVec = new THREE.Vector3(0.64, 0.48, 0.52);
+  const gagang = new THREE.Mesh(new THREE.LatheGeometry(gagangProfil, 18), jatiMerahMat);
+  gagang.castShadow = true;
+
+  gagangUnit.add(leherTembaga, gagang);
+  ganden.add(kepalaPalu, gagangUnit);
+
+  // Disandarkan alami tepat di atas bilah Slendro ujung kanan (Wilah i)
+  ganden.position.set(0.76, 0.305, 0.02);
+  ganden.rotation.set(0.04, -0.22, 0.08);
+  ganden.userData.explodeVec = new THREE.Vector3(0.44, 0.56, 0.38);
   group.add(ganden);
 
   return { group, saronWilahs, saronGandhen: ganden };

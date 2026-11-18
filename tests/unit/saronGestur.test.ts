@@ -47,7 +47,7 @@ describe('EvaluatorGesturSaron (Gestur 3D Saron Slendro)', () => {
     expect(hasil.aktif).toBe(false);
     expect(hasil.hoverWilahIdx).toBeNull();
     expect(hasil.pukulWilahIdx).toBeNull();
-    expect(hasil.malletPos).toEqual([1.18, 0.72, 0.48]);
+    expect(hasil.malletPos).toEqual([0.76, 0.305, 0.02]);
     expect(hasil.saronYawY).toBe(0);
     expect(hasil.saronPitchX).toBe(0);
   });
@@ -72,7 +72,7 @@ describe('EvaluatorGesturSaron (Gestur 3D Saron Slendro)', () => {
       buatFrame(buatTangan({ telunjukX: 0.14, pusatX: 0.14, telunjukY: 0.18, pusatY: 0.18, kemiringan: -1.1 }), 1200),
     );
     expect(kiriAtas.malletPos[0]).toBeCloseTo(-0.875, 3);
-    expect(kiriAtas.malletPos[1]).toBeCloseTo(0.86, 3);
+    expect(kiriAtas.malletPos[1]).toBeCloseTo(0.82, 3);
 
     evalSaron.reset();
     const kananTengahRendah = evalSaron.prosesFrame(
@@ -80,14 +80,14 @@ describe('EvaluatorGesturSaron (Gestur 3D Saron Slendro)', () => {
     );
     expect(kananTengahRendah.pukulWilahIdx).toBeNull();
     expect(kananTengahRendah.malletPos[0]).toBeCloseTo(0.875, 3);
-    expect(kananTengahRendah.malletPos[1]).toBeCloseTo(0.86 - ((0.56 - 0.18) / (0.76 - 0.18)) * 0.57, 3);
+    expect(kananTengahRendah.malletPos[1]).toBeCloseTo(0.82 - ((0.56 - 0.18) / (0.76 - 0.18)) * 0.49, 3);
     expect(kananTengahRendah.malletTiltZ).toBeLessThan(kiriAtas.malletTiltZ);
 
     const kananPukulBawah = evalSaron.prosesFrame(
       buatFrame(buatTangan({ telunjukX: 0.86, pusatX: 0.86, telunjukY: 0.76, pusatY: 0.76 }), 1320),
     );
     expect(kananPukulBawah.pukulWilahIdx).toBe(5);
-    expect(kananPukulBawah.malletPos[1]).toBeCloseTo(0.255, 3);
+    expect(kananPukulBawah.malletPos[1]).toBeCloseTo(0.305, 3);
   });
 
   it('menghasilkan pukulWilahIdx dan amplitudo lebih kuat saat ayunan turun cepat', () => {

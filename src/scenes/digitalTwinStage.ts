@@ -130,12 +130,14 @@ export class DigitalTwinStage {
   private gesturUmumAktif = false;
   private gesturUmumYaw = 0;
   private gesturUmumPitch = 0;
-  private readonly gandhenTargetPos = new THREE.Vector3(1.18, 0.72, 0.48);
-  private readonly gandhenCurPos = new THREE.Vector3(1.18, 0.72, 0.48);
-  private gandhenTargetRotX = -0.22;
-  private gandhenTargetRotZ = 0.36;
-  private gandhenCurRotX = -0.22;
-  private gandhenCurRotZ = 0.36;
+  private readonly gandhenTargetPos = new THREE.Vector3(0.76, 0.305, 0.02);
+  private readonly gandhenCurPos = new THREE.Vector3(0.76, 0.305, 0.02);
+  private gandhenTargetRotX = 0.04;
+  private gandhenTargetRotY = -0.22;
+  private gandhenTargetRotZ = 0.08;
+  private gandhenCurRotX = 0.04;
+  private gandhenCurRotY = -0.22;
+  private gandhenCurRotZ = 0.08;
   private gandhenStrikeDip = 0;
   private gandhenManualTimer = 0;
   private saronYawTarget = 0;
@@ -252,12 +254,14 @@ export class DigitalTwinStage {
     this.gandhenStrikeDip = 0;
     this.gandhenManualTimer = 0;
     this.saronRingPulse = 0;
-    this.gandhenTargetPos.set(1.18, 0.72, 0.48);
-    this.gandhenCurPos.set(1.18, 0.72, 0.48);
-    this.gandhenTargetRotX = -0.22;
-    this.gandhenTargetRotZ = 0.36;
-    this.gandhenCurRotX = -0.22;
-    this.gandhenCurRotZ = 0.36;
+    this.gandhenTargetPos.set(0.76, 0.305, 0.02);
+    this.gandhenCurPos.set(0.76, 0.305, 0.02);
+    this.gandhenTargetRotX = 0.04;
+    this.gandhenTargetRotY = -0.22;
+    this.gandhenTargetRotZ = 0.08;
+    this.gandhenCurRotX = 0.04;
+    this.gandhenCurRotY = -0.22;
+    this.gandhenCurRotZ = 0.08;
 
     const id = benda.id;
     const paket =
@@ -433,13 +437,15 @@ export class DigitalTwinStage {
       this.gandhenTargetPos.set(...kinetik.malletPos);
       this.gandhenTargetRotZ = kinetik.malletTiltZ;
       this.gandhenTargetRotX = kinetik.malletTiltX;
+      this.gandhenTargetRotY = 0;
       if (kinetik.pukulWilahIdx !== null) {
         this.pukulWilahSaron(kinetik.pukulWilahIdx, 1.08);
       }
     } else {
-      this.gandhenTargetPos.set(1.18, 0.72, 0.48);
-      this.gandhenTargetRotZ = 0.36;
-      this.gandhenTargetRotX = -0.22;
+      this.gandhenTargetPos.set(0.76, 0.305, 0.02);
+      this.gandhenTargetRotZ = 0.08;
+      this.gandhenTargetRotY = -0.22;
+      this.gandhenTargetRotX = 0.04;
     }
   }
 
@@ -453,9 +459,10 @@ export class DigitalTwinStage {
     this.saronRingX = SARON_WILAH_X[k];
 
     if (!this.gesturSaronAktif) {
-      this.gandhenTargetPos.set(SARON_WILAH_X[k], 0.35, 0.06);
-      this.gandhenTargetRotZ = 0.14;
-      this.gandhenTargetRotX = 0.28;
+      this.gandhenTargetPos.set(SARON_WILAH_X[k], 0.34, 0.02);
+      this.gandhenTargetRotZ = 0.06;
+      this.gandhenTargetRotY = 0;
+      this.gandhenTargetRotX = 0.22;
       this.gandhenManualTimer = 0.45;
     }
   }
@@ -486,9 +493,10 @@ export class DigitalTwinStage {
     this.gesturSaronAktif = false;
     this.gesturUmumAktif = false;
     this.hoveredWilahIdx = null;
-    this.gandhenTargetPos.set(1.18, 0.72, 0.48);
-    this.gandhenTargetRotZ = 0.36;
-    this.gandhenTargetRotX = -0.22;
+    this.gandhenTargetPos.set(0.76, 0.305, 0.02);
+    this.gandhenTargetRotZ = 0.08;
+    this.gandhenTargetRotY = -0.22;
+    this.gandhenTargetRotX = 0.04;
     this.saronYawTarget = 0;
     this.saronPitchTarget = 0;
   }
@@ -698,9 +706,10 @@ export class DigitalTwinStage {
         if (this.gandhenManualTimer > 0) {
           this.gandhenManualTimer = Math.max(0, this.gandhenManualTimer - dt);
           if (this.gandhenManualTimer === 0 && !this.gesturSaronAktif) {
-            this.gandhenTargetPos.set(1.18, 0.72, 0.48);
-            this.gandhenTargetRotZ = 0.36;
-            this.gandhenTargetRotX = -0.22;
+            this.gandhenTargetPos.set(0.76, 0.305, 0.02);
+            this.gandhenTargetRotZ = 0.08;
+            this.gandhenTargetRotY = -0.22;
+            this.gandhenTargetRotX = 0.04;
           }
         }
         this.gandhenStrikeDip *= Math.exp(-14 * dt);
@@ -713,15 +722,16 @@ export class DigitalTwinStage {
 
           const followAlpha = this.gesturSaronAktif ? 1 - Math.exp(-22 * dt) : 1 - Math.exp(-12 * dt);
           this.gandhenCurPos.lerp(this.gandhenTargetPos, followAlpha);
-          this.gandhenCurRotX += (this.gandhenTargetRotX + this.gandhenStrikeDip * 0.42 - this.gandhenCurRotX) * followAlpha;
+          this.gandhenCurRotX += (this.gandhenTargetRotX + this.gandhenStrikeDip * 0.24 - this.gandhenCurRotX) * followAlpha;
+          this.gandhenCurRotY += (this.gandhenTargetRotY - this.gandhenCurRotY) * followAlpha;
           this.gandhenCurRotZ += (this.gandhenTargetRotZ - this.gandhenCurRotZ) * followAlpha;
 
           this.saronGandhen.position.set(
             this.gandhenCurPos.x + expX,
-            Math.max(0.24, this.gandhenCurPos.y - this.gandhenStrikeDip * 0.14) + expY,
+            Math.max(0.285, this.gandhenCurPos.y - this.gandhenStrikeDip * 0.05) + expY,
             this.gandhenCurPos.z + expZ,
           );
-          this.saronGandhen.rotation.set(this.gandhenCurRotX, 0.16, this.gandhenCurRotZ);
+          this.saronGandhen.rotation.set(this.gandhenCurRotX, this.gandhenCurRotY, this.gandhenCurRotZ);
         }
 
         if (this.saronStrikeRing) {

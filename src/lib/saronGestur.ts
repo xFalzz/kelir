@@ -81,9 +81,9 @@ export class EvaluatorGesturSaron {
         hoverWilahIdx: null,
         pukulWilahIdx: null,
         amplitudoPukul: 0.32,
-        malletPos: [1.18, 0.72, 0.48],
-        malletTiltZ: 0.36,
-        malletTiltX: -0.22,
+        malletPos: [0.76, 0.305, 0.02],
+        malletTiltZ: 0.08,
+        malletTiltX: 0.04,
         saronYawY: 0,
         saronPitchX: 0,
       };
@@ -149,8 +149,8 @@ export class EvaluatorGesturSaron {
 
     const targetX =
       pukulIdx !== null ? SARON_WILAH_X[pukulIdx] : -0.875 + uX * 1.75;
-    const targetY = pukulIdx !== null ? 0.255 : 0.86 - uY * 0.57;
-    const targetZ = 0.05 + (1 - uY) * 0.08;
+    const targetY = pukulIdx !== null ? 0.305 : 0.82 - uY * 0.49;
+    const targetZ = 0.02 + (1 - uY) * 0.06;
 
     const wristOffset = clamp(mainHand.kemiringan + Math.PI / 2, -0.75, 0.75);
     const malletTiltZ = 0.22 + (uX - 0.5) * -0.45 + wristOffset * 0.35;

@@ -634,8 +634,8 @@ export const DAFTAR_BENDA: BendaPusaka[] = [
       {
         id: 'saron-ganden',
         judul: { id: 'Tabuh Gandhen Kayu Sawo & Cincin Tembaga', en: 'Turned Sawo-Wood Mallet (Gandhen) & Copper Ring', jw: 'Tabuh Gandhen Kayu Sawo' },
-        posisi: [1.18, 0.72, 0.48],
-        explodeVec: [0.64, 0.48, 0.52],
+        posisi: [0.76, 0.305, 0.02],
+        explodeVec: [0.44, 0.56, 0.38],
         material: { id: 'Kayu Sawo Keras Bubut · Ring Tembaga', en: 'Dense Sawo Hardwood Head · Copper Banding', jw: 'Kayu Sawo Keras Bubut · Cincin Tembaga' },
         fungsiTeknis: {
           id: 'Penumbuk elastis pembentuk karakter serangan lembut pada perunggu panas',

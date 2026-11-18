@@ -226,6 +226,14 @@ test.describe('Kelir Multi-Page Spasial 3D — Verifikasi 5 Halaman & Realisme 3
     await expect(page.getByTestId('twin-saron-gesture-btn')).toBeVisible();
     await expect(page.getByTestId('twin-saron-gesture-btn')).toHaveAttribute('aria-pressed', 'false');
     await expect(page.locator('.saron-keys-bar')).toBeVisible();
+    await slider.evaluate((el: HTMLInputElement) => {
+      el.value = '0';
+      el.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+    await page.evaluate(() => window.scrollTo(0, 0));
+    await page.waitForTimeout(380);
+    await page.screenshot({ path: `${ARTIFACT_DIR}/mp-05b-twin-saron-mallet.png` });
+
     const saronWilah2 = page.getByTestId('saron-wilah-2');
     await saronWilah2.scrollIntoViewIfNeeded();
     const struckObserver = page.waitForFunction(
@@ -235,6 +243,10 @@ test.describe('Kelir Multi-Page Spasial 3D — Verifikasi 5 Halaman & Realisme 3
     );
     await saronWilah2.click();
     await struckObserver;
+    await slider.evaluate((el: HTMLInputElement) => {
+      el.value = '0.78';
+      el.dispatchEvent(new Event('input', { bubbles: true }));
+    });
     await page.getByTestId('toggle-xray').click({ force: true });
     await page.evaluate(() => window.scrollTo(0, 0));
     await page.waitForTimeout(350);
@@ -639,11 +651,19 @@ test.describe('Kelir Multi-Page Spasial 3D — Verifikasi 5 Halaman & Realisme 3
 
     // Verifikasi smooth scroll wheel di semua halaman & isolasi zoom 3D Digital Twin
     await page.setViewportSize({ width: 1280, height: 800 });
+    const sectionSelectorMap = {
+      beranda: '#pendopo',
+      koleksi: '#coverflow',
+      pakeliran: '#pakeliran',
+      kawruh: '#pamomong',
+    } as const;
     for (const hal of ['beranda', 'koleksi', 'pakeliran', 'kawruh'] as const) {
       await page.goto(`/?hal=${hal}`);
       await expect(page.locator('.preloader-curtain')).toHaveAttribute('data-preloader-done', 'true', {
         timeout: 10000,
       });
+      await expect(page.locator(sectionSelectorMap[hal])).toBeVisible({ timeout: 10000 });
+      await page.waitForFunction(() => document.documentElement.scrollHeight > window.innerHeight + 300);
       await page.mouse.move(120, 420);
       await page.mouse.wheel(0, 420);
       await expect
