@@ -67,6 +67,7 @@
     formatSumberLabel: (s: KodeSumber) => string;
     onSimpanSkorKuis?: (skor: number) => void;
     onMasukLangkahTur?: (step: LangkahRuteTur) => void;
+    onScrollProgres?: (norm0ke1: number) => void;
   }
 
   let {
@@ -85,6 +86,7 @@
     formatSumberLabel,
     onSimpanSkorKuis,
     onMasukLangkahTur,
+    onScrollProgres,
   }: Props = $props();
 
   let aksaraTersalin = $state(false);
@@ -246,6 +248,8 @@
   const AI_FEEDBACK_STORAGE_KEY = 'kelir_ai_feedback_v1';
   let umpanBalikAiMap: Record<string, 'membantu' | 'lapor'> = $state({});
   let orbRetrySeq = $state(0);
+  let pamomongSectionEl: HTMLElement | undefined = $state();
+  let orbScrollProgress = $state(0);
 
   onMount(() => {
     try {
@@ -259,6 +263,31 @@
     } catch {
       umpanBalikAiMap = {};
     }
+
+    let rafPending = false;
+    const perbaruiScrollOrb = (): void => {
+      rafPending = false;
+      if (!pamomongSectionEl) return;
+      const rect = pamomongSectionEl.getBoundingClientRect();
+      const vh = Math.max(window.innerHeight, 480);
+      const maxTravel = Math.max(pamomongSectionEl.scrollHeight - vh * 0.65, 280);
+      const p = Math.min(1, Math.max(0, -rect.top / maxTravel));
+      if (Math.abs(p - orbScrollProgress) >= 0.001) {
+        orbScrollProgress = p;
+        onScrollProgres?.(p);
+      }
+    };
+    const onScrollOrb = (): void => {
+      if (rafPending) return;
+      rafPending = true;
+      window.requestAnimationFrame(perbaruiScrollOrb);
+    };
+    window.addEventListener('scroll', onScrollOrb, { passive: true });
+    perbaruiScrollOrb();
+
+    return () => {
+      window.removeEventListener('scroll', onScrollOrb);
+    };
   });
 
   let kunciFeedback = $derived(
@@ -428,7 +457,12 @@
   );
 </script>
 
-<section id="pamomong" class="band-section" aria-label={tI18n(bahasa, 'pages.kawruh.label')}>
+<section
+  id="pamomong"
+  bind:this={pamomongSectionEl}
+  class="band-section"
+  aria-label={tI18n(bahasa, 'pages.kawruh.label')}
+>
   <div class="pamomong-grid">
     <div>
       <span class="eyebrow-mono">{tI18n(bahasa, 'kawruh.eyebrow')}</span>
@@ -1145,7 +1179,7 @@
       {/if}
     </div>
 
-    <div class="pamomong-orb-stage">
+    <div class="pamomong-orb-stage" style="--orb-scroll: {orbScrollProgress.toFixed(4)};">
       <div class="pamomong-orb-status">
         <span class="eyebrow-mono">
           <span class="live-dot" aria-hidden="true"></span>

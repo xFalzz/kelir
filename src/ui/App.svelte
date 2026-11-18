@@ -2632,6 +2632,7 @@
           {formatSumberLabel}
           onSimpanSkorKuis={catatSkorKuis}
           onMasukLangkahTur={bukaLangkahTur}
+          onScrollProgres={(p) => orbStage?.aturProgresGulir(p)}
         />
       {:else}
         <section class="band-section" style="min-height: 68vh;" aria-busy="true"></section>

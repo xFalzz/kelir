@@ -4317,6 +4317,7 @@ html[data-theme='malam'] .pakeliran-theatre-box {
 .pamomong-orb-stage {
   position: sticky;
   top: 96px;
+  align-self: start;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -4324,6 +4325,8 @@ html[data-theme='malam'] .pakeliran-theatre-box {
   border: none;
   padding: 0;
   overflow: visible;
+  transform: translate3d(0, calc(var(--orb-scroll, 0) * -6px), 0);
+  transition: transform 0.14s linear;
 }
 
 .pamomong-orb-status {
@@ -5324,9 +5327,13 @@ html[data-theme='malam'] .pwa-install-toast {
   }
   .twin-viewport-col,
   .engineering-sticky-col,
-  .pamomong-orb-stage,
   .modal-art-stage-col {
     position: static;
+    transform: none;
+  }
+  .pamomong-orb-stage {
+    position: relative;
+    top: auto;
     transform: none;
   }
   .pamomong-orb-host {
@@ -8640,7 +8647,6 @@ html[data-theme='malam'] .kelir-404-room-num {
   box-shadow: 0 0 0 3px var(--ember-soft);
 }
 
-.pamomong-orb-stage,
 .pakeliran-theatre-box,
 .coverflow-viewport,
 .diorama-canvas-wrap,

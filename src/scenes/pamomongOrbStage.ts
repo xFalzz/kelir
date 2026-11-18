@@ -213,6 +213,8 @@ export class PamomongOrbStage {
   private pointerX = 0;
   private pointerY = 0;
   private energyPulse = 0;
+  private scrollProgress = 0;
+  private scrollSmoothed = 0;
 
   constructor(container: HTMLElement, tema: 'malam' | 'terang' = 'terang') {
     this.container = container;
@@ -640,6 +642,10 @@ export class PamomongOrbStage {
     this.energyPulse = 1;
   }
 
+  public aturProgresGulir(norm0ke1: number): void {
+    this.scrollProgress = THREE.MathUtils.clamp(norm0ke1, 0, 1);
+  }
+
   public ubahUkuran(): void {
     if (!this.renderer) return;
     const w = Math.max(this.container.clientWidth || 320, 1);
@@ -658,8 +664,11 @@ export class PamomongOrbStage {
     this.rafId = window.requestAnimationFrame(this.loop);
 
     const t = performance.now() * 0.001;
+    this.scrollSmoothed += (this.scrollProgress - this.scrollSmoothed) * 0.1;
     const levitation = Math.sin(t * 1.65) * 0.075;
-    this.astrolabeRoot.position.y = levitation;
+    this.astrolabeRoot.position.y = levitation + Math.sin(this.scrollSmoothed * Math.PI) * 0.06;
+    this.astrolabeRoot.rotation.y = this.scrollSmoothed * 0.58;
+    this.astrolabeRoot.rotation.x = this.scrollSmoothed * 0.14;
 
     if (this.shadowDisc) {
       const s = 1 - levitation * 0.55;

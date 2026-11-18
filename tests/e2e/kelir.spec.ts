@@ -1564,9 +1564,26 @@ test.describe('Kelir Multi-Page Spasial 3D — Verifikasi 5 Halaman & Realisme 3
     expect(pakeliranOverflow).toBe(false);
     await page.setViewportSize({ width: 1280, height: 800 });
 
-    // 7. Kawruh: scan Axe + mocked Live /api/tanya multi-turn internal + mode Aksara 'aks'
+    // 7. Kawruh: scan Axe + sticky orb scroll tracking + mocked Live /api/tanya + mode Aksara 'aks'
     await page.getByTestId('page-tab-kawruh').click();
     await expect(page.locator('#pamomong')).toBeVisible({ timeout: 10000 });
+    const stickyOrbCheck = await page.evaluate(async () => {
+      const orbEl = document.querySelector('.pamomong-orb-stage') as HTMLElement | null;
+      if (!orbEl) return null;
+      const computedPos = getComputedStyle(orbEl).position;
+      window.scrollTo({ top: 260, behavior: 'instant' as ScrollBehavior });
+      await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+      const rectTop = orbEl.getBoundingClientRect().top;
+      const orbScrollVar = parseFloat(orbEl.style.getPropertyValue('--orb-scroll') || '0');
+      window.scrollTo({ top: 0, behavior: 'instant' as ScrollBehavior });
+      await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+      return { computedPos, rectTop, orbScrollVar };
+    });
+    expect(stickyOrbCheck?.computedPos).toBe('sticky');
+    expect(stickyOrbCheck?.rectTop ?? 0).toBeGreaterThanOrEqual(72);
+    expect(stickyOrbCheck?.rectTop ?? 999).toBeLessThanOrEqual(116);
+    expect(stickyOrbCheck?.orbScrollVar ?? 0).toBeGreaterThan(0);
+
     const axeKawruh = await new AxeBuilder({ page })
       .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
       .analyze();
