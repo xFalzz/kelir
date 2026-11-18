@@ -547,6 +547,9 @@
   // Svelte actions untuk siklus hidup WebGL 3D per halaman
   function mountDioramaStage(node: HTMLDivElement) {
     dioramaStage = new LivingPendopoStage(node, tema);
+    if (wireframeDioramaAktif) {
+      dioramaStage.aturWireframeMode(1);
+    }
     dioramaStage.onProyeksiPin((pins) => {
       dioramaPins = pins;
     });
@@ -2143,9 +2146,11 @@
                   type="button"
                   class="util-pill"
                   class:is-active={wireframeDioramaAktif}
+                  aria-pressed={wireframeDioramaAktif}
+                  data-testid="diorama-wireframe-btn-{kronik.nomor}"
                   onclick={() => {
                     wireframeDioramaAktif = !wireframeDioramaAktif;
-                    dioramaStage?.aturWireframeMode(wireframeDioramaAktif ? 0.85 : 0.08);
+                    dioramaStage?.aturWireframeMode(wireframeDioramaAktif ? 1 : 0);
                   }}
                 >
                   {wireframeDioramaAktif ? tI18n(bahasa, 'hero.wireframeOn') : tI18n(bahasa, 'hero.wireframeOff')}

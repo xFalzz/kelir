@@ -1506,6 +1506,16 @@ test.describe('Kelir Multi-Page Spasial 3D — Verifikasi 5 Halaman & Realisme 3
       .analyze();
     expect(axeBeranda.violations).toEqual([]);
 
+    // 2b. Beranda Diorama Wireframe toggle pada Kronik 03
+    const wireBtn = page.getByTestId('diorama-wireframe-btn-03');
+    await wireBtn.scrollIntoViewIfNeeded();
+    await wireBtn.click();
+    await expect(wireBtn).toHaveAttribute('aria-pressed', 'true');
+    await page.waitForTimeout(420);
+    await page.screenshot({ path: `${ARTIFACT_DIR}/mp-27-beranda-wireframe.png` });
+    await wireBtn.click();
+    await expect(wireBtn).toHaveAttribute('aria-pressed', 'false');
+
     // 3. Karawitan Bar collapse toggle
     await page.getByTestId('toggle-audio').click();
     await expect(page.getByTestId('karawitan-collapse-btn')).toBeVisible();

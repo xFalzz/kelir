@@ -329,6 +329,7 @@ export function attachCadWireframeLayer(
     opacity: initialOpacity,
     depthWrite: false,
   });
+  lineMat.visible = initialOpacity > 0.01;
 
   const meshes: THREE.Mesh[] = [];
   root.traverse((obj) => {
@@ -341,13 +342,13 @@ export function attachCadWireframeLayer(
   for (const mesh of meshes) {
     let edges = cacheEdges.get(mesh.geometry);
     if (!edges) {
-      edges = new THREE.EdgesGeometry(mesh.geometry, 22);
+      edges = new THREE.EdgesGeometry(mesh.geometry, 15);
       cacheEdges.set(mesh.geometry, edges);
     }
     const segments = new THREE.LineSegments(edges.clone(), lineMat);
     segments.userData.isCadOverlay = true;
     segments.renderOrder = 4;
-    segments.visible = initialOpacity > 0.01;
+    segments.visible = true;
     mesh.add(segments);
   }
 

@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
+  attachCadWireframeLayer,
   createSafeWebGLRenderer,
   disposeSceneObject,
   kirimStatusWebGL,
@@ -132,5 +133,35 @@ describe('Three.js Helpers WebGL Safety & GPU Resource Disposal', () => {
     expect(rtDisposeSpy).toHaveBeenCalledTimes(1);
     expect(scene.environment).toBeNull();
     expect(scene.userData.__envRT).toBeUndefined();
+  });
+
+  it('attachCadWireframeLayer menjaga LineSegments.visible=true saat initialOpacity=0 agar lineMat.visible dapat menyalakan wireframe', () => {
+    const group = new THREE.Group();
+    const mesh = new THREE.Mesh(
+      new THREE.BoxGeometry(1, 1, 1),
+      new THREE.MeshStandardMaterial(),
+    );
+    const skipMesh = new THREE.Mesh(
+      new THREE.BoxGeometry(0.5, 0.5, 0.5),
+      new THREE.MeshStandardMaterial(),
+    );
+    skipMesh.userData.skipCad = true;
+    group.add(mesh, skipMesh);
+
+    const lineMat = attachCadWireframeLayer(group, 0xff5a1f, 0);
+    expect(lineMat.visible).toBe(false);
+
+    const overlays: THREE.LineSegments[] = [];
+    group.traverse((n) => {
+      if (n instanceof THREE.LineSegments && n.userData.isCadOverlay) overlays.push(n);
+    });
+    expect(overlays).toHaveLength(1);
+    expect(overlays[0].visible).toBe(true);
+
+    lineMat.opacity = 0.96;
+    lineMat.visible = true;
+    expect(lineMat.visible).toBe(true);
+    expect(overlays[0].visible).toBe(true);
+    disposeSceneObject(group);
   });
 });

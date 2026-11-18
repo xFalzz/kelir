@@ -601,8 +601,19 @@ export class LivingPendopoStage {
 
   private hoveredId: IdArtefak | null = null;
   private selectedId: IdArtefak | null = null;
+  private temaAktif: 'malam' | 'terang' = 'terang';
   private currentWireframe = 0;
   private targetWireframe = 0;
+  private lastAppliedWireframe = -1;
+  private bangunanMatsDasar = new Map<
+    THREE.Material,
+    { opacity: number; transparent: boolean; depthWrite: boolean }
+  >();
+  private pulauMatsDasar = new Map<
+    THREE.Material,
+    { opacity: number; transparent: boolean; depthWrite: boolean }
+  >();
+  private cadSegmentsList: THREE.LineSegments[] = [];
   private rafId: number | null = null;
   private loopAktif = true;
   private loopSiapMulai = false;
@@ -690,7 +701,52 @@ export class LivingPendopoStage {
   private pastikanCadWireframeLayer(): void {
     if (this.cadWireframeTerpasang) return;
     this.cadWireframeTerpasang = true;
-    this.cadLineMat = attachCadWireframeLayer(this.pulauRoot, 0xd95628, this.currentWireframe);
+    const warna = this.temaAktif === 'malam' ? 0xff8a47 : 0xb8320e;
+    this.cadLineMat = attachCadWireframeLayer(this.pulauRoot, warna, this.currentWireframe);
+
+    const kumpulkanMaterial = (
+      akar: THREE.Object3D,
+      tujuan: Map<THREE.Material, { opacity: number; transparent: boolean; depthWrite: boolean }>,
+    ) => {
+      akar.traverse((node) => {
+        if (node.userData?.isCadOverlay || node.userData?.skipCad) return;
+        const mesh = node as THREE.Mesh;
+        if (!mesh.isMesh || !mesh.material) return;
+        const daftar = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
+        for (const m of daftar) {
+          if (!tujuan.has(m)) {
+            tujuan.set(m, {
+              opacity: m.opacity,
+              transparent: m.transparent,
+              depthWrite: m.depthWrite,
+            });
+          }
+        }
+      });
+    };
+
+    for (const data of this.bangunanMap.values()) {
+      kumpulkanMaterial(data.grup, this.bangunanMatsDasar);
+    }
+    this.pulauRoot.traverse((node) => {
+      if (node.userData?.isCadOverlay && node instanceof THREE.LineSegments) {
+        this.cadSegmentsList.push(node);
+        return;
+      }
+      if (node.userData?.skipCad) return;
+      const mesh = node as THREE.Mesh;
+      if (!mesh.isMesh || !mesh.material) return;
+      const daftar = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
+      for (const m of daftar) {
+        if (!this.bangunanMatsDasar.has(m) && !this.pulauMatsDasar.has(m)) {
+          this.pulauMatsDasar.set(m, {
+            opacity: m.opacity,
+            transparent: m.transparent,
+            depthWrite: m.depthWrite,
+          });
+        }
+      }
+    });
   }
 
   public onProyeksiPin(cb: (pins: ProyeksiPinDiorama[]) => void): void {
@@ -734,6 +790,10 @@ export class LivingPendopoStage {
   }
 
   public aturTema(tema: 'malam' | 'terang'): void {
+    this.temaAktif = tema;
+    if (this.cadLineMat) {
+      this.cadLineMat.color.setHex(tema === 'malam' ? 0xff8a47 : 0xb8320e);
+    }
     if (!this.hemiLight || !this.sunLight || !this.fillLight || !this.rimLight) return;
 
     if (tema === 'malam') {
@@ -1765,6 +1825,9 @@ export class LivingPendopoStage {
     if (this.targetWireframe > 0.015) {
       this.pastikanCadWireframeLayer();
     }
+    if (this.rafId === null && this.loopSiapMulai && this.loopAktif) {
+      this.loop();
+    }
   }
 
   public aturParalaks(normX: number, normY: number): void {
@@ -1834,10 +1897,47 @@ export class LivingPendopoStage {
     this.camera.position.copy(this.curCamPos);
     this.camera.lookAt(this.curLookAt);
 
-    this.currentWireframe += (this.targetWireframe - this.currentWireframe) * 0.1;
-    if (this.cadLineMat) {
-      this.cadLineMat.opacity = this.currentWireframe;
-      this.cadLineMat.visible = this.currentWireframe > 0.015;
+    const lerpWire = 1 - Math.exp(-8.5 * dt);
+    this.currentWireframe += (this.targetWireframe - this.currentWireframe) * lerpWire;
+    if (Math.abs(this.targetWireframe - this.currentWireframe) < 0.004) {
+      this.currentWireframe = this.targetWireframe;
+    }
+
+    if (this.cadLineMat && Math.abs(this.currentWireframe - this.lastAppliedWireframe) > 0.002) {
+      this.lastAppliedWireframe = this.currentWireframe;
+      const w = this.currentWireframe;
+      const showWire = w > 0.015;
+      this.cadLineMat.opacity = Math.min(1, w * 0.96);
+      this.cadLineMat.visible = showWire;
+      for (const seg of this.cadSegmentsList) {
+        seg.visible = showWire;
+      }
+
+      for (const [mat, base] of this.bangunanMatsDasar) {
+        if (!showWire) {
+          mat.opacity = base.opacity;
+          mat.transparent = base.transparent;
+          mat.depthWrite = base.depthWrite;
+        } else {
+          mat.transparent = true;
+          mat.opacity = Math.max(0.14, base.opacity * (1 - w * 0.84));
+          mat.depthWrite = w < 0.35 ? base.depthWrite : false;
+        }
+        mat.needsUpdate = true;
+      }
+
+      for (const [mat, base] of this.pulauMatsDasar) {
+        if (!showWire) {
+          mat.opacity = base.opacity;
+          mat.transparent = base.transparent;
+          mat.depthWrite = base.depthWrite;
+        } else {
+          mat.transparent = true;
+          mat.opacity = Math.max(0.32, base.opacity * (1 - w * 0.56));
+          mat.depthWrite = w < 0.5 ? base.depthWrite : false;
+        }
+        mat.needsUpdate = true;
+      }
     }
 
     const fokusKeris = this.selectedId === 'keris' || this.hoveredId === 'keris';
@@ -1952,6 +2052,10 @@ export class LivingPendopoStage {
     this.stopObservasi?.();
     this.stopObservasi = null;
     if (this.rafId !== null) window.cancelAnimationFrame(this.rafId);
+    this.bangunanMatsDasar.clear();
+    this.pulauMatsDasar.clear();
+    this.cadSegmentsList.length = 0;
+    this.cadLineMat = null;
     disposeSceneObject(this.scene);
     this.renderer?.dispose();
     this.renderer = null;
