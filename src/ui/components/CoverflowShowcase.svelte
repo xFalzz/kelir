@@ -53,6 +53,7 @@
 
   let sectionEl: HTMLElement | undefined = $state();
   let scrollProgress = $state(0);
+  let stageRetrySeq = $state(0);
   let visibleBlocks: Record<string, boolean> = $state({
     dossier: true,
     anatomy: true,
@@ -172,8 +173,10 @@
     onkeydown={handleViewportKeyDown}
   >
     <div class="coverflow-stage-aura" aria-hidden="true"></div>
-    <div class="coverflow-webgl-host" use:mountStage></div>
-    <WebGLStatusBanner {bahasa} />
+    {#key stageRetrySeq}
+      <div class="coverflow-webgl-host" use:mountStage></div>
+    {/key}
+    <WebGLStatusBanner {bahasa} onRetry={() => (stageRetrySeq += 1)} />
     <div class="coverflow-edge-fade" aria-hidden="true"></div>
 
     <div class="coverflow-hud-top">

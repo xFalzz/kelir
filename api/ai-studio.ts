@@ -57,10 +57,14 @@ export default async function handler(req: VercelReq, res: VercelRes): Promise<v
   const bahasa: BahasaAktif = rawLang && BAHASA_API_VALID.has(rawLang) ? rawLang : 'id';
   const { apiKey } = bacaKonfigurasiGemini();
 
-  const hasil = await eksekusiPermintaanAiStudio({
-    body,
-    bahasa,
-    apiKey,
-  });
-  res.status(200).json(hasil);
+  try {
+    const hasil = await eksekusiPermintaanAiStudio({
+      body,
+      bahasa,
+      apiKey,
+    });
+    res.status(200).json(hasil);
+  } catch {
+    res.status(500).json({ error: 'Terjadi gangguan sementara pada layanan Studio AI.' });
+  }
 }

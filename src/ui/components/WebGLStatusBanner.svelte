@@ -33,13 +33,16 @@
     const raf = requestAnimationFrame(sinkron);
 
     const onStatusEvent = (ev: Event) => {
-      const detail = (ev as CustomEvent<{ state?: string }>).detail;
+      const detail = (ev as CustomEvent<{ state?: string; reason?: string }>).detail;
+      const resolved =
+        detail?.state ??
+        (detail?.reason === 'restored' ? 'ready' : detail?.reason);
       if (
-        detail?.state === 'ready' ||
-        detail?.state === 'unavailable' ||
-        detail?.state === 'lost'
+        resolved === 'ready' ||
+        resolved === 'unavailable' ||
+        resolved === 'lost'
       ) {
-        webglState = detail.state;
+        webglState = resolved;
         return;
       }
       sinkron();

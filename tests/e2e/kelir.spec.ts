@@ -1,3 +1,4 @@
+import AxeBuilder from '@axe-core/playwright';
 import { expect, test } from '@playwright/test';
 
 const ARTIFACT_DIR =
@@ -1389,6 +1390,7 @@ test.describe('Kelir Multi-Page Spasial 3D — Verifikasi 5 Halaman & Realisme 3
     await expect(page.locator('.preloader-curtain')).toHaveAttribute('data-preloader-done', 'true', {
       timeout: 12000,
     });
+    await page.waitForTimeout(250);
 
     // 1. Skip-link A11y & Landmark
     await page.keyboard.press('Tab');
@@ -1471,6 +1473,191 @@ test.describe('Kelir Multi-Page Spasial 3D — Verifikasi 5 Halaman & Realisme 3
       data: { bendaId: 'keris', pertanyaan: 'x'.repeat(20_000) },
     });
     expect(bigApi.status()).toBe(413);
+
+    expect(errors).toEqual([]);
+  });
+
+  test('Suite 7: Axe WCAG AA, WebGL Lost/Retry, Onboarding, Karawitan Collapse, Mock Live /api/tanya, Privacy Reset & Mobile Pakeliran', async ({
+    page,
+  }) => {
+    test.setTimeout(180000);
+    const errors: string[] = [];
+    page.on('pageerror', (err) => errors.push(err.message));
+
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await page.goto('/');
+    await expect(page.locator('.preloader-curtain')).toHaveAttribute('data-preloader-done', 'true', {
+      timeout: 12000,
+    });
+
+    // 1. Onboarding kunjungan perdana tampil, bisa ditutup, dan tersimpan
+    const onboarding = page.getByTestId('onboarding-banner');
+    await onboarding.scrollIntoViewIfNeeded();
+    await expect(onboarding).toBeVisible();
+    await page.getByTestId('onboarding-dismiss-btn').click();
+    await expect(onboarding).toHaveCount(0);
+    expect(await page.evaluate(() => window.localStorage.getItem('kelir_onboarding_v1'))).toBe('1');
+
+    // 2. Scan WCAG 2.1 AA otomatis (@axe-core/playwright) di 5 halaman & modal utama
+    //    (.wordmark-colossal adalah watermark dekoratif aria-hidden="true", dikecualikan di WCAG 1.4.3)
+    const axeBeranda = await new AxeBuilder({ page })
+      .exclude('.wordmark-colossal')
+      .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
+      .analyze();
+    expect(axeBeranda.violations).toEqual([]);
+
+    // 3. Karawitan Bar collapse toggle
+    await page.getByTestId('toggle-audio').click();
+    await expect(page.getByTestId('karawitan-collapse-btn')).toBeVisible();
+    await page.getByTestId('karawitan-collapse-btn').click();
+    await expect(page.locator('.karawitan-floating-wrap.is-minimized')).toBeVisible();
+    await page.getByTestId('karawitan-collapse-btn').click();
+    await expect(page.locator('.karawitan-floating-wrap.is-minimized')).toHaveCount(0);
+
+    // 4. Twin: scan Axe + simulasi WEBGL_lose_context & pulih via tombol Retry tanpa reload penuh
+    await page.getByTestId('page-tab-twin').click();
+    await expect(page.locator('#digital-twin')).toBeVisible({ timeout: 10000 });
+    const axeTwin = await new AxeBuilder({ page })
+      .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
+      .analyze();
+    expect(axeTwin.violations).toEqual([]);
+
+    await expect(page.getByTestId('webgl-fallback-banner')).toHaveCount(0);
+    await page.evaluate(() => {
+      const inner = document.querySelector('.twin-webgl-inner');
+      inner?.dispatchEvent(
+        new CustomEvent('kelirwebglstatus', {
+          bubbles: true,
+          detail: { state: 'lost', ok: false, reason: 'lost' },
+        }),
+      );
+    });
+    await expect(page.getByTestId('webgl-fallback-banner')).toBeVisible();
+    await page.getByTestId('webgl-retry-btn').click();
+    await expect(page.getByTestId('webgl-fallback-banner')).toHaveCount(0);
+
+    // 5. Koleksi Coverflow: scan Axe
+    await page.getByTestId('page-tab-koleksi').click();
+    await expect(page.locator('#coverflow')).toBeVisible({ timeout: 10000 });
+    const axeKoleksi = await new AxeBuilder({ page })
+      .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
+      .analyze();
+    expect(axeKoleksi.violations).toEqual([]);
+
+    // 6. Pakeliran: scan Axe + salin tautan adegan + tata letak mobile 390px
+    await page.getByTestId('page-tab-pakeliran').click();
+    await expect(page.locator('#pakeliran')).toBeVisible({ timeout: 10000 });
+    const axePakeliran = await new AxeBuilder({ page })
+      .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
+      .analyze();
+    expect(axePakeliran.violations).toEqual([]);
+
+    await page.getByTestId('babak-1').click();
+    await page.getByTestId('pakeliran-copy-link-btn').click();
+    await expect(page.getByTestId('kelir-toast')).toBeVisible();
+
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.waitForTimeout(250);
+    const pakeliranOverflow = await page.evaluate(
+      () => document.documentElement.scrollWidth > window.innerWidth + 1,
+    );
+    expect(pakeliranOverflow).toBe(false);
+    await page.setViewportSize({ width: 1280, height: 800 });
+
+    // 7. Kawruh: scan Axe + mocked Live /api/tanya multi-turn internal + mode Aksara 'aks'
+    await page.getByTestId('page-tab-kawruh').click();
+    await expect(page.locator('#pamomong')).toBeVisible({ timeout: 10000 });
+    const axeKawruh = await new AxeBuilder({ page })
+      .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
+      .analyze();
+    expect(axeKawruh.violations).toEqual([]);
+
+    const capturedPayloads: Array<Record<string, unknown>> = [];
+    await page.route('**/api/tanya', async (route) => {
+      const reqBody = route.request().postDataJSON() as Record<string, unknown>;
+      capturedPayloads.push(reqBody);
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          jawaban: 'Pamor keris dibentuk dari lipatan besi-nikel tradisional (S1).',
+          sumber: ['S1'],
+          mode: 'pamomong-live',
+          modelNama: 'Pamomong Nusantara',
+          statusGrounding: 'terbukti',
+          skorKeyakinan: 96,
+          kataKunciCocok: ['pamor', 'keris'],
+          latensiMs: 42,
+          butirBukti: [
+            {
+              id: 'mock-s1',
+              judul: 'Dapur dan Pamor Tosan Aji',
+              kutipan: 'Lipatan besi dan nikel membentuk pola pamor khas bilah keris Jawa.',
+              sumber: ['S1'],
+              skorRelatif: 96,
+            },
+          ],
+          rujukan: [
+            {
+              kode: 'S1',
+              judul: 'Dossier Tosan Aji Keraton',
+              lembaga: 'UNESCO ICH',
+            },
+          ],
+        }),
+      });
+    });
+
+    const queryInput = page.locator('[data-testid="form-tanya"] input');
+    const querySubmit = page.locator('[data-testid="form-tanya"] button[type="submit"]');
+    await queryInput.fill('Bagaimana pamor keris dibentuk?');
+    await querySubmit.click();
+    await expect(page.getByTestId('jawaban-pamomong')).toContainText('lipatan besi-nikel tradisional', {
+      timeout: 8000,
+    });
+    await expect(page.getByTestId('pamomong-model-badge')).toContainText('Pamomong Nusantara');
+    expect(capturedPayloads).toHaveLength(1);
+    expect(capturedPayloads[0].riwayatSingkat ?? []).toEqual([]);
+
+    await queryInput.fill('Apakah teknik lipatan itu merata?');
+    await querySubmit.click();
+    await expect.poll(() => capturedPayloads.length, { timeout: 8000 }).toBe(2);
+    expect(Array.isArray(capturedPayloads[1].riwayatSingkat)).toBe(true);
+    expect((capturedPayloads[1].riwayatSingkat as unknown[]).length).toBe(1);
+    await page.unroute('**/api/tanya');
+
+    // Mode bahasa Aksara 'aks' di #pamomong
+    await page.getByTestId('lang-switcher-btn').click();
+    await page.getByTestId('lang-aks').click();
+    await expect(page.locator('#pamomong h1')).toContainText(/[\uA980-\uA9DF]/);
+    await page.getByTestId('lang-switcher-btn').click();
+    await page.getByTestId('lang-id').click();
+
+    // 8. Legal Modal Privasi + Focus Trap + Reset Data Lokal + Search Modal Axe
+    await page.getByTestId('btn-search-modal').click();
+    await expect(page.getByTestId('search-modal')).toBeVisible();
+    const axeSearch = await new AxeBuilder({ page })
+      .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
+      .analyze();
+    expect(axeSearch.violations).toEqual([]);
+    await page.keyboard.press('Escape');
+
+    await page.getByTestId('footer-link-privasi').click();
+    const legalModal = page.getByTestId('legal-info-modal');
+    await expect(legalModal).toBeVisible();
+    const axeLegal = await new AxeBuilder({ page })
+      .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
+      .analyze();
+    expect(axeLegal.violations).toEqual([]);
+
+    await page.getByTestId('btn-reset-local-data').click();
+    await expect(page.getByTestId('reset-local-data-done')).toBeVisible();
+    const storageCleared = await page.evaluate(() => ({
+      jejak: window.localStorage.getItem('kelir_jejak_v1'),
+      onboarding: window.localStorage.getItem('kelir_onboarding_v1'),
+      feedback: window.localStorage.getItem('kelir_ai_feedback_v1'),
+    }));
+    expect(storageCleared).toEqual({ jejak: null, onboarding: null, feedback: null });
 
     expect(errors).toEqual([]);
   });

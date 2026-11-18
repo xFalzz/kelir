@@ -19,6 +19,29 @@ export function isMobileGpuProfile(): boolean {
   );
 }
 
+export function tandaiTeksturCacheBersama<T extends THREE.Texture | null | undefined>(
+  tex: T,
+): T {
+  if (tex) {
+    tex.userData = { ...(tex.userData ?? {}), sharedCache: true };
+  }
+  return tex;
+}
+
+export function kirimStatusWebGL(
+  container: HTMLElement,
+  state: 'ready' | 'lost' | 'unavailable',
+): void {
+  container.dataset.webglState = state;
+  const reason = state === 'ready' ? 'restored' : state;
+  container.dispatchEvent(
+    new CustomEvent('kelirwebglstatus', {
+      bubbles: true,
+      detail: { state, ok: state === 'ready', reason },
+    }),
+  );
+}
+
 /**
  * Menginisialisasi WebGLRenderer secara aman; mengembalikan null jika konteks WebGL tidak tersedia.
  */
@@ -32,7 +55,10 @@ export function createSafeWebGLRenderer(
       canvas.getContext('webgl2', { powerPreference: 'high-performance' }) ||
       canvas.getContext('webgl') ||
       canvas.getContext('experimental-webgl');
-    if (!gl) return null;
+    if (!gl) {
+      kirimStatusWebGL(container, 'unavailable');
+      return null;
+    }
 
     const width = Math.max(container.clientWidth || 320, 1);
     const height = Math.max(container.clientHeight || 240, 1);
@@ -64,7 +90,6 @@ export function createSafeWebGLRenderer(
     if (getComputedStyle(container).position === 'static') {
       container.style.position = 'relative';
     }
-    container.dataset.webglState = 'ready';
     canvas.style.position = 'absolute';
     canvas.style.inset = '0';
     canvas.style.zIndex = '0';
@@ -73,25 +98,17 @@ export function createSafeWebGLRenderer(
     canvas.style.display = 'block';
     canvas.addEventListener('webglcontextlost', (ev) => {
       ev.preventDefault();
-      container.dataset.webglState = 'lost';
-      container.dispatchEvent(
-        new CustomEvent('kelirwebglstatus', { detail: { ok: false, reason: 'lost' } }),
-      );
+      kirimStatusWebGL(container, 'lost');
     });
     canvas.addEventListener('webglcontextrestored', () => {
-      container.dataset.webglState = 'ready';
-      container.dispatchEvent(
-        new CustomEvent('kelirwebglstatus', { detail: { ok: true, reason: 'restored' } }),
-      );
+      kirimStatusWebGL(container, 'ready');
     });
     container.querySelectorAll('canvas').forEach((el) => el.remove());
     container.prepend(canvas);
+    kirimStatusWebGL(container, 'ready');
     return renderer;
   } catch {
-    container.dataset.webglState = 'unavailable';
-    container.dispatchEvent(
-      new CustomEvent('kelirwebglstatus', { detail: { ok: false, reason: 'unavailable' } }),
-    );
+    kirimStatusWebGL(container, 'unavailable');
     return null;
   }
 }
@@ -109,7 +126,7 @@ export function loadBudayaTextures(): PaketTeksturBudaya {
       tex.wrapS = THREE.RepeatWrapping;
       tex.wrapT = THREE.RepeatWrapping;
       if (srgb) tex.colorSpace = THREE.SRGBColorSpace;
-      return tex;
+      return tandaiTeksturCacheBersama(tex);
     } catch {
       return null;
     }
@@ -411,6 +428,29 @@ export function pinProyeksiBerubah<T extends { x: number; y: number; terlihat: b
   return false;
 }
 
+const SLOT_TEKSTUR_MATERIAL = [
+  'map',
+  'normalMap',
+  'roughnessMap',
+  'bumpMap',
+  'emissiveMap',
+  'aoMap',
+  'alphaMap',
+  'metalnessMap',
+  'envMap',
+] as const;
+
+function disposeMaterialDenganTekstur(mat: THREE.Material): void {
+  const matRecord = mat as unknown as Record<string, unknown>;
+  for (const key of SLOT_TEKSTUR_MATERIAL) {
+    const tex = matRecord[key];
+    if (tex instanceof THREE.Texture && !tex.userData?.sharedCache) {
+      tex.dispose();
+    }
+  }
+  mat.dispose();
+}
+
 export function disposeSceneObject(obj: THREE.Object3D): void {
   if (obj instanceof THREE.Scene) {
     const envRT = obj.userData.__envRT as THREE.WebGLRenderTarget | undefined;
@@ -430,9 +470,9 @@ export function disposeSceneObject(obj: THREE.Object3D): void {
     }
     const mat = (mesh as { material?: THREE.Material | THREE.Material[] }).material;
     if (Array.isArray(mat)) {
-      mat.forEach((m) => m.dispose());
+      mat.forEach((m) => disposeMaterialDenganTekstur(m));
     } else if (mat) {
-      mat.dispose();
+      disposeMaterialDenganTekstur(mat);
     }
   });
 }

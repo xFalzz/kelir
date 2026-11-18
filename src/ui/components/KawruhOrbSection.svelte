@@ -80,7 +80,7 @@
     mountOrbStage,
     inputAksaraLatin = $bindable(''),
     aksaraTerkonversi,
-    kartuCarakanTerpilih,
+    kartuCarakanTerpilih: _kartuCarakanTerpilih,
     onPilihCarakan,
     formatSumberLabel,
     onSimpanSkorKuis,
@@ -245,6 +245,7 @@
 
   const AI_FEEDBACK_STORAGE_KEY = 'kelir_ai_feedback_v1';
   let umpanBalikAiMap: Record<string, 'membantu' | 'lapor'> = $state({});
+  let orbRetrySeq = $state(0);
 
   onMount(() => {
     try {
@@ -273,6 +274,23 @@
     } catch {
       // Abaikan jika storage diblokir
     }
+  }
+
+  function eksporEvaluasiJsonl(): void {
+    const entries = Object.entries(umpanBalikAiMap);
+    if (entries.length === 0 || typeof document === 'undefined') return;
+    const lines = entries.map(([key, verdict]) =>
+      JSON.stringify({ key, verdict, lang: bahasa, ts: new Date().toISOString() }),
+    );
+    const blob = new Blob([lines.join('\n') + '\n'], { type: 'application/x-ndjson;charset=utf-8' });
+    const href = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = href;
+    a.download = 'kelir-ai-eval-feedback.jsonl';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(href);
   }
 
   onDestroy(() => {
@@ -609,6 +627,16 @@
                 <span class="ai-feedback-saved" data-testid="ai-feedback-saved">
                   {tI18n(bahasa, 'kawruh.feedbackSaved')}
                 </span>
+              {/if}
+              {#if Object.keys(umpanBalikAiMap).length > 0}
+                <button
+                  type="button"
+                  class="util-pill ai-feedback-btn"
+                  onclick={eksporEvaluasiJsonl}
+                  data-testid="ai-feedback-export-btn"
+                >
+                  {tI18n(bahasa, 'kawruh.exportFeedbackJsonl')}
+                </button>
               {/if}
             </div>
           </div>
@@ -1128,8 +1156,10 @@
           {sediaTanya || studioBusy ? tI18n(bahasa, 'kawruh.orbScanning') : tI18n(bahasa, 'kawruh.orbReady')}
         </span>
       </div>
-      <div class="pamomong-orb-host" use:mountOrbStage aria-hidden="true"></div>
-      <WebGLStatusBanner {bahasa} />
+      {#key orbRetrySeq}
+        <div class="pamomong-orb-host" use:mountOrbStage aria-hidden="true"></div>
+      {/key}
+      <WebGLStatusBanner {bahasa} onRetry={() => (orbRetrySeq += 1)} />
       <p class="pamomong-orb-caption">
         {tI18n(bahasa, 'kawruh.orbCaption')}
       </p>

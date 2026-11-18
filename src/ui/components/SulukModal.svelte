@@ -60,6 +60,7 @@
   }: Props = $props();
 
   let track = $derived(tracks[trackIdx] ?? tracks[0]);
+  let sulukRetrySeq = $state(0);
   let aksen = $derived(ambilAksenBenda(track.artefakId, tema));
   let larikAktif = $derived(track.sulukLarik[sulukLarikAktif] ?? track.sulukLarik[0]);
   let cuplikanLarikAktif = $derived(ambilTeks(larikAktif, bahasa));
@@ -420,8 +421,10 @@
       onmousemove={handleArtMouseMove}
       onmouseleave={() => stage?.aturParalaks(0, 0)}
     >
-      <div class="suluk-webgl-host" use:mountSuluk3D></div>
-      <WebGLStatusBanner {bahasa} />
+      {#key sulukRetrySeq}
+        <div class="suluk-webgl-host" use:mountSuluk3D></div>
+      {/key}
+      <WebGLStatusBanner {bahasa} onRetry={() => (sulukRetrySeq += 1)} />
 
       <div class="suluk-art-hud-top">
         <span class="suluk-stage-pill">

@@ -353,7 +353,7 @@ export function latinKeAksaraJawa(
 export function konversiTeksKeAksaraAman(kalimat: string): string {
   if (!kalimat.trim()) return '';
   const polaToken =
-    /(©|\b(?:KELIR|UNESCO|ICH|CAD|PBR|BM25|RAG|PWA|Pamomong|WebGL|WebAudio|MediaPipe|Unicode|BPM|HDR|X-Ray|3D|21-Titik)\b|U\+[A-F0-9]+|S\d(?:[–-]S?\d)?|KLR-[A-Z0-9-]+|\d+(?:[.,–-]\d+)?%?|\bms\b)/g;
+    /(©|(?:Ctrl|Alt)\+[A-Za-z0-9]|\b(?:KELIR|UNESCO|ICH|CAD|PBR|BM25|RAG|PWA|Pamomong|WebGL|WebAudio|MediaPipe|Unicode|BPM|HDR|X-Ray|3D|21-Titik|Offline|Auto-Demo|GPU|AI|PNG|JSONL|JSON|UNAVAILABLE|LOST)\b|U\+[A-F0-9]+|S\d(?:[–-]S?\d)?|KLR-[A-Z0-9-]+|\d+(?:[.,–-]\d+)?%?|\bms\b)/gi;
   const bagian = kalimat.split(polaToken);
   return bagian
     .map((frag) => {

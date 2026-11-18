@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { tandaiTeksturCacheBersama } from './threeHelpers.ts';
 
 export interface WayangSriRamaRig {
   root: THREE.Group;
@@ -157,12 +158,12 @@ function getTeksturPradaTatahan(): {
     }
   }
 
-  cacheSriRamaDiffuse = new THREE.CanvasTexture(cDiff);
+  cacheSriRamaDiffuse = tandaiTeksturCacheBersama(new THREE.CanvasTexture(cDiff));
   cacheSriRamaDiffuse.colorSpace = THREE.SRGBColorSpace;
   cacheSriRamaDiffuse.wrapS = THREE.RepeatWrapping;
   cacheSriRamaDiffuse.wrapT = THREE.RepeatWrapping;
 
-  cacheSriRamaBump = new THREE.CanvasTexture(cBump);
+  cacheSriRamaBump = tandaiTeksturCacheBersama(new THREE.CanvasTexture(cBump));
   cacheSriRamaBump.wrapS = THREE.RepeatWrapping;
   cacheSriRamaBump.wrapT = THREE.RepeatWrapping;
 
@@ -231,12 +232,12 @@ function getTeksturKainDodot(): {
   ctx.lineWidth = 3;
   ctx.strokeRect(4, 4, size - 8, size - 8);
 
-  cacheDodotDiffuse = new THREE.CanvasTexture(canvas);
+  cacheDodotDiffuse = tandaiTeksturCacheBersama(new THREE.CanvasTexture(canvas));
   cacheDodotDiffuse.colorSpace = THREE.SRGBColorSpace;
   cacheDodotDiffuse.wrapS = THREE.RepeatWrapping;
   cacheDodotDiffuse.wrapT = THREE.RepeatWrapping;
 
-  cacheDodotBump = new THREE.CanvasTexture(bumpCanvas);
+  cacheDodotBump = tandaiTeksturCacheBersama(new THREE.CanvasTexture(bumpCanvas));
   cacheDodotBump.wrapS = THREE.RepeatWrapping;
   cacheDodotBump.wrapT = THREE.RepeatWrapping;
 
@@ -333,9 +334,9 @@ function getTeksturGununganDetail(): {
     }
   }
 
-  cacheGununganDiffuse = new THREE.CanvasTexture(canvas);
+  cacheGununganDiffuse = tandaiTeksturCacheBersama(new THREE.CanvasTexture(canvas));
   cacheGununganDiffuse.colorSpace = THREE.SRGBColorSpace;
-  cacheGununganBump = new THREE.CanvasTexture(bumpCanvas);
+  cacheGununganBump = tandaiTeksturCacheBersama(new THREE.CanvasTexture(bumpCanvas));
 
   return { diffuse: cacheGununganDiffuse, bump: cacheGununganBump };
 }
@@ -393,9 +394,9 @@ function getTeksturKidangKencana(): {
     }
   }
 
-  cacheKidangDiffuse = new THREE.CanvasTexture(canvas);
+  cacheKidangDiffuse = tandaiTeksturCacheBersama(new THREE.CanvasTexture(canvas));
   cacheKidangDiffuse.colorSpace = THREE.SRGBColorSpace;
-  cacheKidangBump = new THREE.CanvasTexture(bumpCanvas);
+  cacheKidangBump = tandaiTeksturCacheBersama(new THREE.CanvasTexture(bumpCanvas));
 
   return { diffuse: cacheKidangDiffuse, bump: cacheKidangBump };
 }

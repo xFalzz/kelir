@@ -6,6 +6,7 @@ import {
   hitungFovResponsif,
   jalankanLoopSetelahSiap,
   pasangObservasiPanggung,
+  tandaiTeksturCacheBersama,
 } from './threeHelpers.ts';
 import {
   buildBlencongWayang3D,
@@ -77,7 +78,7 @@ function buatTeksturLayarBlacu(): THREE.CanvasTexture | null {
     ctx.fill();
   }
 
-  cacheLayarBlacuTex = new THREE.CanvasTexture(canvas);
+  cacheLayarBlacuTex = tandaiTeksturCacheBersama(new THREE.CanvasTexture(canvas));
   cacheLayarBlacuTex.colorSpace = THREE.SRGBColorSpace;
   cacheLayarBlacuTex.anisotropy = 4;
   return cacheLayarBlacuTex;
@@ -113,7 +114,7 @@ function buatTeksturGedebogPisang(): THREE.CanvasTexture | null {
     ctx.stroke();
   }
 
-  cacheGedebogTex = new THREE.CanvasTexture(canvas);
+  cacheGedebogTex = tandaiTeksturCacheBersama(new THREE.CanvasTexture(canvas));
   cacheGedebogTex.colorSpace = THREE.SRGBColorSpace;
   cacheGedebogTex.wrapS = THREE.RepeatWrapping;
   cacheGedebogTex.wrapT = THREE.RepeatWrapping;
@@ -153,7 +154,7 @@ function buatTeksturJatiUkir(): THREE.CanvasTexture | null {
     ctx.fill();
   }
 
-  cacheJatiUkirTex = new THREE.CanvasTexture(canvas);
+  cacheJatiUkirTex = tandaiTeksturCacheBersama(new THREE.CanvasTexture(canvas));
   cacheJatiUkirTex.colorSpace = THREE.SRGBColorSpace;
   cacheJatiUkirTex.wrapS = THREE.RepeatWrapping;
   cacheJatiUkirTex.wrapT = THREE.RepeatWrapping;

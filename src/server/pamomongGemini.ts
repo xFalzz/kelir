@@ -24,6 +24,7 @@ import {
   jawabDariKurasiLokal,
   type HasilTanya,
   type KonteksUnsurKurasi,
+  type RiwayatTanyaSingkat,
 } from '../lib/tanya.ts';
 import {
   MODEL_GEMINI_LIVE_UNLIMITED,
@@ -45,10 +46,30 @@ export interface OpsiTanyaGemini {
   pertanyaan: string;
   bahasa?: BahasaAktif;
   konteksUnsur?: KonteksUnsurKurasi;
+  riwayatSingkat?: unknown;
   apiKey?: string;
   timeoutMs?: number;
   liveClientFactory?: (apiKey: string) => LiveClientLike;
   bypassCache?: boolean;
+}
+
+function sanitasiRiwayatSingkatAman(raw: unknown): RiwayatTanyaSingkat[] {
+  if (!Array.isArray(raw)) return [];
+  const bersih: RiwayatTanyaSingkat[] = [];
+  for (const item of raw.slice(-2)) {
+    if (!item || typeof item !== 'object' || Array.isArray(item)) continue;
+    const rec = item as Record<string, unknown>;
+    const t = typeof rec.tanya === 'string' ? bersihkanInputPengguna(rec.tanya, 140) : '';
+    const r = typeof rec.ringkas === 'string' ? bersihkanInputPengguna(rec.ringkas, 220) : '';
+    if (
+      t &&
+      deteksiSeranganAtauLuarTopik(t, 140).aman &&
+      (!r || deteksiSeranganAtauLuarTopik(r, 220).aman)
+    ) {
+      bersih.push({ tanya: t, ringkas: r });
+    }
+  }
+  return bersih;
 }
 
 const MAX_JAWABAN_CACHE = 48;
@@ -124,6 +145,7 @@ function susunInputKurasi(
   bahasaTarget: 'id' | 'en' | 'jw',
   pertanyaan: string,
   konteksUnsur?: KonteksUnsurKurasi,
+  riwayatSingkat: RiwayatTanyaSingkat[] = [],
 ): string {
   const unsurJudul = konteksUnsur?.judulUnsur ? bersihkanInputPengguna(konteksUnsur.judulUnsur, 120) : '';
   const unsurMat = konteksUnsur?.material ? bersihkanInputPengguna(konteksUnsur.material, 180) : '';
@@ -132,6 +154,12 @@ function susunInputKurasi(
   const blokUnsur =
     unsurJudul
       ? `<unsur_anatomi_3d>\nUnsur Dipilih: ${unsurJudul}${unsurMat ? `\nMaterial: ${unsurMat}` : ''}${unsurFungsi ? `\nFungsi Teknis: ${unsurFungsi}` : ''}${unsurRingkas ? `\nCatatan Kurasi: ${unsurRingkas}` : ''}\n</unsur_anatomi_3d>`
+      : '';
+  const blokRiwayat =
+    riwayatSingkat.length > 0
+      ? `<konteks_percakapan_singkat>\n${riwayatSingkat
+          .map((item, idx) => `Tanya-${idx + 1}: ${item.tanya}${item.ringkas ? `\nInti-${idx + 1}: ${item.ringkas}` : ''}`)
+          .join('\n')}\n</konteks_percakapan_singkat>`
       : '';
 
   if (hasilLokal.statusGrounding === 'eksplorasi-nusantara' || hasilLokal.statusGrounding === 'luar-korpus') {
@@ -153,6 +181,7 @@ function susunInputKurasi(
       'FOKUS: Eksplorasi Mendalam Budaya & Warisan Nusantara Indonesia (Non-S1–S7).',
       blokReferensi,
       blokUnsur,
+      blokRiwayat,
       `<pertanyaan_pengguna>${pertanyaan}</pertanyaan_pengguna>`,
     ]
       .filter(Boolean)
@@ -170,6 +199,7 @@ function susunInputKurasi(
   return [
     `KONTEKS KOLEKSI: ${konteksBenda}`,
     blokUnsur,
+    blokRiwayat,
     `<bukti_arsip_s1_s7>\n${daftarBukti}\n</bukti_arsip_s1_s7>`,
     `<pertanyaan_pengguna>${pertanyaan}</pertanyaan_pengguna>`,
   ]
@@ -238,8 +268,10 @@ export async function jawabDenganGemini38Flash(
   const isNusantaraLuas = !isArsipUtama;
   const modeEksplorasi = isNusantaraLuas ? 'eksplorasi-nusantara' : 'arsip-s1-s7';
   const konteksAman = sanitasiKonteksUnsurAman(opts.konteksUnsur);
+  const riwayatAman = sanitasiRiwayatSingkatAman(opts.riwayatSingkat);
   const unsurTag = konteksAman?.judulUnsur ? `:${konteksAman.judulUnsur.toLowerCase()}` : '';
-  const cacheKey = `v2:${modeEksplorasi}:${isNusantaraLuas ? 'idn' : benda.id}${unsurTag}:${bahasaLlm}:${pertanyaanBersih.toLowerCase()}`;
+  const riwayatTag = riwayatAman.length > 0 ? `:mt:${riwayatAman[riwayatAman.length - 1].tanya.slice(0, 32).toLowerCase()}` : '';
+  const cacheKey = `v2:${modeEksplorasi}:${isNusantaraLuas ? 'idn' : benda.id}${unsurTag}${riwayatTag}:${bahasaLlm}:${pertanyaanBersih.toLowerCase()}`;
 
   if (!opts.bypassCache) {
     const cached = cacheJawabanLive.get(cacheKey);
@@ -269,6 +301,7 @@ export async function jawabDenganGemini38Flash(
         bahasaLlm,
         pertanyaanBersih || ambilTeks(benda.nama, bahasaLlm),
         konteksAman,
+        riwayatAman,
       ),
       voiceName: bahasaLlm === 'en' ? 'Kore' : 'Charon',
       timeoutMs: Math.max(2500, opts.timeoutMs ?? 28000),

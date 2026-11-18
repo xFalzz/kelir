@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import type { BendaPusaka } from '../content/pusaka.ts';
-import { loadBudayaTextures } from './threeHelpers.ts';
+import { loadBudayaTextures, tandaiTeksturCacheBersama } from './threeHelpers.ts';
 import {
   buildKidangKencana3D,
   buildSriRamaWayang3D,
@@ -120,7 +120,10 @@ export function buatTeksturPamorKeris(): {
   bump.wrapS = THREE.RepeatWrapping;
   bump.wrapT = THREE.RepeatWrapping;
 
-  cachePamorKeris = { diffuse, bump };
+  cachePamorKeris = {
+    diffuse: tandaiTeksturCacheBersama(diffuse),
+    bump: tandaiTeksturCacheBersama(bump),
+  };
   return cachePamorKeris;
 }
 
@@ -190,7 +193,10 @@ function buatTeksturPerungguGangsa(): {
   bump.wrapS = THREE.RepeatWrapping;
   bump.wrapT = THREE.RepeatWrapping;
 
-  cachePerungguGangsa = { diffuse, bump };
+  cachePerungguGangsa = {
+    diffuse: tandaiTeksturCacheBersama(diffuse),
+    bump: tandaiTeksturCacheBersama(bump),
+  };
   return cachePerungguGangsa;
 }
 
@@ -338,7 +344,10 @@ export function buatTeksturBatikKawung(): {
   diffuse.colorSpace = THREE.SRGBColorSpace;
   const bump = new THREE.CanvasTexture(bumpCanvas);
 
-  cacheBatikKawung = { diffuse, bump };
+  cacheBatikKawung = {
+    diffuse: tandaiTeksturCacheBersama(diffuse),
+    bump: tandaiTeksturCacheBersama(bump),
+  };
   return cacheBatikKawung;
 }
 
@@ -403,7 +412,10 @@ function buatTeksturUkiranRancakan(): {
   const diffuse = new THREE.CanvasTexture(dCanvas);
   diffuse.colorSpace = THREE.SRGBColorSpace;
   const bump = new THREE.CanvasTexture(bCanvas);
-  cacheUkiranRancakan = { diffuse, bump };
+  cacheUkiranRancakan = {
+    diffuse: tandaiTeksturCacheBersama(diffuse),
+    bump: tandaiTeksturCacheBersama(bump),
+  };
   return cacheUkiranRancakan;
 }
 
@@ -466,7 +478,10 @@ function buatTeksturGentengAtap(): {
   bump.wrapT = THREE.RepeatWrapping;
   bump.repeat.set(2.5, 2.5);
 
-  cacheGentengAtap = { diffuse, bump };
+  cacheGentengAtap = {
+    diffuse: tandaiTeksturCacheBersama(diffuse),
+    bump: tandaiTeksturCacheBersama(bump),
+  };
   return cacheGentengAtap;
 }
 
@@ -560,7 +575,10 @@ function buatTeksturPrasastiHanacaraka(): {
   const diffuse = new THREE.CanvasTexture(dCanvas);
   diffuse.colorSpace = THREE.SRGBColorSpace;
   const bump = new THREE.CanvasTexture(bCanvas);
-  cachePrasastiHanacaraka = { diffuse, bump };
+  cachePrasastiHanacaraka = {
+    diffuse: tandaiTeksturCacheBersama(diffuse),
+    bump: tandaiTeksturCacheBersama(bump),
+  };
   return cachePrasastiHanacaraka;
 }
 

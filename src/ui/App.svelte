@@ -165,7 +165,12 @@
   let pakeliranDepthZ = $state(0.14);
   let pakeliranWalikan = $state(false);
   let pakeliranAutoDemo = $state(false);
+  let pakeliranDemoSuara = $state(false);
   let pakeliranDemoTimer: ReturnType<typeof setInterval> | null = null;
+  let dioramaRetrySeq = $state(0);
+  let wayangRetrySeq = $state(0);
+  let onboardingAktif = $state(false);
+  let riwayatTanyaInternal: Array<{ tanya: string; ringkas: string }> = [];
   let moodPanggungWayang: MoodPanggungWayang = $state('blencong');
   let dalangSuaraStatus: 'diam' | 'memuat' | 'gemini' | 'webspeech' = $state('diam');
   let dalangAudioEl: HTMLAudioElement | null = null;
@@ -216,10 +221,51 @@
       } else {
         wayangStage?.picuSabetanWayang();
       }
+      if (pakeliranDemoSuara) {
+        hentikanSuaraDalang();
+        void toggleSuaraDalang();
+      }
       step += 1;
     };
     jalankanLangkah();
     pakeliranDemoTimer = setInterval(jalankanLangkah, 3200);
+  }
+
+  function tutupOnboarding(): void {
+    onboardingAktif = false;
+    try {
+      window.localStorage.setItem('kelir_onboarding_v1', '1');
+    } catch {
+      // Abaikan jika storage diblokir
+    }
+  }
+
+  function resetSemuaDataLokal(): void {
+    jejakKurasi = jejakKurasiKosong();
+    onboardingAktif = false;
+    riwayatTanyaInternal = [];
+    tampilkanToast(
+      bahasa === 'en'
+        ? 'Local browser data cleared'
+        : bahasa === 'jw'
+          ? 'Data lokal piranti sampun karesiki'
+          : 'Data lokal perangkat telah dibersihkan',
+    );
+  }
+
+  async function salinTautanPakeliran(): Promise<void> {
+    if (typeof window === 'undefined') return;
+    const url = new URL(window.location.href);
+    url.searchParams.set('hal', 'pakeliran');
+    url.searchParams.set('babak', String(babakIdx));
+    url.searchParams.delete('benda');
+    url.searchParams.delete('titik');
+    try {
+      await navigator.clipboard?.writeText(url.toString());
+    } catch {
+      // Clipboard fallback tetap memicu konfirmasi UI
+    }
+    tampilkanToast(tI18n(bahasa, 'pakeliran.linkCopied'));
   }
 
   // Pencarian Global, Paspor Jejak Kurasi & Skala Keterbacaan
@@ -1180,7 +1226,20 @@
     sediaTanya = true;
     orbStage?.picuDenyutBerpikir();
     const { tanyakanKeAsisten } = await muatTanyaModul();
-    jawabanPamomong = await tanyakanKeAsisten(bendaPamomongAktif.id, q, bahasa);
+    const res = await tanyakanKeAsisten(
+      bendaPamomongAktif.id,
+      q,
+      bahasa,
+      undefined,
+      riwayatTanyaInternal,
+    );
+    jawabanPamomong = res;
+    if (res.statusGrounding !== 'luar-korpus') {
+      riwayatTanyaInternal = [
+        ...riwayatTanyaInternal.slice(-1),
+        { tanya: q.slice(0, 140), ringkas: res.jawaban.slice(0, 200) },
+      ];
+    }
     sediaTanya = false;
   }
 
@@ -1403,6 +1462,13 @@
     window.addEventListener('popstate', onPopState);
 
     inisialisasiPendengarPwa();
+    try {
+      if (window.localStorage.getItem('kelir_onboarding_v1') !== '1') {
+        onboardingAktif = true;
+      }
+    } catch {
+      onboardingAktif = false;
+    }
     const awalPwa = ambilStatusPwa();
     deferredInstallPrompt = awalPwa.deferredPrompt;
     pwaTerpasang = awalPwa.terpasang || cekModeStandalone();
@@ -1638,7 +1704,7 @@
       class="util-pill nav-search-btn"
       onpointerenter={pastikanSearchModal}
       onclick={bukaSearchModal}
-      aria-label={tI18n(bahasa, 'nav.searchAria')}
+      aria-label={`${tI18n(bahasa, 'nav.searchBtn')}: ${tI18n(bahasa, 'nav.searchAria')}`}
       title={tI18n(bahasa, 'nav.searchAria')}
       data-testid="btn-search-modal"
     >
@@ -1708,7 +1774,7 @@
         onclick={() => (langMenuBuka = !langMenuBuka)}
         aria-haspopup="listbox"
         aria-expanded={langMenuBuka}
-        aria-label={tI18n(bahasa, 'nav.langAria')}
+        aria-label={`${bahasa.toUpperCase()} - ${tI18n(bahasa, 'nav.langAria')}`}
         data-testid="lang-switcher-btn"
       >
         <svg class="lang-globe-ico" viewBox="0 0 16 16" fill="none" aria-hidden="true">
@@ -1862,7 +1928,13 @@
   {/each}
 </nav>
 
-<main id="main-content" tabindex="-1" class="page-stage-shell" data-active-page={ruteTidakDitemukan ? 'notfound' : halamanAktif}>
+<main
+  id="main-content"
+  tabindex="-1"
+  class="page-stage-shell"
+  class:has-karawitan={audioAktif || suasanaPendopoAktif}
+  data-active-page={ruteTidakDitemukan ? 'notfound' : halamanAktif}
+>
   {#if ruteTidakDitemukan && infoRute404}
     <NotFoundPage
       {bahasa}
@@ -1916,8 +1988,10 @@
   {#if halamanAktif === 'beranda'}
     <section id="pendopo" class="diorama-master-band" aria-label="Diorama Pendopo Budaya Jawa 3D">
       <div class="diorama-sticky-stage">
-        <div class="diorama-webgl-host" use:mountDioramaStage aria-hidden="true"></div>
-        <WebGLStatusBanner {bahasa} />
+        {#key dioramaRetrySeq}
+          <div class="diorama-webgl-host" use:mountDioramaStage aria-hidden="true"></div>
+        {/key}
+        <WebGLStatusBanner {bahasa} onRetry={() => (dioramaRetrySeq += 1)} />
         <div class="diorama-scrim"></div>
 
         <!-- Pin Callout 3D Terproyeksi Langsung ke Bangunan Diorama -->
@@ -2009,6 +2083,18 @@
 
       <!-- Scrollytelling 5 Bab dengan Angka Piksel 01..05 & Kartu HUD Kaca -->
       <div id="scrolly" class="scrolly-chapters">
+        {#if onboardingAktif}
+          <aside class="onboarding-strip" data-testid="onboarding-banner" aria-label={tI18n(bahasa, 'nav.onboardingEyebrow')}>
+            <div class="onboarding-copy">
+              <span class="eyebrow-mono">{tI18n(bahasa, 'nav.onboardingEyebrow')}</span>
+              <strong>{tI18n(bahasa, 'nav.onboardingTitle')}</strong>
+              <p>{tI18n(bahasa, 'nav.onboardingDesc')}</p>
+            </div>
+            <button type="button" class="util-pill is-accent" onclick={tutupOnboarding} data-testid="onboarding-dismiss-btn">
+              {tI18n(bahasa, 'nav.onboardingDismiss')}
+            </button>
+          </aside>
+        {/if}
         {#each KRONIK_SEJARAH_BUDAYA as kronik, idx}
           <article
             id="kronik-{kronik.nomor}"
@@ -2101,82 +2187,110 @@
 
   <!-- Halaman 02: Studio Digital Twin 3D -->
   {#if halamanAktif === 'twin'}
-    {#if DigitalTwinStudioComp}
-      <DigitalTwinStudioComp
-        specimens={DAFTAR_BEDAH_TWIN}
-        {bendaAktifId}
-        {bendaAktif}
-        {titikAktifId}
-        {titikAktif}
-        {modeVisualTwin}
-        {faktorLedak}
-        {aksiHidupTwin}
-        {twinPins}
-        {tema}
-        {bahasa}
-        keunggulan={KEUNGGULAN_SISTEM}
-        pilar={PILAR_NILAI}
-        mountStage={mountTwinStage}
-        onPilihPusaka={(id) => pilihPusaka(id)}
-        onResetKamera={() => twinStage?.resetKamera()}
-        onPilihTitik={pilihTitikInfo}
-        onModeVisual={aturModeVisualTwin}
-        onUbahLedak={(val) => {
-          faktorLedak = val;
-          twinStage?.aturLedakAnatomi(val);
-        }}
-        onPicuEfek={() => {
-          twinStage?.picuEfekKhusus3D();
-          if (!audioAktif) {
-            audioAktif = true;
-            audioBudaya.aturAktif(true);
-          }
-          picuSuaraBenda(bendaAktif.id);
-        }}
-        onToggleAksiHidup={() => {
-          aksiHidupTwin = twinStage?.toggleAksiHidup() ?? !aksiHidupTwin;
-        }}
-        onBunyikanWilah={bunyikanWilahTwin}
-        onBukaSulukSpesimen={bukaSulukSpesimen}
-        isFavorit={(jejakKurasi.favoritIds ?? []).includes(bendaAktif.id)}
-        onToggleFavorit={() => toggleFavoritSpesimen(bendaAktif.id)}
-        onTangkapPotret={() => twinStage?.tangkapPotretPng() ?? null}
-        onPindahHalaman={(hal, anchor) => pindahHalaman(hal, anchor)}
-        onScrollProgres={(p) => twinStage?.aturProgresGulir(p)}
-        {statusKamera}
-        saronHoverIdx={saronHoverWilahIdx}
-        saronStruckIdx={saronStruckWilahIdx}
-        onToggleKamera={toggleKameraTangan}
-      />
-    {:else}
-      <section class="band-section" style="min-height: 68vh;" aria-busy="true"></section>
-    {/if}
+    <svelte:boundary>
+      {#if DigitalTwinStudioComp}
+        <DigitalTwinStudioComp
+          specimens={DAFTAR_BEDAH_TWIN}
+          {bendaAktifId}
+          {bendaAktif}
+          {titikAktifId}
+          {titikAktif}
+          {modeVisualTwin}
+          {faktorLedak}
+          {aksiHidupTwin}
+          {twinPins}
+          {tema}
+          {bahasa}
+          keunggulan={KEUNGGULAN_SISTEM}
+          pilar={PILAR_NILAI}
+          mountStage={mountTwinStage}
+          onPilihPusaka={(id) => pilihPusaka(id)}
+          onResetKamera={() => twinStage?.resetKamera()}
+          onPilihTitik={pilihTitikInfo}
+          onModeVisual={aturModeVisualTwin}
+          onUbahLedak={(val) => {
+            faktorLedak = val;
+            twinStage?.aturLedakAnatomi(val);
+          }}
+          onPicuEfek={() => {
+            twinStage?.picuEfekKhusus3D();
+            if (!audioAktif) {
+              audioAktif = true;
+              audioBudaya.aturAktif(true);
+            }
+            picuSuaraBenda(bendaAktif.id);
+          }}
+          onToggleAksiHidup={() => {
+            aksiHidupTwin = twinStage?.toggleAksiHidup() ?? !aksiHidupTwin;
+          }}
+          onBunyikanWilah={bunyikanWilahTwin}
+          onBukaSulukSpesimen={bukaSulukSpesimen}
+          isFavorit={(jejakKurasi.favoritIds ?? []).includes(bendaAktif.id)}
+          onToggleFavorit={() => toggleFavoritSpesimen(bendaAktif.id)}
+          onTangkapPotret={() => twinStage?.tangkapPotretPng() ?? null}
+          onPindahHalaman={(hal, anchor) => pindahHalaman(hal, anchor)}
+          onScrollProgres={(p) => twinStage?.aturProgresGulir(p)}
+          {statusKamera}
+          saronHoverIdx={saronHoverWilahIdx}
+          saronStruckIdx={saronStruckWilahIdx}
+          onToggleKamera={toggleKameraTangan}
+        />
+      {:else}
+        <section class="band-section" style="min-height: 68vh;" aria-busy="true"></section>
+      {/if}
+      {#snippet failed(_err, reset)}
+        <section class="band-section" data-testid="error-boundary-fallback">
+          <div class="error-boundary-card" role="alert">
+            <span class="eyebrow-mono">KELIR RUNTIME GUARD</span>
+            <h2>{tI18n(bahasa, 'nav.errorBoundaryTitle')}</h2>
+            <p>{tI18n(bahasa, 'nav.errorBoundaryDesc')}</p>
+            <button type="button" class="util-pill is-accent" onclick={reset}>
+              {tI18n(bahasa, 'nav.errorBoundaryRetry')}
+            </button>
+          </div>
+        </section>
+      {/snippet}
+    </svelte:boundary>
   {/if}
 
   <!-- Halaman 03: Galeri Coverflow 3D -->
   {#if halamanAktif === 'koleksi'}
-    {#if CoverflowShowcaseComp}
-      <CoverflowShowcaseComp
-        items={KOLEKSI_COVERFLOW}
-        {coverflowIdx}
-        {tema}
-        {bahasa}
-        {suasanaPendopoAktif}
-        favoritIds={jejakKurasi.favoritIds ?? []}
-        mountStage={mountCoverflowStage}
-        onSelectIndex={pilihIndeksCoverflow}
-        onGeser={geserCoverflow}
-        onBukaModalSuluk={bukaModalSuluk}
-        onToggleSuasanaGending={toggleSuasanaGending}
-        onToggleFavorit={toggleFavoritSpesimen}
-        onBukaItem={bukaItemCoverflow}
-        onFokusAnatomi={(item, titikId) => pilihPusaka(item.artefakId, true, titikId ?? item.titikId)}
-        onParalaks={(nx, ny) => coverflowStage?.aturParalaks(nx, ny)}
-        onScrollProgres={(p) => coverflowStage?.aturProgresGulir(p)}
-      />
-    {:else}
-      <section class="band-section" style="min-height: 68vh;" aria-busy="true"></section>
-    {/if}
+    <svelte:boundary>
+      {#if CoverflowShowcaseComp}
+        <CoverflowShowcaseComp
+          items={KOLEKSI_COVERFLOW}
+          {coverflowIdx}
+          {tema}
+          {bahasa}
+          {suasanaPendopoAktif}
+          favoritIds={jejakKurasi.favoritIds ?? []}
+          mountStage={mountCoverflowStage}
+          onSelectIndex={pilihIndeksCoverflow}
+          onGeser={geserCoverflow}
+          onBukaModalSuluk={bukaModalSuluk}
+          onToggleSuasanaGending={toggleSuasanaGending}
+          onToggleFavorit={toggleFavoritSpesimen}
+          onBukaItem={bukaItemCoverflow}
+          onFokusAnatomi={(item, titikId) => pilihPusaka(item.artefakId, true, titikId ?? item.titikId)}
+          onParalaks={(nx, ny) => coverflowStage?.aturParalaks(nx, ny)}
+          onScrollProgres={(p) => coverflowStage?.aturProgresGulir(p)}
+        />
+      {:else}
+        <section class="band-section" style="min-height: 68vh;" aria-busy="true"></section>
+      {/if}
+      {#snippet failed(_err, reset)}
+        <section class="band-section" data-testid="error-boundary-fallback">
+          <div class="error-boundary-card" role="alert">
+            <span class="eyebrow-mono">KELIR RUNTIME GUARD</span>
+            <h2>{tI18n(bahasa, 'nav.errorBoundaryTitle')}</h2>
+            <p>{tI18n(bahasa, 'nav.errorBoundaryDesc')}</p>
+            <button type="button" class="util-pill is-accent" onclick={reset}>
+              {tI18n(bahasa, 'nav.errorBoundaryRetry')}
+            </button>
+          </div>
+        </section>
+      {/snippet}
+    </svelte:boundary>
   {/if}
 
   <!-- Halaman 04: Panggung Pakeliran Wayang Kulit 3D -->
@@ -2206,8 +2320,10 @@
       </div>
 
       <div class="pakeliran-theatre-box">
-        <div class="pakeliran-canvas-host" use:mountWayangStage></div>
-        <WebGLStatusBanner {bahasa} />
+        {#key wayangRetrySeq}
+          <div class="pakeliran-canvas-host" use:mountWayangStage></div>
+        {/key}
+        <WebGLStatusBanner {bahasa} onRetry={() => (wayangRetrySeq += 1)} />
 
         <div class="pakeliran-console">
           <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 16px;">
@@ -2335,6 +2451,7 @@
                 max="0.85"
                 step="0.02"
                 value={posKidang}
+                aria-valuetext={posKidang.toFixed(2)}
                 oninput={(e) => {
                   posKidang = Number((e.currentTarget as HTMLInputElement).value);
                   pakeliranGesturEval?.sinkronkanPosisiAwal(posRama, posKidang);
@@ -2350,6 +2467,7 @@
                 max="0.85"
                 step="0.02"
                 value={posRama}
+                aria-valuetext={posRama.toFixed(2)}
                 oninput={(e) => {
                   posRama = Number((e.currentTarget as HTMLInputElement).value);
                   pakeliranGesturEval?.sinkronkanPosisiAwal(posRama, posKidang);
@@ -2368,6 +2486,7 @@
                 max="0.34"
                 step="0.01"
                 value={pakeliranSolahY}
+                aria-valuetext={pakeliranSolahY.toFixed(2)}
                 data-testid="pakeliran-solah-y"
                 oninput={(e) => {
                   pakeliranSolahY = Number((e.currentTarget as HTMLInputElement).value);
@@ -2387,6 +2506,7 @@
                 max="0.34"
                 step="0.01"
                 value={pakeliranDepthZ}
+                aria-valuetext={pakeliranDepthZ.toFixed(2)}
                 data-testid="pakeliran-depth-z"
                 oninput={(e) => {
                   pakeliranDepthZ = Number((e.currentTarget as HTMLInputElement).value);
@@ -2417,6 +2537,26 @@
               }}
             >
               {tI18n(bahasa, 'pakeliran.flipBtn')}
+            </button>
+
+            <button
+              type="button"
+              class="util-pill"
+              class:is-active={pakeliranDemoSuara}
+              aria-pressed={pakeliranDemoSuara}
+              data-testid="pakeliran-demo-voice-toggle"
+              onclick={() => (pakeliranDemoSuara = !pakeliranDemoSuara)}
+            >
+              {tI18n(bahasa, 'pakeliran.demoVoiceLabel')}
+            </button>
+
+            <button
+              type="button"
+              class="util-pill"
+              data-testid="pakeliran-copy-link-btn"
+              onclick={() => void salinTautanPakeliran()}
+            >
+              {tI18n(bahasa, 'pakeliran.copyLinkBtn')}
             </button>
 
             <button
@@ -2467,34 +2607,48 @@
 
   <!-- Halaman 05: Lab Aksara Jawa & AI Studio Pamomong Nusantara -->
   {#if halamanAktif === 'kawruh'}
-    {#if KawruhOrbSectionComp}
-      <KawruhOrbSectionComp
-        {bahasa}
-        bendaAktif={bendaPamomongAktif}
-        bind:pertanyaanInput
-        {sediaTanya}
-        {jawabanPamomong}
-        onKirimTanya={kirimTanyaPamomong}
-        onPilihContohPertanyaan={(contohQ) => {
-          pertanyaanInput = contohQ;
-          void kirimTanyaPamomong();
-        }}
-        {mountOrbStage}
-        bind:inputAksaraLatin
-        {aksaraTerkonversi}
-        {kartuCarakanTerpilih}
-        onPilihCarakan={(c) => {
-          kartuCarakanTerpilih = c;
-          inputAksaraLatin = c.contohKata;
-          if (audioAktif) audioBudaya.bunyikanWilahSaron(Math.floor(Math.random() * 6), 0.14);
-        }}
-        {formatSumberLabel}
-        onSimpanSkorKuis={catatSkorKuis}
-        onMasukLangkahTur={bukaLangkahTur}
-      />
-    {:else}
-      <section class="band-section" style="min-height: 68vh;" aria-busy="true"></section>
-    {/if}
+    <svelte:boundary>
+      {#if KawruhOrbSectionComp}
+        <KawruhOrbSectionComp
+          {bahasa}
+          bendaAktif={bendaPamomongAktif}
+          bind:pertanyaanInput
+          {sediaTanya}
+          {jawabanPamomong}
+          onKirimTanya={kirimTanyaPamomong}
+          onPilihContohPertanyaan={(contohQ) => {
+            pertanyaanInput = contohQ;
+            void kirimTanyaPamomong();
+          }}
+          {mountOrbStage}
+          bind:inputAksaraLatin
+          {aksaraTerkonversi}
+          {kartuCarakanTerpilih}
+          onPilihCarakan={(c) => {
+            kartuCarakanTerpilih = c;
+            inputAksaraLatin = c.contohKata;
+            if (audioAktif) audioBudaya.bunyikanWilahSaron(Math.floor(Math.random() * 6), 0.14);
+          }}
+          {formatSumberLabel}
+          onSimpanSkorKuis={catatSkorKuis}
+          onMasukLangkahTur={bukaLangkahTur}
+        />
+      {:else}
+        <section class="band-section" style="min-height: 68vh;" aria-busy="true"></section>
+      {/if}
+      {#snippet failed(_err, reset)}
+        <section class="band-section" data-testid="error-boundary-fallback">
+          <div class="error-boundary-card" role="alert">
+            <span class="eyebrow-mono">KELIR RUNTIME GUARD</span>
+            <h2>{tI18n(bahasa, 'nav.errorBoundaryTitle')}</h2>
+            <p>{tI18n(bahasa, 'nav.errorBoundaryDesc')}</p>
+            <button type="button" class="util-pill is-accent" onclick={reset}>
+              {tI18n(bahasa, 'nav.errorBoundaryRetry')}
+            </button>
+          </div>
+        </section>
+      {/snippet}
+    </svelte:boundary>
   {/if}
 
   <!-- Navigasi jembatan antar-halaman -->
@@ -2699,6 +2853,7 @@
     terbuka={legalModalBuka}
     tabAktif={legalModalTab}
     onPilihTab={(tab) => (legalModalTab = tab)}
+    onResetDataLokal={resetSemuaDataLokal}
     onClose={() => (legalModalBuka = false)}
   />
 {/if}

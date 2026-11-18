@@ -42,6 +42,11 @@ export interface KonteksUnsurKurasi {
   ringkasan?: string;
 }
 
+export interface RiwayatTanyaSingkat {
+  tanya: string;
+  ringkas: string;
+}
+
 export interface ButirBuktiTanya {
   id: string;
   judul: string;
@@ -137,12 +142,30 @@ function asMulti(v: TeksLokal): MultiTeks {
   return v;
 }
 
+function stemTokenIndonesia(kata: string): string | null {
+  if (kata.length < 5) return null;
+  let dasar = kata
+    .replace(/(?:nya|lah|kah)$/i, '')
+    .replace(/^(?:meng|meny|mem|men|me|peng|peny|pem|pen|ber|ter|di|ke)/i, '');
+  if (dasar.length >= 4 && /(?:kan|an|i)$/i.test(dasar) && dasar.length > 5) {
+    dasar = dasar.replace(/(?:kan|an)$/i, '');
+  }
+  return dasar.length >= 3 && dasar !== kata && !STOPWORDS.has(dasar) ? dasar : null;
+}
+
 function normalisasiToken(teks: string): string[] {
-  return teks
+  const dasar = teks
     .toLowerCase()
     .replace(/[^a-z0-9\s]/g, ' ')
     .split(/\s+/)
     .filter((kata) => kata.length > 2 && !STOPWORDS.has(kata));
+  const hasil: string[] = [];
+  for (const kata of dasar) {
+    hasil.push(kata);
+    const stem = stemTokenIndonesia(kata);
+    if (stem) hasil.push(stem);
+  }
+  return hasil;
 }
 
 function ekspansiKueri(tokens: string[]): { semuaToken: string[]; bobot: Map<string, number> } {
@@ -608,6 +631,7 @@ export async function tanyakanKeAsisten(
   pertanyaan: string,
   bahasa: BahasaAktif = 'id',
   konteksUnsur?: KonteksUnsurKurasi,
+  riwayatSingkat?: RiwayatTanyaSingkat[],
 ): Promise<HasilTanya> {
   const pemeriksaan = deteksiSeranganAtauLuarTopik(pertanyaan, BATAS_KARAKTER_TANYA);
   if (!pemeriksaan.aman && pemeriksaan.kategori !== 'kosong') {
@@ -619,7 +643,13 @@ export async function tanyakanKeAsisten(
     const resp = await fetch('/api/tanya', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ bendaId, pertanyaan: pertanyaanBersih, bahasa, konteksUnsur }),
+      body: JSON.stringify({
+        bendaId,
+        pertanyaan: pertanyaanBersih,
+        bahasa,
+        konteksUnsur,
+        riwayatSingkat: riwayatSingkat?.slice(-2),
+      }),
     });
     if (resp.ok) {
       const data = (await resp.json()) as Partial<HasilTanya>;

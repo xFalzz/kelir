@@ -165,6 +165,7 @@ function apiTanyaLocalPlugin(serverEnv: Record<string, string | undefined>): Plu
             pertanyaan?: string;
             bahasa?: BahasaAktif;
             konteksUnsur?: unknown;
+            riwayatSingkat?: unknown;
           };
           const bendaId: BendaPusaka['id'] = DAFTAR_BENDA.some((b) => b.id === body.bendaId)
             ? (body.bendaId as BendaPusaka['id'])
@@ -178,6 +179,7 @@ function apiTanyaLocalPlugin(serverEnv: Record<string, string | undefined>): Plu
             pertanyaan: typeof body.pertanyaan === 'string' ? body.pertanyaan.slice(0, 640) : '',
             bahasa,
             konteksUnsur,
+            riwayatSingkat: body.riwayatSingkat,
             apiKey: apiKeyServer,
             timeoutMs,
           });
@@ -233,8 +235,28 @@ function kelirPwaPrecachePlugin(): Plugin {
         '/icons/icon-maskable-512.png',
         '/icons/apple-touch-icon-180.png',
         '/og-kelir.png',
-        '/og-kelir.svg',
       ];
+
+      // Hapus file font .woff lawas & hapus url(...woff) pada CSS produksi agar hemat ~418 KB aset
+      const rawAssets = fs.readdirSync(assetsDir);
+      for (const f of rawAssets) {
+        if (/\.woff$/i.test(f)) {
+          fs.unlinkSync(path.join(assetsDir, f));
+        } else if (/\.css$/i.test(f)) {
+          const cssPath = path.join(assetsDir, f);
+          const cssRaw = fs.readFileSync(cssPath, 'utf8');
+          const cssModern = cssRaw.replace(/,\s*url\([^)]+\.woff\)\s*format\(["']woff["']\)/gi, '');
+          if (cssModern !== cssRaw) {
+            fs.writeFileSync(cssPath, cssModern, 'utf8');
+          }
+        }
+      }
+
+      // Salin index.html ke dist/404.html agar rute invalid di Vercel mengembalikan status HTTP 404 dengan UI NotFoundPage
+      const distIndex = path.join(outDir, 'index.html');
+      if (fs.existsSync(distIndex)) {
+        fs.copyFileSync(distIndex, path.join(outDir, '404.html'));
+      }
 
       const assetFiles = fs
         .readdirSync(assetsDir)

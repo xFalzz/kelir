@@ -11,6 +11,7 @@ import {
   pasangObservasiPanggung,
   pinProyeksiBerubah,
   scheduleIdleWork,
+  tandaiTeksturCacheBersama,
 } from './threeHelpers.ts';
 
 export type IdArtefak = BendaPusaka['id'];
@@ -102,7 +103,10 @@ function buatTeksturGentengTerakota(): { map: THREE.CanvasTexture; bump: THREE.C
   bump.wrapT = THREE.RepeatWrapping;
   bump.repeat.set(3, 3);
 
-  cacheGentengTex = { map, bump };
+  cacheGentengTex = {
+    map: tandaiTeksturCacheBersama(map),
+    bump: tandaiTeksturCacheBersama(bump),
+  };
   return cacheGentengTex;
 }
 
@@ -144,7 +148,10 @@ function buatTeksturKayuJati(): { map: THREE.CanvasTexture; bump: THREE.CanvasTe
   bump.wrapS = THREE.RepeatWrapping;
   bump.wrapT = THREE.RepeatWrapping;
 
-  cacheKayuJatiTex = { map, bump };
+  cacheKayuJatiTex = {
+    map: tandaiTeksturCacheBersama(map),
+    bump: tandaiTeksturCacheBersama(bump),
+  };
   return cacheKayuJatiTex;
 }
 
@@ -199,7 +206,10 @@ function buatTeksturLantaiTeras(): { map: THREE.CanvasTexture; bump: THREE.Canva
   bump.wrapT = THREE.RepeatWrapping;
   bump.repeat.set(3, 3);
 
-  cacheLantaiTerasTex = { map, bump };
+  cacheLantaiTerasTex = {
+    map: tandaiTeksturCacheBersama(map),
+    bump: tandaiTeksturCacheBersama(bump),
+  };
   return cacheLantaiTerasTex;
 }
 
@@ -250,7 +260,10 @@ function buatTeksturRumputTaman(): { map: THREE.CanvasTexture; bump: THREE.Canva
   bump.wrapT = THREE.RepeatWrapping;
   bump.repeat.set(4, 4);
 
-  cacheRumputTamanTex = { map, bump };
+  cacheRumputTamanTex = {
+    map: tandaiTeksturCacheBersama(map),
+    bump: tandaiTeksturCacheBersama(bump),
+  };
   return cacheRumputTamanTex;
 }
 
@@ -304,7 +317,10 @@ function buatTeksturBataMajapahit(): { map: THREE.CanvasTexture; bump: THREE.Can
   bump.wrapT = THREE.RepeatWrapping;
   bump.repeat.set(2, 2);
 
-  cacheBataMerahTex = { map, bump };
+  cacheBataMerahTex = {
+    map: tandaiTeksturCacheBersama(map),
+    bump: tandaiTeksturCacheBersama(bump),
+  };
   return cacheBataMerahTex;
 }
 
@@ -355,7 +371,10 @@ function buatTeksturDaunBeringin(): { map: THREE.CanvasTexture; bump: THREE.Canv
   bump.wrapT = THREE.RepeatWrapping;
   bump.repeat.set(2, 2);
 
-  cacheDaunBeringinTex = { map, bump };
+  cacheDaunBeringinTex = {
+    map: tandaiTeksturCacheBersama(map),
+    bump: tandaiTeksturCacheBersama(bump),
+  };
   return cacheDaunBeringinTex;
 }
 
@@ -423,6 +442,7 @@ function buatTeksturKainBatik(pola: 'kawung' | 'parang'): THREE.CanvasTexture | 
   tex.colorSpace = THREE.SRGBColorSpace;
   tex.wrapS = THREE.RepeatWrapping;
   tex.wrapT = THREE.RepeatWrapping;
+  tandaiTeksturCacheBersama(tex);
   cacheBatikTex.set(pola, tex);
   return tex;
 }
@@ -568,11 +588,11 @@ export class LivingPendopoStage {
   private pointerNormY = 0;
 
   private heroCamPos = new THREE.Vector3(10.2, 7.6, 13.8);
-  private heroLookAt = new THREE.Vector3(-2.3, 0.72, -0.05);
+  private heroLookAt = new THREE.Vector3(-2.95, 0.72, -0.05);
   private curCamPos = new THREE.Vector3(10.2, 7.6, 13.8);
-  private curLookAt = new THREE.Vector3(-2.3, 0.72, -0.05);
+  private curLookAt = new THREE.Vector3(-2.95, 0.72, -0.05);
   private targetCamPos = new THREE.Vector3(10.2, 7.6, 13.8);
-  private targetLookAt = new THREE.Vector3(-2.3, 0.72, -0.05);
+  private targetLookAt = new THREE.Vector3(-2.95, 0.72, -0.05);
   private goalPosScratch = new THREE.Vector3();
   private pinProjScratch = new THREE.Vector3();
   private prevPins: ProyeksiPinDiorama[] = [];
@@ -1505,7 +1525,7 @@ export class LivingPendopoStage {
     this.daftarkanBangunan(
       'batik',
       grupBatik,
-      new THREE.Vector3(-3.35, 2.45, 2.85),
+      new THREE.Vector3(-2.65, 2.52, 2.65),
       [glowBatik, batikParangMat],
       1.74,
     );

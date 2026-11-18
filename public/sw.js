@@ -9,7 +9,6 @@ const APP_SHELL_URLS = [
   '/icons/icon-maskable-512.png',
   '/icons/apple-touch-icon-180.png',
   '/og-kelir.png',
-  '/og-kelir.svg',
 ];
 
 function buatOfflineResponse(status = 504, pesan = 'Offline') {

@@ -67,6 +67,7 @@ export default async function handler(req: VercelReq, res: VercelRes): Promise<v
     pertanyaan?: string;
     bahasa?: BahasaAktif;
     konteksUnsur?: unknown;
+    riwayatSingkat?: unknown;
   };
 
   const idValid = DAFTAR_BENDA.some((b) => b.id === body.bendaId);
@@ -85,6 +86,7 @@ export default async function handler(req: VercelReq, res: VercelRes): Promise<v
       pertanyaan: pertanyaanRaw.slice(0, 640),
       bahasa,
       konteksUnsur,
+      riwayatSingkat: body.riwayatSingkat,
       apiKey,
     });
     res.status(200).json({

@@ -403,7 +403,6 @@
 
 <!-- Scrollbar Kanan Modern Mengambang (Bisa Diklik & Diseret Langsung) -->
 {#if hasScrollableTarget}
-  <!-- svelte-ignore a11y_no_static_element_interactions -->
   <div
     class="kelir-scroll-rail"
     class:is-scrolling={isScrolling || isDraggingRail}

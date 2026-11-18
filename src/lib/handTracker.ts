@@ -29,7 +29,7 @@ function jarak2D(a: NormalizedLandmark, b: NormalizedLandmark): number {
   return Math.hypot(dx, dy);
 }
 
-function klasifikasiTangan(lm: NormalizedLandmark[]): TanganTerdeteksi {
+export function klasifikasiTangan(lm: NormalizedLandmark[]): TanganTerdeteksi {
   const pergelangan = lm[0];
   const ujungJempol = lm[4];
   const ujungTelunjuk = lm[8];

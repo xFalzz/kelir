@@ -8,7 +8,7 @@ import {
   buildWayangSriRamaDanBlencong3D,
   type PaketModel3D,
 } from './pusaka3DBuilder.ts';
-import { disposeSceneObject, loadBudayaTextures } from './threeHelpers.ts';
+import { disposeSceneObject, loadBudayaTextures, tandaiTeksturCacheBersama } from './threeHelpers.ts';
 
 interface PresetKameraEtalase {
   build: () => PaketModel3D;
@@ -140,7 +140,7 @@ function getContactShadowTexture(): THREE.CanvasTexture | null {
   g.addColorStop(1, 'rgba(0, 0, 0, 0)');
   ctx.fillStyle = g;
   ctx.fillRect(0, 0, size, size);
-  cacheContactShadowTex = new THREE.CanvasTexture(c);
+  cacheContactShadowTex = tandaiTeksturCacheBersama(new THREE.CanvasTexture(c));
   cacheContactShadowTex.colorSpace = THREE.SRGBColorSpace;
   return cacheContactShadowTex;
 }

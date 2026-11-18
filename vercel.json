@@ -1,10 +1,4 @@
 {
-  "rewrites": [
-    {
-      "source": "/((?!api/|assets/|icons/|textures/|mediapipe/|favicon\\.svg$|manifest\\.webmanifest$|sw\\.js$|robots\\.txt$|sitemap\\.xml$|llms\\.txt$|llms-full\\.txt$|og-kelir\\.png$|og-kelir\\.svg$).*)",
-      "destination": "/index.html"
-    }
-  ],
   "headers": [
     {
       "source": "/sw.js",

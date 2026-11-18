@@ -20,9 +20,24 @@
     tabAktif: TabLegalModal;
     onPilihTab: (tab: TabLegalModal) => void;
     onClose: () => void;
+    onResetDataLokal?: () => void;
   }
 
-  let { bahasa, tema, terbuka, tabAktif, onPilihTab, onClose }: Props = $props();
+  let { bahasa, tema, terbuka, tabAktif, onPilihTab, onClose, onResetDataLokal }: Props = $props();
+
+  let dataLokalDireset = $state(false);
+
+  function tanganiResetDataLokal(): void {
+    try {
+      window.localStorage.removeItem('kelir_jejak_v1');
+      window.localStorage.removeItem('kelir_ai_feedback_v1');
+      window.localStorage.removeItem('kelir_onboarding_v1');
+    } catch {
+      // Abaikan jika storage diblokir peramban
+    }
+    dataLokalDireset = true;
+    onResetDataLokal?.();
+  }
 
   const DAFTAR_TAB: TabLegalModal[] = ['syarat', 'privasi', 'kontak'];
 
@@ -241,6 +256,24 @@
               </article>
             {/each}
           </div>
+
+          {#if tabAktif === 'privasi'}
+            <div class="legal-privacy-actions">
+              <button
+                type="button"
+                class="util-pill"
+                onclick={tanganiResetDataLokal}
+                data-testid="btn-reset-local-data"
+              >
+                {ambilTeks(KONTAK_META_TEKS.hapusDataLokal, bahasa)}
+              </button>
+              {#if dataLokalDireset}
+                <span class="source-badge" data-testid="reset-local-data-done">
+                  {ambilTeks(KONTAK_META_TEKS.hapusDataSukses, bahasa)}
+                </span>
+              {/if}
+            </div>
+          {/if}
         {/if}
       </div>
 

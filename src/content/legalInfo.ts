@@ -219,9 +219,9 @@ export const PASAL_KEBIJAKAN_PRIVASI: PasalDokumenLegal[] = [
       jw: 'Tanpa Akun & Simpenan Lokal',
     },
     isi: {
-      id: 'KELIR bebas iklan dan tidak memerlukan akun; tema, bahasa, dan Paspor Jejak Kurasi (kelir_jejak_v1) tersimpan murni di localStorage perangkat Anda.',
-      en: 'KELIR requires no sign-in and uses zero ad trackers; theme, language, and trail progress (kelir_jejak_v1) stay purely in localStorage.',
-      jw: 'KELIR tanpa akun lan iklan; tema, basa, lan Paspor Jejak Kurasi (kelir_jejak_v1) kasimpen murni ing localStorage piranti panjenengan.',
+      id: 'KELIR bebas iklan dan tidak memerlukan akun; tema, bahasa, Paspor Jejak Kurasi (kelir_jejak_v1), status panduan (kelir_onboarding_v1), dan umpan balik kurasi AI (kelir_ai_feedback_v1) tersimpan murni di localStorage perangkat Anda.',
+      en: 'KELIR requires no sign-in and uses zero ad trackers; theme, language, Curatorial Trail (kelir_jejak_v1), onboarding status (kelir_onboarding_v1), and AI feedback notes (kelir_ai_feedback_v1) stay purely in localStorage.',
+      jw: 'KELIR tanpa akun lan iklan; tema, basa, Paspor Jejak Kurasi (kelir_jejak_v1), status pitedah (kelir_onboarding_v1), saha umpan balik AI (kelir_ai_feedback_v1) kasimpen murni ing localStorage piranti panjenengan.',
     },
   },
   {
@@ -409,6 +409,16 @@ export const KONTAK_META_TEKS = {
     id: 'Tutup ✕',
     en: 'Close ✕',
     jw: 'Tutup ✕',
+  } satisfies MultiTeks,
+  hapusDataLokal: {
+    id: 'Hapus Semua Data Lokal',
+    en: 'Clear All Local Data',
+    jw: 'Busak Sedaya Data Lokal',
+  } satisfies MultiTeks,
+  hapusDataSukses: {
+    id: 'Data lokal perangkat telah dibersihkan.',
+    en: 'Local browser data has been cleared.',
+    jw: 'Data lokal piranti sampun karesiki.',
   } satisfies MultiTeks,
   footerCredit: {
     id: 'KELIR Spatial Heritage Archive · Nawfal Irfan',

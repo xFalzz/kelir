@@ -407,12 +407,13 @@
   </div>
 
   <div class="etalase-dock">
-    <div class="etalase-tabs" role="tablist" aria-label={tI18n(bahasa, 'beranda.etalaseTitle')}>
+    <div class="etalase-tabs" role="group" aria-label={tI18n(bahasa, 'beranda.etalaseTitle')}>
       {#each FILTER_TABS as [kunci, labelKey]}
         <button
           type="button"
           class="util-pill"
           class:is-active={filterEtalase === kunci}
+          aria-pressed={filterEtalase === kunci}
           onclick={() => onFilterChange(kunci)}
           data-testid="filter-{kunci}"
         >

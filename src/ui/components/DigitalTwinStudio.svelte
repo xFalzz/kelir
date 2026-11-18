@@ -102,6 +102,7 @@
 
   let sectionEl: HTMLElement | undefined = $state();
   let scrollProgress = $state(0);
+  let stageRetrySeq = $state(0);
   let visibleBlocks: Record<string, boolean> = $state({
     workspace: true,
     engineering: false,
@@ -349,8 +350,11 @@
     <!-- Kolom Kiri Sticky: Kanvas WebGL CAD + Pin Real-Time + Bilah Mode & Ledak -->
     <div class="twin-viewport-col">
       <div class="twin-viewport-card">
-        <div class="twin-canvas-host" data-wheel-native="true" use:mountStage>
-        <WebGLStatusBanner {bahasa} />
+        <div class="twin-canvas-host" data-wheel-native="true">
+        {#key stageRetrySeq}
+          <div class="twin-webgl-inner" use:mountStage></div>
+        {/key}
+        <WebGLStatusBanner {bahasa} onRetry={() => (stageRetrySeq += 1)} />
           <div class="twin-viewport-hud">
             <div class="twin-hud-badges">
               <span class="twin-viewport-spec">
@@ -368,7 +372,6 @@
                 type="button"
                 class="util-pill"
                 onclick={() => onUbahLedak(faktorLedak > 0.45 ? 0 : 0.78)}
-                aria-label={tI18n(bahasa, 'twin.quickExplode')}
                 data-testid="twin-quick-explode"
               >
                 {faktorLedak > 0.45
@@ -396,7 +399,7 @@
                   class:is-active={titikAktifId === t.id}
                   style="left: {pin.x}px; top: {pin.y}px;"
                   onclick={() => onPilihTitik(t)}
-                  aria-label="Anatomi {ambilTeks(t.judul, bahasa)}"
+                  aria-label="{pIdx + 1} - Anatomi {ambilTeks(t.judul, bahasa)}"
                   title={ambilTeks(t.judul, bahasa)}
                 >
                   {pIdx + 1}
@@ -443,6 +446,7 @@
               max="1"
               step="0.02"
               value={faktorLedak}
+              aria-valuetext={`${Math.round(faktorLedak * 100)}%`}
               oninput={(e) => onUbahLedak(Number((e.currentTarget as HTMLInputElement).value))}
               data-testid="slider-ledak"
             />

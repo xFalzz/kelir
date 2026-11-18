@@ -64,29 +64,47 @@ export function cekOriginPermintaanApi(headers: HeaderLookup): {
     return { diizinkan: false, alasan: 'Permintaan cross-site tidak diizinkan.' };
   }
 
+  const reqHost = (
+    ambilHeaderSingle(headers, 'x-forwarded-host') ||
+    ambilHeaderSingle(headers, 'host')
+  ).toLowerCase();
+  const reqHostOnly = reqHost.split(':')[0];
+  const isReqLocal =
+    reqHostOnly === 'localhost' || reqHostOnly === '127.0.0.1' || reqHostOnly === '[::1]';
+  const isProdRuntime = process.env.NODE_ENV === 'production';
+
   const origin = ambilHeaderSingle(headers, 'origin');
   if (!origin) {
+    const referer = ambilHeaderSingle(headers, 'referer');
+    if (referer) {
+      try {
+        const refHost = new URL(referer).host.toLowerCase();
+        if (reqHost && refHost !== reqHost) {
+          return { diizinkan: false, alasan: 'Referer eksternal tidak diizinkan.' };
+        }
+      } catch {
+        return { diizinkan: false, alasan: 'Header Referer tidak valid.' };
+      }
+    }
     return { diizinkan: true };
   }
 
-  let originHost = '';
+  let originHost: string;
   try {
     originHost = new URL(origin).host.toLowerCase();
   } catch {
     return { diizinkan: false, alasan: 'Header Origin tidak valid.' };
   }
 
-  const reqHost = (
-    ambilHeaderSingle(headers, 'x-forwarded-host') ||
-    ambilHeaderSingle(headers, 'host')
-  ).toLowerCase();
-
   if (reqHost && originHost === reqHost) {
     return { diizinkan: true };
   }
 
   const hostOnly = originHost.split(':')[0];
-  if (hostOnly === 'localhost' || hostOnly === '127.0.0.1' || hostOnly === '[::1]') {
+  if (
+    (!isProdRuntime || isReqLocal || !reqHost) &&
+    (hostOnly === 'localhost' || hostOnly === '127.0.0.1' || hostOnly === '[::1]')
+  ) {
     return { diizinkan: true };
   }
 

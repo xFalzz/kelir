@@ -10,6 +10,7 @@
     "preview": "vite preview --port 4173",
     "check": "svelte-check --tsconfig ./tsconfig.json",
     "typecheck": "svelte-check --tsconfig ./tsconfig.json",
+    "lint": "eslint src api tests",
     "audit:ci": "npm audit --omit=dev",
     "test:unit": "vitest run tests/unit",
     "test:e2e": "playwright test",
@@ -30,12 +31,17 @@
     "three": "^0.187.0"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.14.0",
+    "@eslint/js": "^10.0.1",
     "@playwright/test": "^1.65.0",
     "@sveltejs/vite-plugin-svelte": "^7.3.1",
     "@types/three": "^0.187.0",
+    "eslint": "^10.15.0",
+    "eslint-plugin-svelte": "^3.24.1",
     "svelte": "^5.57.3",
     "svelte-check": "^4.7.8",
     "typescript": "~5.8.0",
+    "typescript-eslint": "^8.73.0",
     "vite": "^8.3.7",
     "vitest": "^5.1.0"
   }

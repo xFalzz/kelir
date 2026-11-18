@@ -107,14 +107,12 @@ export function susunNaskahNarasiSuluk(
   const ringkasSejarah = kalimatPertama(ambilTeks(item.penjelasanLengkap, bahasaSuara), 140);
   const ringkasFilosofi = kalimatPertama(ambilTeks(item.filosofi, bahasaSuara), 130);
 
-  let naskah = '';
-  if (bahasaSuara === 'en') {
-    naskah = `${nama}, originating from ${asal}. ${ringkasSejarah} ${ringkasFilosofi}`;
-  } else if (bahasaSuara === 'jw') {
-    naskah = `${nama}, saking ${asal}. ${ringkasSejarah} ${ringkasFilosofi}`;
-  } else {
-    naskah = `${nama}, berasal dari ${asal}. ${ringkasSejarah} ${ringkasFilosofi}`;
-  }
+  const naskah =
+    bahasaSuara === 'en'
+      ? `${nama}, originating from ${asal}. ${ringkasSejarah} ${ringkasFilosofi}`
+      : bahasaSuara === 'jw'
+        ? `${nama}, saking ${asal}. ${ringkasSejarah} ${ringkasFilosofi}`
+        : `${nama}, berasal dari ${asal}. ${ringkasSejarah} ${ringkasFilosofi}`;
 
   const naskahBersih = naskah.replace(/\s+/g, ' ').replace(/\u2014/g, ', ').trim();
   const tampilNaskah =

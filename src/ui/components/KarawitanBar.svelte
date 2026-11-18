@@ -24,6 +24,7 @@
   let { bahasa, audioAktif, suasanaAktif, onToggleSuasana, onPilihGending }: Props = $props();
 
   let panelFilosofiBuka = $state(false);
+  let ringkasMinim = $state(false);
   let filterSuasana: SuasanaGending | 'semua' = $state('semua');
   let statusRt: StatusGendingRealtime = $state(audioBudaya.ambilStatusRealtime());
 
@@ -53,10 +54,11 @@
 {#if audioAktif || suasanaAktif}
   <aside
     class="karawitan-floating-wrap"
+    class:is-minimized={ringkasMinim}
     aria-label={tI18n(bahasa, 'karawitan.barAria')}
     data-testid="karawitan-bar"
   >
-    {#if panelFilosofiBuka}
+    {#if panelFilosofiBuka && !ringkasMinim}
       <div class="karawitan-filosofi-card" data-testid="karawitan-filosofi-panel">
         <div class="karawitan-card-head">
           <div>
@@ -146,54 +148,87 @@
         <span></span><span></span><span></span><span></span>
       </div>
 
-      <button
-        type="button"
-        class="karawitan-meta-btn"
-        onclick={() => (panelFilosofiBuka = !panelFilosofiBuka)}
-        data-testid="btn-karawitan-filosofi"
-        aria-expanded={panelFilosofiBuka}
-      >
-        <span class="karawitan-mini-title">{gendingAktif.judul}</span>
-        <span class="karawitan-mini-beat">
-          {infoAktif.laras}
-          {#if suasanaAktif}
-            · {statusRt.isGong
-              ? 'GONG'
-              : statusRt.isKenong
-                ? 'KENONG'
-                : statusRt.nadanya !== '.'
-                  ? `WILAH ${statusRt.nadanya}`
-                  : 'SELA'}
-          {/if}
-        </span>
-      </button>
-
-      <div class="karawitan-pill-actions">
+      {#if !ringkasMinim}
         <button
           type="button"
-          class="util-pill karawitan-step-btn"
-          onclick={() => geserTrack(-1)}
-          aria-label="Gending Sebelumnya"
-          data-testid="btn-karawitan-prev"
-        >
-          &#8249;
-        </button>
-        <button
-          type="button"
-          class="util-pill karawitan-step-btn"
-          onclick={() => geserTrack(1)}
-          aria-label="Gending Berikutnya"
-          data-testid="btn-karawitan-next"
-        >
-          &#8250;
-        </button>
-        <button
-          type="button"
-          class="util-pill"
-          class:is-active={panelFilosofiBuka}
+          class="karawitan-meta-btn"
           onclick={() => (panelFilosofiBuka = !panelFilosofiBuka)}
+          data-testid="btn-karawitan-filosofi"
+          aria-expanded={panelFilosofiBuka}
         >
-          {tI18n(bahasa, 'karawitan.philosophyBtn')}
+          <span class="karawitan-mini-title">{gendingAktif.judul}</span>
+          <span class="karawitan-mini-beat">
+            {infoAktif.laras}
+            {#if suasanaAktif}
+              · {statusRt.isGong
+                ? 'GONG'
+                : statusRt.isKenong
+                  ? 'KENONG'
+                  : statusRt.nadanya !== '.'
+                    ? `WILAH ${statusRt.nadanya}`
+                    : 'SELA'}
+            {/if}
+          </span>
+        </button>
+
+        <div class="karawitan-pill-actions">
+          <button
+            type="button"
+            class="util-pill karawitan-step-btn"
+            onclick={() => geserTrack(-1)}
+            aria-label="Gending Sebelumnya"
+            data-testid="btn-karawitan-prev"
+          >
+            &#8249;
+          </button>
+          <button
+            type="button"
+            class="util-pill karawitan-step-btn"
+            onclick={() => geserTrack(1)}
+            aria-label="Gending Berikutnya"
+            data-testid="btn-karawitan-next"
+          >
+            &#8250;
+          </button>
+          <button
+            type="button"
+            class="util-pill"
+            class:is-active={panelFilosofiBuka}
+            onclick={() => (panelFilosofiBuka = !panelFilosofiBuka)}
+          >
+            {tI18n(bahasa, 'karawitan.philosophyBtn')}
+          </button>
+          <button
+            type="button"
+            class="util-pill"
+            class:is-active={suasanaAktif}
+            onclick={onToggleSuasana}
+            data-testid="btn-karawitan-toggle"
+          >
+            {suasanaAktif ? tI18n(bahasa, 'karawitan.pauseBtn') : tI18n(bahasa, 'karawitan.playBtn')}
+          </button>
+          <button
+            type="button"
+            class="util-pill karawitan-step-btn"
+            onclick={() => {
+              panelFilosofiBuka = false;
+              ringkasMinim = true;
+            }}
+            aria-label={tI18n(bahasa, 'karawitan.collapseAria')}
+            data-testid="karawitan-collapse-btn"
+          >
+            ▾
+          </button>
+        </div>
+      {:else}
+        <button
+          type="button"
+          class="karawitan-meta-btn"
+          onclick={() => (ringkasMinim = false)}
+          aria-label={tI18n(bahasa, 'karawitan.expandAria')}
+          data-testid="karawitan-collapse-btn"
+        >
+          <span class="karawitan-mini-title">{tI18n(bahasa, 'karawitan.collapsedPill')} ▴</span>
         </button>
         <button
           type="button"
@@ -204,7 +239,7 @@
         >
           {suasanaAktif ? tI18n(bahasa, 'karawitan.pauseBtn') : tI18n(bahasa, 'karawitan.playBtn')}
         </button>
-      </div>
+      {/if}
     </div>
   </aside>
 {/if}

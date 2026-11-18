@@ -58,6 +58,44 @@ export function jejakKurasiKosong(): JejakKurasi {
   };
 }
 
+const SPESIMEN_VALID_SET = new Set<string>(
+  DAFTAR_BEDAH_TWIN.map((b) => b.id),
+);
+
+function filterSpesimenValid(raw: unknown): SpesimenBedahId[] {
+  if (!Array.isArray(raw)) return [];
+  const hasil: SpesimenBedahId[] = [];
+  for (const item of raw) {
+    if (
+      typeof item === 'string' &&
+      SPESIMEN_VALID_SET.has(item) &&
+      !hasil.includes(item as SpesimenBedahId)
+    ) {
+      hasil.push(item as SpesimenBedahId);
+      if (hasil.length >= DAFTAR_BEDAH_TWIN.length) break;
+    }
+  }
+  return hasil;
+}
+
+function filterBabakValid(raw: unknown): number[] {
+  if (!Array.isArray(raw)) return [];
+  const maksBabak = LAKON_KIJANG_KENCANA.daftarBabak.length;
+  const hasil: number[] = [];
+  for (const item of raw) {
+    if (
+      typeof item === 'number' &&
+      Number.isInteger(item) &&
+      item >= 0 &&
+      item < maksBabak &&
+      !hasil.includes(item)
+    ) {
+      hasil.push(item);
+    }
+  }
+  return hasil;
+}
+
 /** Membaca progres eksplorasi kurasi dari localStorage dengan aman. */
 export function bacaJejakKurasi(): JejakKurasi {
   if (typeof window === 'undefined') return jejakKurasiKosong();
@@ -65,13 +103,19 @@ export function bacaJejakKurasi(): JejakKurasi {
     const raw = window.localStorage.getItem(JEJAK_STORAGE_KEY);
     if (!raw) return jejakKurasiKosong();
     const parsed = JSON.parse(raw) as Partial<JejakKurasi>;
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+      return jejakKurasiKosong();
+    }
+    const skorRaw =
+      typeof parsed.skorKuisTertinggi === 'number' && Number.isFinite(parsed.skorKuisTertinggi)
+        ? Math.max(0, Math.min(6, Math.floor(parsed.skorKuisTertinggi)))
+        : 0;
     return {
-      spesimenDiteliti: Array.isArray(parsed.spesimenDiteliti) ? parsed.spesimenDiteliti : [],
-      sulukDidengar: Array.isArray(parsed.sulukDidengar) ? parsed.sulukDidengar : [],
-      babakPakeliran: Array.isArray(parsed.babakPakeliran) ? parsed.babakPakeliran : [],
-      favoritIds: Array.isArray(parsed.favoritIds) ? parsed.favoritIds : [],
-      skorKuisTertinggi:
-        typeof parsed.skorKuisTertinggi === 'number' ? parsed.skorKuisTertinggi : 0,
+      spesimenDiteliti: filterSpesimenValid(parsed.spesimenDiteliti),
+      sulukDidengar: filterSpesimenValid(parsed.sulukDidengar),
+      babakPakeliran: filterBabakValid(parsed.babakPakeliran),
+      favoritIds: filterSpesimenValid(parsed.favoritIds),
+      skorKuisTertinggi: skorRaw,
     };
   } catch {
     return jejakKurasiKosong();

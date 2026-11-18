@@ -89,7 +89,7 @@ export async function hasilkanKomparasiGemini(opts: {
   const start = Date.now();
   const bahasa = opts.bahasa ?? 'id';
   const dasar = bandingkanPusakaLokal(opts.idA, opts.idB, bahasa);
-  const cacheKey = `${dasar.idA}|${dasar.idB}|${bahasa}`;
+  const cacheKey = `v2:${dasar.idA}|${dasar.idB}|${bahasa}`;
   const cached = komparasiCache.get(cacheKey);
   if (cached) {
     return { ...cached, latensiMs: Math.max(2, Date.now() - start) };
@@ -215,7 +215,7 @@ export async function hasilkanPujanggaGemini(opts: {
     };
   }
 
-  const cacheKey = `${dasar.tema.toLowerCase()}|${bahasa}`;
+  const cacheKey = `v2:${dasar.tema.toLowerCase()}|${bahasa}`;
   const cached = pujanggaCache.get(cacheKey);
   if (cached) {
     return { ...cached, latensiMs: Math.max(2, Date.now() - start) };
@@ -298,8 +298,9 @@ export async function hasilkanPujanggaGemini(opts: {
       let wavBase64 = res.wavBase64 ?? null;
       let mimeType = res.mimeType ?? null;
 
-      // Untuk panggilan live nyata, rekam audio terpisah atas larik puisi agar tanda baca JSON tidak ikut terbaca
-      if (!opts.liveClientFactory) {
+      // Hormati anggaran batas serverless 10s: jalankan audio opsional hanya bila sisa waktu mencukupi
+      const remainingBudgetMs = Math.max(0, 8200 - (Date.now() - start));
+      if (!opts.liveClientFactory && remainingBudgetMs >= 3800) {
         try {
           const audioRes = await panggilGemini38Live({
             apiKey: resolvedKey,
@@ -307,7 +308,7 @@ export async function hasilkanPujanggaGemini(opts: {
               'Bacakan dua larik puisi budaya berikut dengan tenang, merdu, dan berwibawa tanpa tambahan kata.',
             userPrompt: naskahSuara,
             voiceName: 'Charon',
-            timeoutMs: 14000,
+            timeoutMs: Math.min(6800, remainingBudgetMs),
             includeWavAudio: true,
           });
           if (audioRes.wavBase64 && audioRes.mimeType) {
@@ -353,7 +354,7 @@ export async function hasilkanSuaraDalangBabak(opts: {
 }): Promise<DalangSuaraResult> {
   const bahasa = opts.bahasa ?? 'id';
   const draft = susunNaskahDalangBabak(opts.babakIdx, bahasa);
-  const cacheKey = `${opts.babakIdx}|${draft.bahasaSuara}`;
+  const cacheKey = `v2:${opts.babakIdx}|${draft.bahasaSuara}`;
 
   const conf = bacaKonfigurasiGemini();
   const resolvedKey = (opts.apiKey ?? (conf.liveDisabled ? '' : conf.apiKey)).trim();
@@ -461,7 +462,7 @@ export async function hasilkanKramaGemini(opts: {
     };
   }
 
-  const cacheKey = `${dasar.kalimatAsal.toLowerCase()}|${bahasa}`;
+  const cacheKey = `v2:${dasar.kalimatAsal.toLowerCase()}|${bahasa}`;
   const cached = kramaCache.get(cacheKey);
   if (cached) {
     return { ...cached, latensiMs: Math.max(2, Date.now() - start) };
@@ -521,14 +522,15 @@ export async function hasilkanKramaGemini(opts: {
     if (ngokoClean && kramaClean && etikaClean) {
       let wavBase64 = res.wavBase64 ?? null;
       let mimeType = res.mimeType ?? null;
-      if (!opts.liveClientFactory) {
+      const remainingBudgetMs = Math.max(0, 8200 - (Date.now() - start));
+      if (!opts.liveClientFactory && remainingBudgetMs >= 3800) {
         try {
           const audioRes = await panggilGemini38Live({
             apiKey: resolvedKey,
             systemInstruction: 'Waosen kanthi alus lan cetha ukara Basa Jawi Krama Inggil punika.',
             userPrompt: kramaClean,
             voiceName: 'Charon',
-            timeoutMs: 14000,
+            timeoutMs: Math.min(6800, remainingBudgetMs),
             includeWavAudio: true,
           });
           if (audioRes.wavBase64 && audioRes.mimeType) {
@@ -588,7 +590,7 @@ export async function hasilkanRuteTurGemini(opts: {
     };
   }
 
-  const cacheKey = `${dasar.minat}|${dasar.durasi}|${dasar.catatan.toLowerCase()}|${bahasa}`;
+  const cacheKey = `v2:${dasar.minat}|${dasar.durasi}|${dasar.catatan.toLowerCase()}|${bahasa}`;
   const cached = turCache.get(cacheKey);
   if (cached) {
     return { ...cached, latensiMs: Math.max(2, Date.now() - start) };

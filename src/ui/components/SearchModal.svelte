@@ -1,6 +1,6 @@
 <script lang="ts">
   import { tick } from 'svelte';
-  import { type BahasaAktif, type SpesimenBedahId } from '../../content/pusaka.ts';
+  import { type BahasaAktif } from '../../content/pusaka.ts';
   import { BANK_KUIS_S1_S7 } from '../../lib/aiStudio.ts';
   import { fokusModalTrap } from '../../lib/focusTrap.ts';
   import { tI18n } from '../../lib/i18n.ts';
