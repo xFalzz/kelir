@@ -209,7 +209,7 @@
           </button>
           <button
             type="button"
-            class="util-pill karawitan-step-btn"
+            class="util-pill karawitan-collapse-btn"
             onclick={() => {
               panelFilosofiBuka = false;
               ringkasMinim = true;

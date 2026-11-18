@@ -135,6 +135,7 @@ export class CoverflowStage {
     container.addEventListener('pointerdown', this.handlePointerDown);
     window.addEventListener('pointermove', this.handlePointerMove);
     window.addEventListener('pointerup', this.handlePointerUp);
+    window.addEventListener('pointercancel', this.handlePointerCancel);
     this.stopObservasi = pasangObservasiPanggung(container, (aktif) => {
       this.loopAktif = aktif;
       if (aktif && this.loopSiapMulai && this.rafId === null) {
@@ -474,9 +475,14 @@ export class CoverflowStage {
     this.didSwipe = false;
   };
 
+  private handlePointerCancel = (): void => {
+    this.dragStartX = null;
+    this.didSwipe = false;
+  };
+
   private handlePointerMove = (e: PointerEvent): void => {
     if (this.dragStartX === null) return;
-    if (Math.abs(e.clientX - this.dragStartX) > 34) {
+    if (Math.abs(e.clientX - this.dragStartX) > 26) {
       this.didSwipe = true;
     }
   };
@@ -631,6 +637,7 @@ export class CoverflowStage {
     this.container.removeEventListener('pointerdown', this.handlePointerDown);
     window.removeEventListener('pointermove', this.handlePointerMove);
     window.removeEventListener('pointerup', this.handlePointerUp);
+    window.removeEventListener('pointercancel', this.handlePointerCancel);
     if (this.rafId !== null) window.cancelAnimationFrame(this.rafId);
     disposeSceneObject(this.scene);
     this.renderer?.dispose();

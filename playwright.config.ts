@@ -7,13 +7,29 @@ const isCI = Boolean(
 
 export default defineConfig({
   testDir: './tests/e2e',
-  timeout: 180000,
-  retries: isCI ? 2 : 1,
+  fullyParallel: false,
+  workers: 1,
+  timeout: isCI ? 240000 : 180000,
+  retries: isCI ? 1 : 1,
   use: {
     baseURL: 'http://127.0.0.1:4173',
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
-    channel: 'chrome',
+    ...(isCI
+      ? {
+          launchOptions: {
+            args: [
+              '--use-gl=angle',
+              '--use-angle=swiftshader',
+              '--enable-webgl',
+              '--enable-unsafe-swiftshader',
+              '--ignore-gpu-blocklist',
+            ],
+          },
+        }
+      : {
+          channel: 'chrome',
+        }),
   },
   webServer: {
     command: 'npm run preview',

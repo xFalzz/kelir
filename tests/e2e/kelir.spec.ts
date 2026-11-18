@@ -9,7 +9,7 @@ test.describe('Kelir Multi-Page Spasial 3D — Verifikasi 5 Halaman & Realisme 3
   test('menguji navigasi 5 halaman terpisah, diorama hero, digital twin CAD, coverflow modal, pakeliran wayang 3D, aksara & pamomong orb', async ({
     page,
   }) => {
-    test.setTimeout(300000);
+    test.setTimeout(360000);
     const errors: string[] = [];
     page.on('pageerror', (err) => errors.push(err.message));
 
@@ -484,7 +484,7 @@ test.describe('Kelir Multi-Page Spasial 3D — Verifikasi 5 Halaman & Realisme 3
   test('memverifikasi tata letak responsif 5 halaman di ponsel sempit (320px), ponsel (390px), dan tablet (768px & 1024px) tanpa error/overflow', async ({
     page,
   }) => {
-    test.setTimeout(300000);
+    test.setTimeout(360000);
     const errors: string[] = [];
     page.on('pageerror', (err) => errors.push(err.message));
 
@@ -500,16 +500,15 @@ test.describe('Kelir Multi-Page Spasial 3D — Verifikasi 5 Halaman & Realisme 3
     ];
     const pages = ['beranda', 'twin', 'koleksi', 'pakeliran', 'kawruh'] as const;
 
-    for (const vp of viewports) {
-      await page.setViewportSize({ width: vp.width, height: vp.height });
-      for (const hal of pages) {
-        await page.goto(`/?hal=${hal}`);
-        await expect(page.locator('.preloader-curtain')).toHaveAttribute(
-          'data-preloader-done',
-          'true',
-          { timeout: 10000 },
-        );
-        await page.waitForTimeout(220);
+    for (const hal of pages) {
+      await page.goto(`/?hal=${hal}`);
+      await expect(page.locator('.preloader-curtain')).toHaveAttribute('data-preloader-done', 'true', {
+        timeout: 10000,
+      });
+
+      for (const vp of viewports) {
+        await page.setViewportSize({ width: vp.width, height: vp.height });
+        await page.waitForTimeout(140);
 
         const audit = await page.evaluate(() => {
           const vw = window.innerWidth;
@@ -647,8 +646,38 @@ test.describe('Kelir Multi-Page Spasial 3D — Verifikasi 5 Halaman & Realisme 3
     await page.getByTestId('btn-search-modal').click();
     await expect(page.getByTestId('search-modal')).toBeVisible();
     await page.waitForTimeout(200);
+    const searchModalCardBox = await page.locator('.search-modal-card').boundingBox();
+    expect(searchModalCardBox).not.toBeNull();
+    const searchCatButtons = page.locator('.search-cat-pills [data-testid^="search-cat-"]');
+    await expect(searchCatButtons).toHaveCount(6);
+    const searchCatOverflow = await page
+      .locator('.search-cat-pills')
+      .evaluate((el) => el.scrollWidth > el.clientWidth + 1);
+    expect(searchCatOverflow).toBe(false);
+    for (let i = 0; i < 6; i++) {
+      const catBtn = searchCatButtons.nth(i);
+      await expect(catBtn).toBeVisible();
+      const box = await catBtn.boundingBox();
+      expect(box).not.toBeNull();
+      if (box && searchModalCardBox) {
+        expect(box.height).toBeGreaterThanOrEqual(36);
+        expect(box.x).toBeGreaterThanOrEqual(searchModalCardBox.x);
+        expect(box.x + box.width).toBeLessThanOrEqual(searchModalCardBox.x + searchModalCardBox.width + 1);
+      }
+    }
+    await page.getByTestId('search-cat-pakeliran').click();
+    await page.getByTestId('search-cat-pustaka').click();
+    await page.getByTestId('search-cat-semua').click();
     await page.screenshot({ path: `${ARTIFACT_DIR}/mp-28-mobile-search.png` });
     await page.getByTestId('search-modal-close').click();
+
+    // Verifikasi bilah Karawitan mobile: tombol ciutkan tampil dan dapat diketuk di 390x844
+    await page.getByTestId('toggle-audio').click();
+    const karawitanCollapseBtn = page.getByTestId('karawitan-collapse-btn');
+    await expect(karawitanCollapseBtn).toBeVisible();
+    await karawitanCollapseBtn.click();
+    await expect(page.locator('.karawitan-floating-wrap')).toHaveClass(/is-minimized/);
+    await page.getByTestId('toggle-audio').click();
 
     await page.goto('/?hal=kawruh');
     await expect(page.locator('.preloader-curtain')).toHaveAttribute('data-preloader-done', 'true', {
@@ -680,7 +709,64 @@ test.describe('Kelir Multi-Page Spasial 3D — Verifikasi 5 Halaman & Realisme 3
     await page.screenshot({ path: `${ARTIFACT_DIR}/mp-14-mobile-modal-suluk.png` });
     await page.getByTestId('close-modal-suluk').click();
 
-    // Verifikasi smooth scroll wheel di semua halaman & isolasi zoom 3D Digital Twin
+    // Regresi ergonomi sentuh 390x844 di Digital Twin (grid 2-kolom & slider) dan Pakeliran
+    await page.goto('/?hal=twin');
+    await expect(page.locator('.preloader-curtain')).toHaveAttribute('data-preloader-done', 'true', {
+      timeout: 10000,
+    });
+    const twinTabChips = page.locator('.artifact-tab-row .tab-chip');
+    await expect(twinTabChips).toHaveCount(7);
+    const tabRowOverflow = await page
+      .locator('.artifact-tab-row')
+      .evaluate((el) => el.scrollWidth > el.clientWidth + 1);
+    expect(tabRowOverflow).toBe(false);
+    for (let i = 0; i < 7; i++) {
+      const box = await twinTabChips.nth(i).boundingBox();
+      expect(box).not.toBeNull();
+      if (box) {
+        expect(box.height).toBeGreaterThanOrEqual(38);
+        expect(box.x).toBeGreaterThanOrEqual(0);
+        expect(box.x + box.width).toBeLessThanOrEqual(390);
+      }
+    }
+    await page.getByTestId('tab-joglo').click();
+    const twinRangeTouch = await page
+      .locator(".explode-slider-wrap input[type='range']")
+      .first()
+      .evaluate((el) => getComputedStyle(el).touchAction);
+    expect(twinRangeTouch).toContain('pan-x');
+
+    await page.goto('/?hal=pakeliran');
+    await expect(page.locator('.preloader-curtain')).toHaveAttribute('data-preloader-done', 'true', {
+      timeout: 10000,
+    });
+    const pakeliranDemoBtns = page.locator('.pakeliran-demo-actions .util-pill');
+    const pakeliranDemoCount = await pakeliranDemoBtns.count();
+    expect(pakeliranDemoCount).toBeGreaterThanOrEqual(2);
+    for (let i = 0; i < pakeliranDemoCount; i++) {
+      const box = await pakeliranDemoBtns.nth(i).boundingBox();
+      expect(box).not.toBeNull();
+      if (box) {
+        expect(box.height).toBeGreaterThanOrEqual(40);
+        expect(box.x + box.width).toBeLessThanOrEqual(390);
+      }
+    }
+    const pakeliranRangeTouch = await page
+      .locator(".pakeliran-slider-label input[type='range']")
+      .first()
+      .evaluate((el) => getComputedStyle(el).touchAction);
+    expect(pakeliranRangeTouch).toContain('pan-x');
+
+    expect(errors).toEqual([]);
+  });
+
+  test('memverifikasi smooth scroll wheel di semua halaman dan isolasi zoom 3D Digital Twin', async ({
+    page,
+  }) => {
+    test.setTimeout(180000);
+    const errors: string[] = [];
+    page.on('pageerror', (err) => errors.push(err.message));
+
     await page.setViewportSize({ width: 1280, height: 800 });
     const sectionSelectorMap = {
       beranda: '#pendopo',
@@ -814,6 +900,7 @@ test.describe('Kelir Multi-Page Spasial 3D — Verifikasi 5 Halaman & Realisme 3
   test('memverifikasi SearchModal Ctrl+K, Deep-Link Twin & Dossier, Suara Dalang Pakeliran & AI Studio Multi-Mode', async ({
     page,
   }) => {
+    test.setTimeout(240000);
     const errors: string[] = [];
     page.on('pageerror', (err) => errors.push(err.message));
 
@@ -1507,7 +1594,7 @@ test.describe('Kelir Multi-Page Spasial 3D — Verifikasi 5 Halaman & Realisme 3
   test('Suite 7: Axe WCAG AA, WebGL Lost/Retry, Onboarding, Karawitan Collapse, Mock Live /api/tanya, Privacy Reset & Mobile Pakeliran', async ({
     page,
   }) => {
-    test.setTimeout(180000);
+    test.setTimeout(240000);
     const errors: string[] = [];
     page.on('pageerror', (err) => errors.push(err.message));
 

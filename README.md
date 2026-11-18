@@ -165,7 +165,7 @@ kelir/
 │   ├── app.css                         # Token desain, gaya responsif, tema terang & malam
 │   └── main.ts                         # Entry point aplikasi & pemuatan font lokal
 └── tests/
-    ├── unit/                           # 13 suite pengujian unit Vitest (58 kasus uji)
+    ├── unit/                           # 20 suite pengujian unit Vitest (95 kasus uji)
     └── e2e/kelir.spec.ts               # Pengujian E2E Playwright (desktop, tablet, mobile, PWA, modal)
 ```
 
@@ -197,7 +197,7 @@ Isi `.env.local` dengan kunci API Anda di variabel `GEMINI_API_KEY` apabila ingi
 | :--- | :--- |
 | `npm run dev` | Menjalankan server pengembangan Vite di `http://localhost:5173` beserta middleware `/api/*` |
 | `npm run check` | Memeriksa tipe TypeScript dan diagnostik komponen Svelte (`svelte-check`) |
-| `npm run test:unit` | Menjalankan seluruh 13 file uji unit `Vitest` (Aksara, BM25, Guardrail, Nusantara, i18n, SmoothScroll, PWA, Legal, dll.) |
+| `npm run test:unit` | Menjalankan seluruh 20 file uji unit `Vitest` (Aksara, BM25, Guardrail, Nusantara, i18n, SmoothScroll, PWA, Legal, dll.) |
 | `npm run build` | Mengompilasi bundel produksi yang terpecah (*code-split*) ke direktori `dist/` |
 | `npm run preview` | Meninjau hasil build produksi pada `http://localhost:4173` |
 | `npm run test:e2e:ci` | Menjalankan suite `Playwright` lengkap pada build/dev server (desktop, tablet, ponsel `320px`, SEO/GEO, modal, PWA, & audit responsif) |

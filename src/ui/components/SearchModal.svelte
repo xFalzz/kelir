@@ -68,7 +68,12 @@
   $effect(() => {
     if (terbuka) {
       indeksSorot = 0;
-      void tick().then(() => inputEl?.focus());
+      const isTouchCoarse =
+        typeof window !== 'undefined' &&
+        Boolean(window.matchMedia?.('(pointer: coarse)').matches);
+      if (!isTouchCoarse) {
+        void tick().then(() => inputEl?.focus());
+      }
     }
   });
 
