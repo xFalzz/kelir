@@ -1207,8 +1207,27 @@ html[data-theme='malam'] .scrolly-narrative {
 .hud-metric-meta {
   display: flex;
   justify-content: space-between;
+  align-items: baseline;
+  gap: 8px 14px;
   font-size: 0.78rem;
   margin-bottom: 5px;
+}
+
+.hud-metric-meta span {
+  min-width: 0;
+}
+
+.hud-metric-meta strong {
+  text-align: right;
+  flex-shrink: 1;
+}
+
+.scrolly-hud-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+  margin-top: 16px;
 }
 
 .hud-bar {
@@ -2779,7 +2798,7 @@ html[data-theme='malam'] .cf-anatomy-panel {
   z-index: 300;
   background:
     radial-gradient(circle at 22% 38%, rgba(179, 48, 37, 0.08), transparent 46%),
-    rgba(246, 244, 239, 0.985);
+    rgba(246, 244, 239, 0.992);
   color: var(--text-primary);
   padding: clamp(18px, 2.4vw, 32px) clamp(16px, 4vw, 52px);
   display: grid;
@@ -2796,7 +2815,7 @@ html[data-theme='malam'] .cf-anatomy-panel {
 html[data-theme='malam'] .modal-suluk-backdrop {
   background:
     radial-gradient(circle at 22% 38%, rgba(219, 86, 71, 0.14), transparent 52%),
-    rgba(16, 14, 12, 0.96);
+    rgba(16, 14, 12, 0.988);
   color: var(--text-primary);
 }
 
@@ -3602,11 +3621,13 @@ html[data-theme='malam'] .wordmark-colossal {
 .etalase-card-domain {
   font-family: var(--font-mono);
   font-size: 0.7rem;
+  line-height: 1.38;
   color: var(--text-muted);
   margin-top: 10px;
-  white-space: nowrap;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
   overflow: hidden;
-  text-overflow: ellipsis;
 }
 
 .etalase-dock {
@@ -3803,6 +3824,13 @@ html[data-theme='malam'] .pakeliran-theatre-box {
   display: grid;
   gap: 18px;
   border-top: 1px solid var(--border-hairline);
+}
+
+.pakeliran-console-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: center;
 }
 
 .pakeliran-suluk-quote {
@@ -5191,74 +5219,110 @@ html[data-theme='malam'] .pwa-install-toast {
 
 @media (max-width: 1080px) {
   html {
-    scroll-padding-bottom: 104px;
+    scroll-padding-bottom: 112px;
   }
   .nav-links,
   .chapter-rail {
     display: none;
   }
   .top-nav {
-    border-radius: 16px;
-    padding: 6px 8px 6px 12px;
+    border-radius: 999px;
+    background: var(--bg-elevated);
+    padding: 5px 7px 5px 12px;
+  }
+  body::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: calc(22px + env(safe-area-inset-top, 0px));
+    background: linear-gradient(180deg, var(--bg-void) 72%, transparent 100%);
+    pointer-events: none;
+    z-index: 118;
+  }
+  body::after {
+    content: '';
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: calc(30px + env(safe-area-inset-bottom, 0px));
+    background: linear-gradient(0deg, var(--bg-void) 62%, transparent 100%);
+    pointer-events: none;
+    z-index: 124;
+  }
+  html.has-modal-open body::before,
+  html.has-modal-open body::after {
+    display: none;
   }
   .page-stage-shell {
-    padding-bottom: calc(20px + env(safe-area-inset-bottom, 0px));
+    padding-bottom: calc(28px + env(safe-area-inset-bottom, 0px));
   }
   .page-stage-shell.has-karawitan {
-    padding-bottom: calc(152px + env(safe-area-inset-bottom, 0px));
+    padding-bottom: calc(164px + env(safe-area-inset-bottom, 0px));
   }
   .site-footer {
-    padding-bottom: calc(142px + env(safe-area-inset-bottom, 0px));
+    padding-bottom: calc(156px + env(safe-area-inset-bottom, 0px));
   }
   .mobile-page-dock {
     position: fixed;
-    bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+    bottom: calc(clamp(8px, 2.2vw, 12px) + env(safe-area-inset-bottom, 0px));
     left: 50%;
     transform: translateX(-50%);
     z-index: 125;
-    width: calc(100% - 20px);
-    max-width: 580px;
+    width: min(560px, calc(100% - clamp(12px, 3.6vw, 24px)));
+    max-width: 560px;
     display: grid;
     grid-template-columns: repeat(5, minmax(0, 1fr));
-    gap: 4px;
-    padding: 6px;
-    border-radius: 18px;
-    background: var(--bg-pill);
-    border: 1px solid var(--border-hairline);
-    box-shadow: 0 10px 28px rgba(18, 19, 22, 0.12);
+    gap: clamp(2px, 0.9vw, 6px);
+    padding: clamp(5px, 1.2vw, 6px);
+    border-radius: clamp(18px, 4.5vw, 22px);
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-strong);
+    box-shadow: 0 10px 28px rgba(18, 19, 22, 0.14);
+    transition: opacity 0.2s ease, transform 0.22s var(--ease-expo);
+  }
+
+  html.has-modal-open .mobile-page-dock {
+    opacity: 0;
+    pointer-events: none;
+    transform: translate(-50%, 16px);
   }
 
   html[data-theme='malam'] .mobile-page-dock {
-    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
+    box-shadow: 0 14px 36px rgba(0, 0, 0, 0.52);
   }
   .mobile-page-btn {
     position: relative;
-    border: none;
+    border: 1px solid transparent;
     background: transparent;
     color: var(--text-secondary);
-    min-height: 46px;
-    padding: 6px 4px;
-    border-radius: 12px;
-    font-size: 0.67rem;
-    line-height: 1.2;
+    min-height: clamp(46px, 12vw, 52px);
+    padding: clamp(5px, 1.3vw, 7px) 2px;
+    border-radius: clamp(13px, 3.3vw, 16px);
+    font-size: clamp(0.57rem, 2.55vw, 0.72rem);
+    line-height: 1.15;
     font-weight: 600;
     min-width: 0;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 3px;
+    gap: clamp(3px, 0.8vw, 4px);
     cursor: pointer;
     text-align: center;
     transition:
       transform 0.16s var(--ease-expo),
       background-color 0.22s ease,
+      border-color 0.22s ease,
       color 0.22s ease;
   }
   .mobile-dock-ico {
-    width: 18px;
-    height: 18px;
+    width: clamp(18px, 4.8vw, 21px);
+    height: clamp(18px, 4.8vw, 21px);
     flex-shrink: 0;
+    transition: transform 0.18s var(--ease-expo);
   }
   .mobile-dock-label {
     display: block;
@@ -5266,18 +5330,16 @@ html[data-theme='malam'] .pwa-install-toast {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    letter-spacing: -0.015em;
   }
   .mobile-page-btn.is-active {
     background: var(--ember-soft);
+    border-color: var(--ember-border);
     color: var(--accent-ember);
+    font-weight: 700;
   }
-  .mobile-page-btn.is-active::after {
-    content: '';
-    width: 16px;
-    height: 2.5px;
-    border-radius: 999px;
-    background: var(--accent-ember);
-    margin-top: 1px;
+  .mobile-page-btn.is-active .mobile-dock-ico {
+    transform: translateY(-0.5px);
   }
   .footer-columns {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -5296,11 +5358,26 @@ html[data-theme='malam'] .pwa-install-toast {
   .kawruh-page-section {
     animation: kelirRoomEnter 0.44s var(--ease-expo) backwards;
   }
+  .scrolly-chapters {
+    padding: clamp(28px, 6vw, 56px) clamp(16px, 4vw, 32px) clamp(40px, 8vw, 68px);
+    gap: clamp(28px, 6vh, 52px);
+  }
   .scrolly-step {
     grid-template-columns: 1fr;
+    min-height: auto;
+    gap: 14px;
   }
   .scrolly-hud-card {
     grid-column: 1;
+  }
+  .scrolly-hud-actions .util-pill,
+  .scrolly-hud-actions .nav-cta-white {
+    min-height: 44px;
+    padding: 8px 14px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.78rem;
   }
   .page-portal-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -5381,8 +5458,8 @@ html[data-theme='malam'] .pwa-install-toast {
     left: 0;
     right: 0;
     margin-inline: auto;
-    bottom: calc(88px + env(safe-area-inset-bottom, 0px));
-    width: min(440px, calc(100vw - 32px));
+    bottom: calc(86px + env(safe-area-inset-bottom, 0px));
+    width: min(440px, calc(100vw - 28px));
   }
   .pwa-install-toast.has-audio-bar {
     bottom: calc(146px + env(safe-area-inset-bottom, 0px));
@@ -5390,7 +5467,7 @@ html[data-theme='malam'] .pwa-install-toast {
 }
 
 @media (max-width: 860px) {
-  .nav-cta-white {
+  .top-nav .nav-cta-white {
     display: none;
   }
   .top-nav .util-pill {
@@ -5427,30 +5504,11 @@ html[data-theme='malam'] .pwa-install-toast {
   .spatial-grid-3d {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
-  /* Bilah Navigasi Bawah Bergaya Aplikasi Native Full-Width */
-  .mobile-page-dock {
-    bottom: 0;
-    left: 0;
-    right: 0;
-    transform: none;
-    width: 100%;
-    max-width: none;
-    border-radius: 0;
-    border-left: none;
-    border-right: none;
-    border-bottom: none;
-    background: var(--bg-elevated);
-    box-shadow: 0 -4px 20px rgba(18, 19, 22, 0.06);
-    padding: 6px 6px calc(6px + env(safe-area-inset-bottom, 0px));
-  }
-  html[data-theme='malam'] .mobile-page-dock {
-    box-shadow: 0 -6px 24px rgba(0, 0, 0, 0.38);
-  }
   .site-footer {
-    padding-bottom: calc(142px + env(safe-area-inset-bottom, 0px));
+    padding-bottom: calc(156px + env(safe-area-inset-bottom, 0px));
   }
   .pwa-install-toast {
-    bottom: calc(74px + env(safe-area-inset-bottom, 0px));
+    bottom: calc(86px + env(safe-area-inset-bottom, 0px));
     width: min(420px, calc(100vw - 24px));
     background: var(--bg-elevated);
   }
@@ -5458,7 +5516,7 @@ html[data-theme='malam'] .pwa-install-toast {
     background: #1b1814;
   }
   .pwa-install-toast.has-audio-bar {
-    bottom: calc(134px + env(safe-area-inset-bottom, 0px));
+    bottom: calc(146px + env(safe-area-inset-bottom, 0px));
   }
   .kelir-scroll-topline {
     height: 3px;
@@ -5481,13 +5539,19 @@ html[data-theme='malam'] .pwa-install-toast {
     min-width: 38px;
     min-height: 38px;
     padding: 0;
+    border-radius: 999px;
     justify-content: center;
+  }
+  .top-nav .lang-dropdown-trigger {
+    min-height: 38px;
+    border-radius: 999px;
+    padding: 0 10px;
   }
 }
 
 @media (max-width: 640px) {
   .band-section {
-    padding: 28px 16px;
+    padding: 26px 14px;
   }
   .display-h2 {
     font-size: clamp(1.75rem, 7vw, 2.35rem);
@@ -5500,30 +5564,31 @@ html[data-theme='malam'] .pwa-install-toast {
     top: calc(8px + env(safe-area-inset-top, 0px));
     width: calc(100% - 16px - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px));
     padding: 4px 6px 4px 12px;
-    border-radius: 14px;
+    border-radius: 999px;
     gap: 6px;
-    box-shadow: 0 4px 16px rgba(18, 19, 22, 0.06);
+    box-shadow: 0 6px 20px rgba(18, 19, 22, 0.08);
   }
   .brand-aksara,
   [data-testid='toggle-kamera'],
-  .nav-cta-white,
+  .top-nav .nav-cta-white,
   .subpage-quick-switch {
     display: none;
   }
   .top-nav .nav-controls {
-    gap: 4px;
+    gap: 5px;
   }
   .top-nav .util-pill {
-    min-height: 40px;
-    border-radius: 10px;
-    border-color: transparent;
-    background: transparent;
-    padding: 0 9px;
+    min-height: 38px;
+    border-radius: 999px;
+    border: 1px solid var(--border-hairline);
+    background: var(--surface-subtle);
+    padding: 0 10px;
   }
   .top-nav .nav-search-btn,
   .top-nav .nav-icon-pill {
-    width: 40px;
-    min-width: 40px;
+    width: 38px;
+    min-width: 38px;
+    height: 38px;
     padding: 0;
     justify-content: center;
   }
@@ -5534,11 +5599,12 @@ html[data-theme='malam'] .pwa-install-toast {
   .top-nav .util-pill.is-active {
     background: var(--ember-soft);
     color: var(--accent-ember);
-    border-color: transparent;
+    border-color: var(--ember-border);
   }
   .top-nav .lang-dropdown-trigger {
-    min-height: 40px;
-    padding: 0 9px;
+    min-height: 38px;
+    height: 38px;
+    padding: 0 10px;
     background: var(--surface-subtle);
     border: 1px solid var(--border-hairline);
   }
@@ -5555,7 +5621,72 @@ html[data-theme='malam'] .pwa-install-toast {
     gap: 5px 8px;
   }
   .hero-overlay-copy {
-    padding: 74px 16px 86px;
+    padding: 68px 14px 88px;
+  }
+  .twin-viewport-hud {
+    top: 8px;
+    left: 8px;
+    right: 8px;
+    gap: 6px;
+    flex-wrap: nowrap;
+  }
+  .twin-hud-badges .twin-viewport-spec:nth-child(2) {
+    display: none;
+  }
+  .twin-viewport-spec {
+    font-size: 0.58rem;
+    padding: 4px 8px;
+  }
+  .twin-hud-actions {
+    gap: 5px;
+    flex-shrink: 0;
+  }
+  .twin-hud-actions .util-pill {
+    min-height: 34px;
+    padding: 4px 9px;
+    font-size: 0.68rem;
+  }
+  .twin-meta-cell strong {
+    white-space: normal;
+    line-height: 1.25;
+  }
+  .explore-arrow-link {
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+  }
+  .pakeliran-console-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+    width: 100%;
+  }
+  .pakeliran-console-actions .mode-switch-group {
+    grid-column: 1 / -1;
+    width: 100%;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    padding: 4px;
+    border-radius: 14px;
+  }
+  .pakeliran-console-actions .mode-btn {
+    min-height: 38px;
+    padding: 5px 4px;
+    font-size: 0.72rem;
+    text-align: center;
+  }
+  .pakeliran-console-actions > .pill-cta-outline,
+  .pakeliran-console-actions > .pill-cta-crimson,
+  .pakeliran-console-actions > .util-pill {
+    width: 100%;
+    min-height: 44px;
+    padding: 8px 7px;
+    font-size: 0.71rem;
+    line-height: 1.2;
+    gap: 5px;
+    border-radius: 12px;
+    justify-content: center;
+    text-align: center;
   }
   .hero-h1 {
     font-size: clamp(2.05rem, 8.6vw, 2.7rem);
@@ -5888,10 +6019,10 @@ html[data-theme='malam'] .pwa-install-toast {
     padding: 4px;
   }
   .top-nav .nav-controls {
-    gap: 3px;
+    gap: 4px;
   }
   .top-nav .lang-dropdown-trigger {
-    padding: 0 8px;
+    padding: 0 9px;
     gap: 4px;
   }
   .top-nav .lang-active-code {
@@ -5900,12 +6031,6 @@ html[data-theme='malam'] .pwa-install-toast {
   .lang-dropdown-menu {
     right: -42px;
     width: min(244px, calc(100vw - 24px));
-  }
-  .mobile-page-btn {
-    font-size: 0.6rem;
-    line-height: 1.15;
-    padding: 5px 2px;
-    gap: 2px;
   }
   .hero-actions {
     grid-template-columns: 1fr;
@@ -5984,11 +6109,6 @@ html[data-theme='malam'] .pwa-install-toast {
   .twin-cad-strip {
     grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
   }
-  .twin-viewport-hud {
-    top: 10px;
-    left: 10px;
-    right: 10px;
-  }
   .modal-art-panel {
     min-height: 190px;
   }
@@ -6033,30 +6153,64 @@ html[data-theme='malam'] .pwa-install-toast {
   }
 }
 
-@media (max-width: 440px) {
-  .suluk-karawitan-strip {
-    grid-template-columns: 1fr;
-  }
-}
-
 @media (max-width: 399px) {
   .aksara-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
-@media (max-width: 379px) {
+@media (max-width: 359px) {
   .spatial-grid-3d,
   .suluk-karawitan-strip {
     grid-template-columns: 1fr;
   }
-  .mobile-page-btn {
-    font-size: 0.54rem;
-    letter-spacing: -0.02em;
+  .top-nav .nav-search-btn,
+  .top-nav .nav-icon-pill {
+    width: 36px;
+    min-width: 36px;
+    height: 36px;
   }
-  .mobile-dock-label {
-    white-space: normal;
-    line-height: 1.1;
+  .top-nav .lang-dropdown-trigger {
+    min-height: 36px;
+    height: 36px;
+    padding: 0 8px;
+  }
+  .mobile-page-btn {
+    font-size: 0.55rem;
+    letter-spacing: -0.025em;
+    padding: 5px 1px;
+  }
+}
+
+@media (max-height: 620px) and (max-width: 480px) {
+  .hero-overlay-copy {
+    padding: 64px 14px 82px;
+  }
+  .hero-h1 {
+    font-size: clamp(1.85rem, 7.6vw, 2.3rem);
+    margin: 8px 0 10px;
+  }
+  .hero-lead {
+    font-size: 0.88rem;
+    margin-bottom: 14px;
+    line-height: 1.44;
+  }
+  .hero-actions {
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+  .hero-actions .pill-cta-white,
+  .hero-actions .pill-cta-outline {
+    min-height: 44px;
+    padding: 8px 14px;
+    font-size: 0.82rem;
+  }
+  .hero-spec-strip {
+    padding: 8px 0;
+    margin-bottom: 4px;
+  }
+  .hero-micro-meta {
+    display: none;
   }
 }
 
@@ -6720,7 +6874,7 @@ html[data-theme='malam'] .kelir-scroll-rail.is-dragging .kelir-scroll-track {
   justify-content: center;
   align-items: flex-start;
   padding: clamp(48px, 7vh, 84px) 12px 24px;
-  background: rgba(10, 11, 14, 0.72);
+  background: rgba(10, 11, 14, 0.82);
   overscroll-behavior: none;
 }
 
@@ -6740,18 +6894,24 @@ html[data-theme='malam'] .kelir-scroll-rail.is-dragging .kelir-scroll-track {
   min-width: 0;
   box-sizing: border-box;
   overflow: hidden;
-  max-height: min(84dvh, 700px);
+  max-height: min(86dvh, 720px);
   display: flex;
   flex-direction: column;
   gap: 10px;
   padding: 16px;
   border-radius: 20px;
-  background: var(--bg-card);
+  background: var(--bg-elevated);
+  color: var(--text-primary);
   border: 1px solid var(--border-strong);
   box-shadow: 0 24px 64px rgba(0, 0, 0, 0.34);
 }
 
+html[data-theme='malam'] .search-modal-card {
+  background: #1b1814;
+}
+
 .search-modal-head {
+  flex-shrink: 0;
   display: flex;
   gap: 8px;
   align-items: center;
@@ -6822,6 +6982,7 @@ html[data-theme='malam'] .kelir-scroll-rail.is-dragging .kelir-scroll-track {
 }
 
 .search-utility-deck {
+  flex-shrink: 0;
   display: grid;
   gap: 7px;
 }
@@ -6856,17 +7017,20 @@ html[data-theme='malam'] .kelir-scroll-rail.is-dragging .kelir-scroll-track {
 }
 
 .search-cat-pills {
+  flex-shrink: 0;
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   gap: 6px;
 }
 
 .search-results-list {
-  flex: 1 1 auto;
-  min-height: 0;
+  flex: 1 1 0%;
+  min-height: 150px;
   overflow-y: auto;
   overscroll-behavior: contain;
   display: grid;
+  align-content: start;
   gap: 8px;
   padding-right: 4px;
 }
@@ -7378,7 +7542,7 @@ html[data-theme='malam'] .kelir-scroll-rail.is-dragging .kelir-scroll-track {
   .karawitan-floating-wrap {
     left: 10px;
     right: 10px;
-    bottom: calc(82px + env(safe-area-inset-bottom, 0px));
+    bottom: calc(84px + env(safe-area-inset-bottom, 0px));
     max-width: calc(100vw - 20px);
   }
   .karawitan-mini-pill {
@@ -7388,15 +7552,9 @@ html[data-theme='malam'] .kelir-scroll-rail.is-dragging .kelir-scroll-track {
     min-height: 46px;
   }
   .karawitan-filosofi-card {
-    max-height: calc(100dvh - 210px);
+    max-height: calc(100dvh - 216px);
     padding: 13px;
     gap: 10px;
-  }
-}
-
-@media (max-width: 768px) {
-  .karawitan-floating-wrap {
-    bottom: calc(70px + env(safe-area-inset-bottom, 0px));
   }
 }
 
@@ -7468,16 +7626,23 @@ html[data-theme='malam'] .kelir-scroll-rail.is-dragging .kelir-scroll-track {
   }
   .search-modal-card {
     max-height: calc(100dvh - 24px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
-    padding: 13px;
+    padding: 12px;
     gap: 8px;
+    border-radius: 18px;
+  }
+  .search-utility-deck {
+    gap: 6px;
   }
   .search-cat-pills {
+    flex-shrink: 0;
     flex-wrap: nowrap;
     overflow-x: auto;
     scrollbar-width: none;
     -webkit-overflow-scrolling: touch;
-    padding-bottom: 2px;
-    gap: 5px;
+    min-height: 38px;
+    align-items: center;
+    padding: 2px 0;
+    gap: 6px;
     max-width: 100%;
   }
   .search-cat-pills::-webkit-scrollbar {
@@ -7486,8 +7651,12 @@ html[data-theme='malam'] .kelir-scroll-rail.is-dragging .kelir-scroll-track {
   .search-cat-pills .util-pill {
     flex-shrink: 0;
     white-space: nowrap;
-    padding: 5px 10px;
-    font-size: 0.68rem;
+    min-height: 34px;
+    padding: 5px 11px;
+    font-size: 0.7rem;
+  }
+  .search-results-list {
+    min-height: 160px;
   }
   .search-footer-bar > .eyebrow-mono {
     display: none;
@@ -7663,6 +7832,7 @@ html[data-theme='malam'] .kelir-scroll-rail.is-dragging .kelir-scroll-track {
 }
 
 .search-footer-bar {
+  flex-shrink: 0;
   display: flex;
   flex-wrap: wrap;
   justify-content: space-between;
@@ -7692,6 +7862,27 @@ html[data-theme='malam'] .kelir-scroll-rail.is-dragging .kelir-scroll-track {
     flex-direction: column;
     align-items: stretch;
   }
+  .cert-export-bar {
+    padding: 6px 8px;
+  }
+  .cert-input-group {
+    flex-wrap: nowrap;
+    gap: 6px;
+  }
+  .cert-name-input {
+    min-width: 0;
+    flex: 1 1 auto;
+    padding: 6px 10px;
+    font-size: 0.76rem;
+  }
+  .cert-input-group .util-pill {
+    flex-shrink: 0;
+    padding: 6px 10px;
+    font-size: 0.72rem;
+  }
+}
+
+@media (max-width: 359px) {
   .cert-input-group {
     flex-wrap: wrap;
   }
@@ -7948,7 +8139,7 @@ html[data-theme='malam'] .kelir-scroll-rail.is-dragging .kelir-scroll-track {
   justify-content: center;
   align-items: center;
   padding: clamp(16px, 3vh, 32px) clamp(12px, 3vw, 24px);
-  background: rgba(10, 11, 14, 0.72);
+  background: rgba(10, 11, 14, 0.82);
   overscroll-behavior: none;
 }
 
@@ -7963,14 +8154,14 @@ html[data-theme='malam'] .kelir-scroll-rail.is-dragging .kelir-scroll-track {
   flex-direction: column;
   overflow: hidden;
   border-radius: 20px;
-  background: var(--bg-card);
+  background: var(--bg-elevated);
   color: var(--text-primary);
   border: 1px solid var(--border-strong);
   box-shadow: 0 28px 72px rgba(0, 0, 0, 0.36);
 }
 
 html[data-theme='malam'] .legal-modal-card {
-  background: rgba(24, 21, 18, 0.98);
+  background: #181512;
 }
 
 .legal-modal-head {
@@ -8309,14 +8500,20 @@ html[data-theme='malam'] .legal-modal-card {
   .legal-tabs-row {
     width: 100%;
     border-radius: 14px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    padding: 4px;
   }
   .legal-modal-body {
     padding: 13px 14px 16px;
     gap: 11px;
   }
   .legal-tab-btn {
-    padding: 5px 10px;
-    font-size: 0.76rem;
+    flex: 1 1 auto;
+    justify-content: center;
+    padding: 6px 10px;
+    font-size: 0.74rem;
   }
   .legal-modal-foot {
     padding: 10px 14px;
@@ -8820,7 +9017,7 @@ html[data-theme='malam'] .webgl-fallback-badge {
 @media (max-width: 768px) {
   .offline-status-pill {
     top: auto;
-    bottom: 78px;
+    bottom: calc(84px + env(safe-area-inset-bottom, 0px));
     right: 16px;
   }
 
@@ -8833,12 +9030,18 @@ html[data-theme='malam'] .webgl-fallback-badge {
   }
 
   .site-footer {
-    padding-bottom: calc(142px + env(safe-area-inset-bottom, 0px));
+    padding-bottom: calc(156px + env(safe-area-inset-bottom, 0px));
   }
 }
 
 .page-stage-shell.has-karawitan {
   padding-bottom: 92px;
+}
+
+@media (max-width: 1080px) {
+  .page-stage-shell.has-karawitan {
+    padding-bottom: calc(164px + env(safe-area-inset-bottom, 0px));
+  }
 }
 
 .onboarding-strip {

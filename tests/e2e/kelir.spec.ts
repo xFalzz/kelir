@@ -591,7 +591,7 @@ test.describe('Kelir Multi-Page Spasial 3D — Verifikasi 5 Halaman & Realisme 3
     expect(modalClip.barRight).toBeLessThanOrEqual(modalClip.vw + 2);
     await page.getByTestId('close-modal-suluk').click();
 
-    // Verifikasi SearchModal & LegalInfoModal pada ponsel sempit 320x568 bebas overflow
+    // Verifikasi SearchModal & LegalInfoModal pada ponsel sempit 320x568 bebas overflow & tab tidak terpotong
     await page.getByTestId('btn-search-modal').click();
     await expect(page.getByTestId('search-modal')).toBeVisible();
     const searchBox320 = await page.locator('.search-modal-card').boundingBox();
@@ -601,6 +601,16 @@ test.describe('Kelir Multi-Page Spasial 3D — Verifikasi 5 Halaman & Realisme 3
       expect(searchBox320.x + searchBox320.width).toBeLessThanOrEqual(322);
       expect(searchBox320.y + searchBox320.height).toBeLessThanOrEqual(570);
     }
+    const searchTabsAudit = await page.evaluate(() => {
+      const strip = document.querySelector('.search-cat-pills')?.getBoundingClientRect();
+      const btns = [...document.querySelectorAll('.search-cat-pills button')];
+      return {
+        stripHeight: strip ? Math.round(strip.height) : 0,
+        minBtnHeight: Math.min(...btns.map((b) => Math.round(b.getBoundingClientRect().height))),
+      };
+    });
+    expect(searchTabsAudit.stripHeight).toBeGreaterThanOrEqual(32);
+    expect(searchTabsAudit.minBtnHeight).toBeGreaterThanOrEqual(30);
     await page.getByTestId('search-modal-close').click();
 
     await page.getByTestId('footer-link-kontak').click();
@@ -622,6 +632,23 @@ test.describe('Kelir Multi-Page Spasial 3D — Verifikasi 5 Halaman & Realisme 3
     });
     await page.waitForTimeout(350);
     await page.screenshot({ path: `${ARTIFACT_DIR}/mp-10-mobile-beranda.png` });
+
+    // Verifikasi CTA Kronik, proporsi mobile dock, & SearchModal 390x844
+    const kronik2 = page.locator('#kronik-02 .scrolly-hud-card');
+    await kronik2.scrollIntoViewIfNeeded();
+    await expect(kronik2.locator('.scrolly-hud-actions .nav-cta-white')).toBeVisible();
+    const dock390 = await page.locator('.mobile-page-dock').boundingBox();
+    expect(dock390).not.toBeNull();
+    if (dock390) {
+      expect(dock390.y + dock390.height).toBeLessThan(844);
+      expect(dock390.height).toBeGreaterThanOrEqual(54);
+    }
+    await page.screenshot({ path: `${ARTIFACT_DIR}/mp-29-mobile-dock-scrolly.png` });
+    await page.getByTestId('btn-search-modal').click();
+    await expect(page.getByTestId('search-modal')).toBeVisible();
+    await page.waitForTimeout(200);
+    await page.screenshot({ path: `${ARTIFACT_DIR}/mp-28-mobile-search.png` });
+    await page.getByTestId('search-modal-close').click();
 
     await page.goto('/?hal=kawruh');
     await expect(page.locator('.preloader-curtain')).toHaveAttribute('data-preloader-done', 'true', {

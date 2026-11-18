@@ -2141,7 +2141,7 @@
                 </div>
               {/each}
 
-              <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-top: 16px;">
+              <div class="scrolly-hud-actions">
                 <button
                   type="button"
                   class="util-pill"
@@ -2352,7 +2352,7 @@
               </p>
             </div>
 
-            <div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center;">
+            <div class="pakeliran-console-actions">
               <div class="mode-switch-group" role="group" aria-label={tI18n(bahasa, 'pakeliran.h1')}>
                 {#each [
                   { id: 'blencong' as const, label: tI18n(bahasa, 'pakeliran.moodBlencong') },
