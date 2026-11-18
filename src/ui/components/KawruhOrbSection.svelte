@@ -478,14 +478,6 @@
           >
             {tI18n(bahasa, 'kawruh.nusantaraExampleQuery')}
           </button>
-          <button
-            type="button"
-            class="util-pill is-wrap"
-            onclick={() => onPilihContohPertanyaan(tI18n(bahasa, 'kawruh.testOodQuery'))}
-            title={tI18n(bahasa, 'kawruh.testOodLabel')}
-          >
-            {tI18n(bahasa, 'kawruh.testOodLabel')}
-          </button>
         </div>
 
         <form
