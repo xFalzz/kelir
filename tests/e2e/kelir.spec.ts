@@ -1643,7 +1643,24 @@ test.describe('Kelir Multi-Page Spasial 3D — Verifikasi 5 Halaman & Realisme 3
     expect((capturedPayloads[1].riwayatSingkat as unknown[]).length).toBe(1);
     await page.unroute('**/api/tanya');
 
-    // Mode bahasa Aksara 'aks' di #pamomong
+    // Mode bahasa Aksara 'aks' di #pamomong & audit KelirCursor rombakan baru (6 spark, brackets, gyroscope 3D)
+    const orbBox = await page.locator('.pamomong-orb-host').boundingBox();
+    if (orbBox) {
+      await page.mouse.move(orbBox.x + orbBox.width * 0.5, orbBox.y + orbBox.height * 0.5);
+      await expect(page.locator('.kelir-cursor-layer')).toHaveAttribute('data-mode', 'canvas');
+      await expect(page.locator('.kelir-cursor-glyph')).toContainText('ORBIT 3D');
+      await expect(page.locator('.kelir-cursor-trail')).toHaveCount(6);
+      await page.waitForTimeout(180);
+      await page.screenshot({ path: `${ARTIFACT_DIR}/mp-25-cursor-canvas-orbit.png` });
+    }
+    const submitBox = await querySubmit.boundingBox();
+    if (submitBox) {
+      await page.mouse.move(submitBox.x + submitBox.width * 0.5, submitBox.y + submitBox.height * 0.5);
+      await expect(page.locator('.kelir-cursor-layer')).toHaveAttribute('data-mode', 'interactive');
+      await page.waitForTimeout(180);
+      await page.screenshot({ path: `${ARTIFACT_DIR}/mp-26-cursor-interactive.png` });
+    }
+
     await page.getByTestId('lang-switcher-btn').click();
     await page.getByTestId('lang-aks').click();
     await expect(page.locator('#pamomong h1')).toContainText(/[\uA980-\uA9DF]/);

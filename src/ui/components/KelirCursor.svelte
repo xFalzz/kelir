@@ -14,6 +14,7 @@
   let rippleActive = $state(false);
 
   let nibEl: HTMLDivElement | undefined = $state();
+  let nibSvgEl: SVGSVGElement | undefined = $state();
   let ringEl: HTMLDivElement | undefined = $state();
   let auraEl: HTMLDivElement | undefined = $state();
   let rippleEl: HTMLDivElement | undefined = $state();
@@ -21,6 +22,8 @@
   let trail1: HTMLDivElement | undefined = $state();
   let trail2: HTMLDivElement | undefined = $state();
   let trail3: HTMLDivElement | undefined = $state();
+  let trail4: HTMLDivElement | undefined = $state();
+  let trail5: HTMLDivElement | undefined = $state();
 
   let railTrackEl: HTMLDivElement | undefined = $state();
   let scrollRatio = $state(0);
@@ -177,11 +180,14 @@
     let auraY = targetY;
     let smoothVelAngle = 0;
     let smoothStretch = 0;
+    let smoothNibLean = 0;
     const trailPts = [
-      { x: targetX, y: targetY },
-      { x: targetX, y: targetY },
-      { x: targetX, y: targetY },
-      { x: targetX, y: targetY },
+      { x: targetX, y: targetY, angle: 0 },
+      { x: targetX, y: targetY, angle: 0 },
+      { x: targetX, y: targetY, angle: 0 },
+      { x: targetX, y: targetY, angle: 0 },
+      { x: targetX, y: targetY, angle: 0 },
+      { x: targetX, y: targetY, angle: 0 },
     ];
     let rafId: number | null = null;
     let lastMs = 0;
@@ -207,7 +213,7 @@
         cursorMode = 'drag';
       } else if (
         target.closest(
-          '.coverflow-canvas-wrap, .twin-canvas-host, .diorama-webgl-host, .pakeliran-canvas-host, .pamomong-orb-host, .suluk-webgl-host',
+          '.coverflow-canvas-wrap, .coverflow-webgl-host, .twin-canvas-host, .twin-webgl-inner, .diorama-webgl-host, .pakeliran-canvas-host, .pamomong-orb-host, .suluk-webgl-host',
         ) ||
         target.tagName === 'CANVAS'
       ) {
@@ -216,7 +222,7 @@
         cursorMode = 'drag';
       } else if (
         target.closest(
-          'button, a, [role="button"], [role="option"], input[type="range"], .wall-plate, .source-ledger-row, .suluk-line-btn, .tab-chip',
+          'button, a, summary, [role="button"], [role="tab"], [role="option"], input[type="range"], .wall-plate, .source-ledger-row, .suluk-line-btn, .tab-chip, .page-portal-card, .bridge-card, .carakan-card',
         )
       ) {
         cursorMode = 'interactive';
@@ -229,10 +235,10 @@
       const dt = lastMs > 0 ? Math.min(Math.max((now - lastMs) / 1000, 0.001), 0.05) : 1 / 60;
       lastMs = now;
 
-      const ringFactor = 1 - Math.exp(-18 * dt);
-      const auraFactor = 1 - Math.exp(-9.5 * dt);
-      const stretchFactor = 1 - Math.exp(-15 * dt);
-      const trailRates = [26, 20, 15, 11];
+      const ringFactor = 1 - Math.exp(-20 * dt);
+      const auraFactor = 1 - Math.exp(-10.5 * dt);
+      const stretchFactor = 1 - Math.exp(-16 * dt);
+      const trailRates = [30, 24, 19, 15, 11.5, 8.5];
 
       const dxRing = targetX - ringX;
       const dyRing = targetY - ringY;
@@ -243,10 +249,15 @@
 
       let prevX = targetX;
       let prevY = targetY;
-      for (let i = 0; i < 4; i++) {
+      for (let i = 0; i < 6; i++) {
         const f = 1 - Math.exp(-trailRates[i] * dt);
-        trailPts[i].x += (prevX - trailPts[i].x) * f;
-        trailPts[i].y += (prevY - trailPts[i].y) * f;
+        const dxT = prevX - trailPts[i].x;
+        const dyT = prevY - trailPts[i].y;
+        trailPts[i].x += dxT * f;
+        trailPts[i].y += dyT * f;
+        if (Math.hypot(dxT, dyT) > 0.6) {
+          trailPts[i].angle = (Math.atan2(dyT, dxT) * 180) / Math.PI;
+        }
         prevX = trailPts[i].x;
         prevY = trailPts[i].y;
       }
@@ -255,13 +266,22 @@
       if (vel > 1.2) {
         smoothVelAngle = (Math.atan2(dyRing, dxRing) * 180) / Math.PI;
       }
-      const targetStretch = cursorMode === 'default' ? Math.min(vel * 0.0042, 0.22) : 0;
+      const targetLean = Math.max(-12, Math.min(12, dxRing * 0.35));
+      smoothNibLean += (targetLean - smoothNibLean) * stretchFactor;
+
+      const targetStretch = cursorMode === 'default' ? Math.min(vel * 0.0046, 0.24) : 0;
       smoothStretch += (targetStretch - smoothStretch) * stretchFactor;
+
+      if (nibSvgEl) {
+        const pressTilt = pressed ? -10 : 0;
+        const pressScale = pressed ? 0.84 : cursorMode === 'drag' ? 0.72 : 1;
+        nibSvgEl.style.transform = `rotate(${(smoothNibLean + pressTilt).toFixed(2)}deg) scale(${pressScale})`;
+      }
 
       if (ringEl) {
         if (smoothStretch > 0.005) {
           const sx = (1 + smoothStretch).toFixed(3);
-          const sy = (1 - smoothStretch * 0.42).toFixed(3);
+          const sy = (1 - smoothStretch * 0.44).toFixed(3);
           ringEl.style.transform = `translate3d(${ringX.toFixed(2)}px, ${ringY.toFixed(2)}px, 0) rotate(${smoothVelAngle.toFixed(1)}deg) scale(${sx}, ${sy})`;
         } else {
           ringEl.style.transform = `translate3d(${ringX.toFixed(2)}px, ${ringY.toFixed(2)}px, 0)`;
@@ -271,19 +291,21 @@
         auraEl.style.transform = `translate3d(${auraX.toFixed(2)}px, ${auraY.toFixed(2)}px, 0)`;
       }
 
-      const tNodes = [trail0, trail1, trail2, trail3];
-      for (let i = 0; i < 4; i++) {
+      const tNodes = [trail0, trail1, trail2, trail3, trail4, trail5];
+      for (let i = 0; i < 6; i++) {
         const node = tNodes[i];
         if (!node) continue;
         const dist = Math.hypot(trailPts[i].x - targetX, trailPts[i].y - targetY);
         const alpha =
-          cursorMode === 'text' ? 0 : Math.min(0.46 - i * 0.07, Math.max(0, (dist - 3) * 0.024));
-        node.style.transform = `translate3d(${trailPts[i].x.toFixed(2)}px, ${trailPts[i].y.toFixed(2)}px, 0) scale(${(1 - i * 0.16).toFixed(2)})`;
+          cursorMode === 'text' ? 0 : Math.min(0.62 - i * 0.08, Math.max(0, (dist - 2.5) * 0.032));
+        const baseScale = Math.max(0.36, 1.04 - i * 0.12);
+        const speedStretch = Math.min(1.85, 1 + dist * 0.018);
+        node.style.transform = `translate3d(${trailPts[i].x.toFixed(2)}px, ${trailPts[i].y.toFixed(2)}px, 0) rotate(${trailPts[i].angle.toFixed(1)}deg) scale(${(baseScale * speedStretch).toFixed(2)}, ${baseScale.toFixed(2)})`;
         node.style.opacity = alpha.toFixed(2);
       }
 
-      const remaining = Math.hypot(targetX - trailPts[3].x, targetY - trailPts[3].y);
-      if (remaining > 0.28 || smoothStretch > 0.006 || pressed) {
+      const remaining = Math.hypot(targetX - trailPts[5].x, targetY - trailPts[5].y);
+      if (remaining > 0.25 || smoothStretch > 0.005 || Math.abs(smoothNibLean) > 0.25 || pressed) {
         rafId = window.requestAnimationFrame(tick);
       } else {
         rafId = null;
@@ -427,7 +449,7 @@
   </div>
 {/if}
 
-<!-- Kursor Tematik KELIR: Pahat Kaligrafi Halus, Lensa Orbital Adaptif & Denyar Harmonik -->
+<!-- Kursor Tematik KELIR: Cucuk Canting-Keris Ukiran, Bidik Cakra Viewfinder, Giroskop 3D & Spark Jejak Kawung -->
 {#if enabled}
   <div
     class="kelir-cursor-layer"
@@ -443,43 +465,60 @@
     <div class="kelir-cursor-trail" bind:this={trail1}></div>
     <div class="kelir-cursor-trail" bind:this={trail2}></div>
     <div class="kelir-cursor-trail" bind:this={trail3}></div>
+    <div class="kelir-cursor-trail" bind:this={trail4}></div>
+    <div class="kelir-cursor-trail" bind:this={trail5}></div>
 
     <div class="kelir-cursor-ring" bind:this={ringEl}>
       <div class="kelir-ring-core">
         <span class="kelir-ring-lens"></span>
+        <svg class="kelir-brackets-svg" viewBox="0 0 48 48" fill="none">
+          <path d="M13 6H6v7" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+          <path d="M35 6h7v7" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+          <path d="M6 35v7h7" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+          <path d="M42 35v7h-7" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+          <polygon points="24,1.8 25.8,3.6 24,5.4 22.2,3.6" fill="currentColor" />
+          <polygon points="24,42.6 25.8,44.4 24,46.2 22.2,44.4" fill="currentColor" />
+        </svg>
         <span class="kelir-ring-drag-chevrons">
-          <svg viewBox="0 0 12 12" fill="none"><path d="M7.5 2.5L4 6l3.5 3.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          <svg viewBox="0 0 12 12" fill="none"><path d="M4.5 2.5L8 6l-3.5 3.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <svg viewBox="0 0 12 12" fill="none"><path d="M7.5 2.5L4 6l3.5 3.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <svg viewBox="0 0 12 12" fill="none"><path d="M4.5 2.5L8 6l-3.5 3.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
         </span>
-        <svg class="kelir-cakra-svg" viewBox="0 0 56 56" fill="none">
-          <circle cx="28" cy="28" r="24" stroke="currentColor" stroke-width="1" stroke-dasharray="22 8 6 8" stroke-linecap="round" />
-          <circle cx="28" cy="28" r="18" stroke="currentColor" stroke-width="0.7" stroke-opacity="0.45" />
-          <circle cx="28" cy="4" r="1.4" fill="currentColor" />
-          <circle cx="28" cy="52" r="1.4" fill="currentColor" />
+        <svg class="kelir-cakra-svg" viewBox="0 0 60 60" fill="none">
+          <g class="kelir-cakra-outer">
+            <circle cx="30" cy="30" r="25" stroke="currentColor" stroke-width="1.15" stroke-dasharray="18 7 4 7" stroke-linecap="round" />
+            <polygon points="30,2.5 32.3,4.8 30,7.1 27.7,4.8" fill="currentColor" />
+            <polygon points="30,52.9 32.3,55.2 30,57.5 27.7,55.2" fill="currentColor" />
+          </g>
+          <g class="kelir-cakra-inner">
+            <circle cx="30" cy="30" r="19" stroke="currentColor" stroke-width="0.9" stroke-opacity="0.72" stroke-dasharray="5 6" />
+            <circle cx="11" cy="30" r="1.4" fill="currentColor" />
+            <circle cx="49" cy="30" r="1.4" fill="currentColor" />
+          </g>
         </svg>
       </div>
     </div>
 
     <div class="kelir-cursor-nib" bind:this={nibEl}>
-      <svg class="kelir-nib-svg" viewBox="0 0 22 22" fill="none">
+      <svg class="kelir-nib-svg" bind:this={nibSvgEl} viewBox="0 0 28 28" fill="none">
         <path
-          d="M2 2 L16.2 9.2 L10.2 11.4 L8 17.4 Z"
+          d="M2 2 L20.2 9.4 L14.4 11.8 L17.6 15 L12 14.3 L9.4 20.8 L7.4 13.8 Z"
           class="kelir-nib-halo"
-          stroke-width="2.6"
+          stroke-width="2.9"
           stroke-linejoin="round"
         />
         <path
-          d="M2 2 L16.2 9.2 L10.2 11.4 L8 17.4 Z"
+          d="M2 2 L20.2 9.4 L14.4 11.8 L17.6 15 L12 14.3 L9.4 20.8 L7.4 13.8 Z"
           class="kelir-nib-body"
-          stroke-width="1.15"
+          stroke-width="1.2"
           stroke-linejoin="round"
         />
-        <circle cx="7.8" cy="7.8" r="1.35" class="kelir-nib-jewel" />
+        <path d="M3.2 3.2 L12.2 12.2" class="kelir-nib-spine" stroke-width="1.1" stroke-linecap="round" />
+        <polygon points="9.2,6.4 11.5,8.7 9.2,11 6.9,8.7" class="kelir-nib-jewel" />
       </svg>
       {#if cursorMode === 'drag'}
-        <span class="kelir-cursor-glyph">GESER</span>
+        <span class="kelir-cursor-glyph">GESER &lt;&gt;</span>
       {:else if cursorMode === 'canvas'}
-        <span class="kelir-cursor-glyph">3D ORBIT</span>
+        <span class="kelir-cursor-glyph">ORBIT 3D</span>
       {/if}
     </div>
 

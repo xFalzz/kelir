@@ -6143,7 +6143,10 @@ html.has-kelir-cursor body,
 html.has-kelir-cursor button,
 html.has-kelir-cursor a,
 html.has-kelir-cursor select,
+html.has-kelir-cursor summary,
+html.has-kelir-cursor label,
 html.has-kelir-cursor [role='button'],
+html.has-kelir-cursor [role='tab'],
 html.has-kelir-cursor [role='option'],
 html.has-kelir-cursor input[type='range'],
 html.has-kelir-cursor canvas {
@@ -6319,48 +6322,57 @@ html[data-theme='malam'] .kelir-scroll-rail.is-dragging .kelir-scroll-track {
   position: fixed;
   top: 0;
   left: 0;
-  width: 144px;
-  height: 144px;
-  margin: -72px 0 0 -72px;
+  width: 176px;
+  height: 176px;
+  margin: -88px 0 0 -88px;
   border-radius: 50%;
   background: radial-gradient(
     circle,
-    rgba(209, 73, 27, 0.05) 0%,
-    rgba(154, 108, 29, 0.025) 42%,
-    transparent 68%
+    rgba(176, 56, 18, 0.085) 0%,
+    rgba(154, 108, 29, 0.04) 44%,
+    transparent 70%
   );
   will-change: transform, opacity;
-  transition: opacity 0.25s ease;
+  transition: opacity 0.25s ease, transform 0.2s ease;
 }
 
 .kelir-cursor-layer[data-theme='malam'] .kelir-cursor-aura {
-  width: 164px;
-  height: 164px;
-  margin: -82px 0 0 -82px;
+  width: 210px;
+  height: 210px;
+  margin: -105px 0 0 -105px;
   background: radial-gradient(
     circle,
-    rgba(240, 109, 60, 0.13) 0%,
-    rgba(224, 179, 90, 0.045) 45%,
-    transparent 70%
+    rgba(240, 109, 60, 0.16) 0%,
+    rgba(224, 179, 90, 0.065) 45%,
+    transparent 72%
   );
 }
 
+.kelir-cursor-layer[data-mode='interactive'] .kelir-cursor-aura {
+  opacity: 0.92;
+}
+
 .kelir-cursor-layer[data-mode='text'] .kelir-cursor-aura {
-  opacity: 0.25;
+  opacity: 0.22;
 }
 
 .kelir-cursor-trail {
   position: fixed;
   top: 0;
   left: 0;
-  width: 4.5px;
-  height: 4.5px;
-  margin: -2.25px 0 0 -2.25px;
-  border-radius: 999px;
-  background: radial-gradient(circle, var(--accent-gold) 0%, var(--accent-ember) 100%);
+  width: 8px;
+  height: 5px;
+  margin: -2.5px 0 0 -4px;
+  clip-path: polygon(0 50%, 38% 0, 100% 50%, 38% 100%);
+  background: linear-gradient(90deg, var(--accent-ember) 0%, var(--accent-gold) 100%);
   opacity: 0;
   will-change: transform, opacity;
-  box-shadow: 0 0 6px var(--ember-border);
+  filter: drop-shadow(0 0 4px rgba(176, 56, 18, 0.45));
+}
+
+.kelir-cursor-layer[data-theme='malam'] .kelir-cursor-trail {
+  background: linear-gradient(90deg, #f06d3c 0%, #fde68a 100%);
+  filter: drop-shadow(0 0 5px rgba(240, 109, 60, 0.6));
 }
 
 .kelir-cursor-ring {
@@ -6377,10 +6389,10 @@ html[data-theme='malam'] .kelir-scroll-rail.is-dragging .kelir-scroll-track {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 30px;
-  height: 30px;
-  margin: -15px 0 0 -15px;
-  color: rgba(154, 108, 29, 0.65);
+  width: 34px;
+  height: 34px;
+  margin: -17px 0 0 -17px;
+  color: rgba(120, 80, 11, 0.72);
   transition:
     width 0.28s var(--ease-expo),
     height 0.28s var(--ease-expo),
@@ -6391,14 +6403,14 @@ html[data-theme='malam'] .kelir-scroll-rail.is-dragging .kelir-scroll-track {
 }
 
 .kelir-cursor-layer[data-theme='malam'] .kelir-ring-core {
-  color: rgba(224, 179, 90, 0.72);
+  color: rgba(224, 179, 90, 0.78);
 }
 
 .kelir-ring-lens {
   position: absolute;
   inset: 0;
   border-radius: 999px;
-  border: 1.15px solid currentColor;
+  border: 1px dashed currentColor;
   background: transparent;
   box-shadow: 0 0 0 0 transparent;
   transition:
@@ -6410,11 +6422,21 @@ html[data-theme='malam'] .kelir-scroll-rail.is-dragging .kelir-scroll-track {
     opacity 0.2s ease;
 }
 
+.kelir-brackets-svg {
+  position: absolute;
+  inset: -4px;
+  width: calc(100% + 8px);
+  height: calc(100% + 8px);
+  opacity: 0;
+  transform: scale(0.66) rotate(-18deg);
+  transition: opacity 0.22s ease, transform 0.3s var(--ease-expo);
+}
+
 .kelir-ring-drag-chevrons {
   position: relative;
   z-index: 1;
   width: 100%;
-  padding: 0 7px;
+  padding: 0 8px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -6424,63 +6446,83 @@ html[data-theme='malam'] .kelir-scroll-rail.is-dragging .kelir-scroll-track {
 }
 
 .kelir-ring-drag-chevrons svg {
-  width: 11px;
-  height: 11px;
+  width: 12px;
+  height: 12px;
 }
 
 .kelir-cakra-svg {
   position: absolute;
-  inset: -4px;
-  width: calc(100% + 8px);
-  height: calc(100% + 8px);
+  inset: -5px;
+  width: calc(100% + 10px);
+  height: calc(100% + 10px);
   opacity: 0;
   transform: scale(0.72);
   transition: opacity 0.24s ease, transform 0.3s var(--ease-expo);
 }
 
+.kelir-cakra-outer,
+.kelir-cakra-inner {
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
 @keyframes kelirGimbalSpin {
   from {
-    transform: scale(1) rotate(0deg);
+    transform: rotate(0deg);
   }
   to {
-    transform: scale(1) rotate(360deg);
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes kelirGimbalSpinReverse {
+  from {
+    transform: rotate(360deg);
+  }
+  to {
+    transform: rotate(0deg);
   }
 }
 
 .kelir-cursor-layer[data-mode='interactive'] .kelir-ring-core {
-  width: 42px;
-  height: 42px;
-  margin: -21px 0 0 -21px;
+  width: 44px;
+  height: 44px;
+  margin: -22px 0 0 -22px;
   color: var(--accent-ember);
 }
 
 .kelir-cursor-layer[data-mode='interactive'] .kelir-ring-lens {
-  border-width: 1.35px;
-  background: rgba(209, 73, 27, 0.06);
-  box-shadow: 0 0 18px rgba(209, 73, 27, 0.14);
+  opacity: 0.25;
+  border-style: solid;
+  background: rgba(176, 56, 18, 0.06);
+}
+
+.kelir-cursor-layer[data-mode='interactive'] .kelir-brackets-svg {
+  opacity: 1;
+  transform: scale(1) rotate(0deg);
 }
 
 .kelir-cursor-layer[data-theme='malam'][data-mode='interactive'] .kelir-ring-lens {
-  background: rgba(240, 109, 60, 0.12);
-  box-shadow: 0 0 22px rgba(240, 109, 60, 0.22);
+  background: rgba(240, 109, 60, 0.14);
 }
 
 .kelir-cursor-layer[data-mode='drag'] .kelir-ring-core {
-  width: 62px;
-  height: 28px;
-  margin: -14px 0 0 -31px;
+  width: 72px;
+  height: 30px;
+  margin: -15px 0 0 -36px;
   color: var(--accent-ember);
 }
 
 .kelir-cursor-layer[data-mode='drag'] .kelir-ring-lens {
-  border-width: 1.35px;
-  background: rgba(252, 250, 245, 0.88);
-  box-shadow: 0 6px 18px rgba(20, 21, 24, 0.1);
+  border-style: solid;
+  border-width: 1.45px;
+  background: rgba(252, 250, 245, 0.92);
+  box-shadow: 0 8px 22px rgba(20, 21, 24, 0.14);
 }
 
 .kelir-cursor-layer[data-theme='malam'][data-mode='drag'] .kelir-ring-lens {
-  background: rgba(26, 22, 18, 0.68);
-  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.38);
+  background: rgba(26, 22, 18, 0.78);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.44);
 }
 
 .kelir-cursor-layer[data-mode='drag'] .kelir-ring-drag-chevrons {
@@ -6489,29 +6531,37 @@ html[data-theme='malam'] .kelir-scroll-rail.is-dragging .kelir-scroll-track {
 }
 
 .kelir-cursor-layer[data-mode='canvas'] .kelir-ring-core {
-  width: 46px;
-  height: 46px;
-  margin: -23px 0 0 -23px;
+  width: 52px;
+  height: 52px;
+  margin: -26px 0 0 -26px;
   color: var(--accent-gold);
 }
 
 .kelir-cursor-layer[data-mode='canvas'] .kelir-ring-lens {
-  opacity: 0.35;
+  opacity: 0;
 }
 
 .kelir-cursor-layer[data-mode='canvas'] .kelir-cakra-svg {
   opacity: 1;
-  animation: kelirGimbalSpin 9s linear infinite;
+  transform: scale(1);
+}
+
+.kelir-cursor-layer[data-mode='canvas'] .kelir-cakra-outer {
+  animation: kelirGimbalSpin 8.5s linear infinite;
+}
+
+.kelir-cursor-layer[data-mode='canvas'] .kelir-cakra-inner {
+  animation: kelirGimbalSpinReverse 5.5s linear infinite;
 }
 
 .kelir-cursor-layer[data-mode='text'] .kelir-ring-core,
 .kelir-cursor-layer[data-mode='text'] .kelir-cursor-nib {
   opacity: 0;
-  transform: scale(0.55);
+  transform: scale(0.48);
 }
 
 .kelir-cursor-layer.is-pressed .kelir-ring-core {
-  transform: scale(0.78);
+  transform: scale(0.76);
 }
 
 .kelir-cursor-layer[data-mode='drag'].is-pressed .kelir-ring-core {
@@ -6522,35 +6572,31 @@ html[data-theme='malam'] .kelir-scroll-rail.is-dragging .kelir-scroll-track {
   position: fixed;
   top: 0;
   left: 0;
-  width: 22px;
-  height: 22px;
-  margin: -1.5px 0 0 -1.5px;
+  width: 28px;
+  height: 28px;
+  margin: -2px 0 0 -2px;
   will-change: transform, opacity;
-  transition: opacity 0.16s ease, transform 0.16s var(--ease-expo);
+  transition: opacity 0.16s ease;
 }
 
 .kelir-nib-svg {
-  width: 20px;
-  height: 20px;
+  width: 26px;
+  height: 26px;
   display: block;
   overflow: visible;
-  filter: drop-shadow(0 2px 6px rgba(18, 19, 22, 0.24));
-  transition: transform 0.16s var(--ease-expo);
+  transform-origin: 2px 2px;
+  filter: drop-shadow(0 3px 8px rgba(18, 19, 22, 0.28));
+  transition: opacity 0.16s ease;
 }
 
 .kelir-cursor-layer[data-mode='drag'] .kelir-nib-svg {
-  transform: scale(0.65);
-  opacity: 0.72;
-}
-
-.kelir-cursor-layer.is-pressed .kelir-nib-svg {
-  transform: scale(0.84) rotate(-6deg);
+  opacity: 0.78;
 }
 
 .kelir-nib-halo {
   fill: none;
   stroke: var(--pill-cta-fg);
-  stroke-opacity: 0.72;
+  stroke-opacity: 0.82;
 }
 
 .kelir-nib-body {
@@ -6558,24 +6604,37 @@ html[data-theme='malam'] .kelir-scroll-rail.is-dragging .kelir-scroll-track {
   stroke: var(--accent-gold);
 }
 
+.kelir-nib-spine {
+  fill: none;
+  stroke: var(--accent-gold);
+  stroke-opacity: 0.85;
+}
+
 .kelir-nib-jewel {
   fill: var(--accent-ember);
+  stroke: var(--pill-cta-fg);
+  stroke-width: 0.65;
+  transition: fill 0.15s ease;
+}
+
+.kelir-cursor-layer.is-pressed .kelir-nib-jewel {
+  fill: var(--accent-gold);
 }
 
 .kelir-cursor-glyph {
   position: absolute;
-  left: 22px;
-  top: 16px;
+  left: 25px;
+  top: 19px;
   font-family: var(--font-mono);
   font-size: 0.56rem;
   font-weight: 700;
   letter-spacing: 0.09em;
-  padding: 2px 8px;
+  padding: 2px 9px;
   border-radius: 999px;
   background: var(--bg-pill);
   border: 1px solid var(--ember-border);
   color: var(--text-primary);
-  box-shadow: 0 6px 16px rgba(18, 19, 22, 0.14);
+  box-shadow: 0 6px 18px rgba(18, 19, 22, 0.16);
   white-space: nowrap;
 }
 
@@ -6583,9 +6642,9 @@ html[data-theme='malam'] .kelir-scroll-rail.is-dragging .kelir-scroll-track {
   position: fixed;
   top: 0;
   left: 0;
-  width: 48px;
-  height: 48px;
-  margin: -24px 0 0 -24px;
+  width: 52px;
+  height: 52px;
+  margin: -26px 0 0 -26px;
   pointer-events: none;
 }
 
@@ -6594,17 +6653,19 @@ html[data-theme='malam'] .kelir-scroll-rail.is-dragging .kelir-scroll-track {
   content: '';
   position: absolute;
   inset: 0;
-  border-radius: 50%;
   opacity: 0;
-  transform: scale(0.25);
 }
 
 .kelir-cursor-ripple::before {
-  border: 1.5px solid var(--accent-ember);
+  border-radius: 50%;
+  border: 1.6px solid var(--accent-ember);
+  transform: scale(0.24);
 }
 
 .kelir-cursor-ripple::after {
-  border: 1px solid var(--accent-gold);
+  border-radius: 7px;
+  border: 1.2px solid var(--accent-gold);
+  transform: rotate(45deg) scale(0.24);
 }
 
 .kelir-cursor-ripple.is-active::before {
@@ -6612,28 +6673,28 @@ html[data-theme='malam'] .kelir-scroll-rail.is-dragging .kelir-scroll-track {
 }
 
 .kelir-cursor-ripple.is-active::after {
-  animation: kelirRippleOuter 0.6s var(--ease-expo) 0.05s forwards;
+  animation: kelirRippleDiamond 0.58s var(--ease-expo) 0.04s forwards;
 }
 
 @keyframes kelirRippleInner {
   0% {
-    opacity: 0.88;
-    transform: scale(0.26);
+    opacity: 0.9;
+    transform: scale(0.24);
   }
   100% {
     opacity: 0;
-    transform: scale(1.45);
+    transform: scale(1.48);
   }
 }
 
-@keyframes kelirRippleOuter {
+@keyframes kelirRippleDiamond {
   0% {
-    opacity: 0.58;
-    transform: scale(0.32);
+    opacity: 0.68;
+    transform: rotate(0deg) scale(0.28);
   }
   100% {
     opacity: 0;
-    transform: scale(2.05);
+    transform: rotate(90deg) scale(1.75);
   }
 }
 
