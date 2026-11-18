@@ -866,7 +866,7 @@ export function buildSriRamaWayang3D(): WayangSriRamaRig {
     buatKakiKsatria('rama-kaki-kanan', 0.14, -0.014),
   );
 
-  // 8. Lengan Kanan Berartikulasi (Memegang Busur Gandewa)
+  // 8. Lengan Kanan Berartikulasi (Memegang Busur Gandewa & Tali Nock Hidup)
   const lenganKanan = new THREE.Group();
   lenganKanan.position.set(-0.27, 0.56, 0.024);
   lenganKanan.rotation.z = -0.34;
@@ -878,6 +878,14 @@ export function buildSriRamaWayang3D(): WayangSriRamaRig {
   );
   bahuPinKanan.rotation.x = Math.PI / 2;
   lenganKanan.add(bahuPinKanan);
+
+  const kelatBahuKanan = new THREE.Mesh(
+    new THREE.TorusGeometry(0.036, 0.011, 6, 14),
+    pradaMurniMat,
+  );
+  kelatBahuKanan.rotation.x = Math.PI / 2;
+  kelatBahuKanan.position.set(0, -0.09, 0);
+  lenganKanan.add(kelatBahuKanan);
 
   const lenganAtasGeo = new THREE.CapsuleGeometry(0.032, 0.34, 6, 10);
   lenganAtasGeo.scale(1, 1, 0.42);
@@ -898,7 +906,15 @@ export function buildSriRamaWayang3D(): WayangSriRamaRig {
   lenganBawahKanan.position.set(0, -0.18, 0);
   sikuKanan.add(lenganBawahKanan);
 
-  // Busur Pusaka Gandewa Berukir
+  const gelangKanan = new THREE.Mesh(
+    new THREE.TorusGeometry(0.028, 0.009, 6, 12),
+    pradaMurniMat,
+  );
+  gelangKanan.rotation.x = Math.PI / 2;
+  gelangKanan.position.set(0, -0.31, 0);
+  sikuKanan.add(gelangKanan);
+
+  // Busur Pusaka Gandewa Berukir + Tali Tarik & Panah Guwawijaya Siap Bidik
   const busur = new THREE.Group();
   busur.position.set(-0.04, -0.36, 0.01);
   sikuKanan.add(busur);
@@ -913,48 +929,93 @@ export function buildSriRamaWayang3D(): WayangSriRamaRig {
     new THREE.Vector3(0.12, -0.58, 0),
   ]);
   const busurArc = new THREE.Mesh(
-    new THREE.TubeGeometry(gandewaCurve, 20, 0.02, 8, false),
+    new THREE.TubeGeometry(gandewaCurve, 22, 0.021, 8, false),
     pradaMurniMat,
   );
   busur.add(busurArc);
 
-  const taliBusur = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.005, 0.005, 1.14, 6),
-    gegelKuninganMat,
-  );
-  taliBusur.position.set(0.11, 0, 0);
-  busur.add(taliBusur);
+  for (const ujungY of [0.58, -0.58]) {
+    const pucuk = new THREE.Mesh(
+      new THREE.ConeGeometry(0.022, 0.075, 6),
+      gegelKuninganMat,
+    );
+    pucuk.position.set(0.12, ujungY, 0);
+    pucuk.rotation.z = ujungY > 0 ? -0.45 : Math.PI + 0.45;
+    busur.add(pucuk);
+  }
+
+  const taliSegGeo = new THREE.CylinderGeometry(0.0045, 0.0045, 1, 6);
+  const taliAtas = new THREE.Mesh(taliSegGeo, gegelKuninganMat);
+  taliAtas.name = 'busur-tali-atas';
+  taliAtas.position.set(0.12, 0.29, 0);
+  taliAtas.scale.set(1, 0.58, 1);
+  busur.add(taliAtas);
+
+  const taliBawah = new THREE.Mesh(taliSegGeo, gegelKuninganMat);
+  taliBawah.name = 'busur-tali-bawah';
+  taliBawah.position.set(0.12, -0.29, 0);
+  taliBawah.scale.set(1, 0.58, 1);
+  busur.add(taliBawah);
+
+  const panahNockGroup = new THREE.Group();
+  panahNockGroup.name = 'busur-panah';
+  panahNockGroup.position.set(0, 0, 0.01);
+  busur.add(panahNockGroup);
 
   const batangPanah = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.009, 0.009, 0.68, 6),
+    new THREE.CylinderGeometry(0.009, 0.009, 0.72, 8),
     pradaMurniMat,
   );
   batangPanah.rotation.z = Math.PI / 2;
-  batangPanah.position.set(-0.14, 0, 0.01);
-  busur.add(batangPanah);
+  batangPanah.position.set(-0.15, 0, 0);
+  panahNockGroup.add(batangPanah);
 
+  const mataPanahMat = new THREE.MeshStandardMaterial({
+    color: 0xffe488,
+    emissive: 0xff7b1c,
+    emissiveIntensity: 0.45,
+    metalness: 0.88,
+    roughness: 0.22,
+  });
   const mataPanah = new THREE.Mesh(
-    new THREE.ConeGeometry(0.036, 0.13, 6),
+    new THREE.ConeGeometry(0.036, 0.13, 8),
+    mataPanahMat,
+  );
+  mataPanah.name = 'busur-mata-panah';
+  mataPanah.rotation.z = Math.PI / 2;
+  mataPanah.position.set(-0.52, 0, 0);
+  panahNockGroup.add(mataPanah);
+
+  const buluPanahBusur = new THREE.Mesh(
+    new THREE.ConeGeometry(0.024, 0.09, 6),
+    new THREE.MeshStandardMaterial({ color: 0xc9351e, roughness: 0.45 }),
+  );
+  buluPanahBusur.rotation.z = -Math.PI / 2;
+  buluPanahBusur.position.set(0.18, 0, 0);
+  panahNockGroup.add(buluPanahBusur);
+
+  const penjepitTudingKanan = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.015, 0.015, 0.04, 8),
     gegelKuninganMat,
   );
-  mataPanah.rotation.z = Math.PI / 2;
-  mataPanah.position.set(-0.5, 0, 0.01);
-  busur.add(mataPanah);
+  penjepitTudingKanan.position.set(-0.01, -0.35, -0.01);
+  sikuKanan.add(penjepitTudingKanan);
 
   const tudingKanan = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.009, 0.012, 1.12, 6),
+    new THREE.CylinderGeometry(0.008, 0.013, 1.08, 6),
     tandukGapitMat,
   );
-  tudingKanan.position.set(-0.04, -0.9, -0.01);
+  tudingKanan.position.set(-0.04, -0.88, -0.01);
   tudingKanan.rotation.z = 0.08;
   sikuKanan.add(tudingKanan);
 
-  // 9. Lengan Kiri Berartikulasi
+  // 9. Lengan Kiri Berartikulasi (Tangan Belakang / Solah Sembah)
   const lenganKiri = new THREE.Group();
   lenganKiri.position.set(0.27, 0.56, -0.024);
   lenganKiri.rotation.z = 0.4;
   badan.add(lenganKiri);
   lenganKiri.add(bahuPinKanan.clone());
+  lenganKiri.add(kelatBahuKanan.clone());
 
   const lenganAtasKiri = new THREE.Mesh(lenganAtasGeo.clone(), kulitPradaMat);
   lenganAtasKiri.position.set(0, -0.18, 0);
@@ -969,9 +1030,23 @@ export function buildSriRamaWayang3D(): WayangSriRamaRig {
   const lenganBawahKiri = new THREE.Mesh(lenganBawahGeo.clone(), kulitPradaMat);
   lenganBawahKiri.position.set(0, -0.18, 0);
   sikuKiri.add(lenganBawahKiri);
+  sikuKiri.add(gelangKanan.clone());
+
+  const jemariKiri = new THREE.Mesh(
+    new THREE.ConeGeometry(0.022, 0.11, 6),
+    kulitPradaMat,
+  );
+  jemariKiri.scale.z = 0.4;
+  jemariKiri.position.set(0.01, -0.38, 0);
+  jemariKiri.rotation.z = Math.PI + 0.25;
+  sikuKiri.add(jemariKiri);
+
+  const penjepitTudingKiri = penjepitTudingKanan.clone();
+  penjepitTudingKiri.position.set(0, -0.35, -0.01);
+  sikuKiri.add(penjepitTudingKiri);
 
   const tudingKiri = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.009, 0.012, 1.05, 6),
+    new THREE.CylinderGeometry(0.008, 0.013, 1.04, 6),
     tandukGapitMat,
   );
   tudingKiri.position.set(0, -0.84, -0.01);
@@ -1079,6 +1154,42 @@ export function buildKidangKencana3D(): KidangKencanaRig {
   bodyMesh.castShadow = true;
   badan.add(bodyMesh);
 
+  // Ragam hias ceplok prada emas di lambung & punggung Kidang Kencana
+  for (const [sx, sy, sr] of [
+    [-0.14, 0.27, 0.022],
+    [0.02, 0.28, 0.026],
+    [0.18, 0.26, 0.022],
+    [0.08, 0.16, 0.018],
+  ]) {
+    const ceplok = new THREE.Mesh(
+      new THREE.CylinderGeometry(sr, sr, 0.036, 8),
+      tandukEmasMat,
+    );
+    ceplok.rotation.x = Math.PI / 2;
+    ceplok.position.set(sx, sy, 0);
+    badan.add(ceplok);
+  }
+
+  // Ekor Kidang Kencana berartikulasi yang melenggang saat melompat
+  const ekorGrup = new THREE.Group();
+  ekorGrup.name = 'kidang-ekor';
+  ekorGrup.position.set(0.42, 0.28, 0);
+  const ekorBatang = new THREE.Mesh(
+    new THREE.ConeGeometry(0.038, 0.17, 6),
+    emasKidangMat,
+  );
+  ekorBatang.scale.z = 0.36;
+  ekorBatang.position.set(0.04, 0.07, 0);
+  ekorBatang.rotation.z = -0.58;
+  const ekorUjung = new THREE.Mesh(
+    new THREE.SphereGeometry(0.026, 8, 6),
+    tandukEmasMat,
+  );
+  ekorUjung.scale.set(1.2, 0.85, 0.45);
+  ekorUjung.position.set(0.09, 0.13, 0);
+  ekorGrup.add(ekorBatang, ekorUjung);
+  badan.add(ekorGrup);
+
   const leherKepala = new THREE.Group();
   leherKepala.position.set(-0.34, 0.28, 0.006);
   badan.add(leherKepala);
@@ -1118,14 +1229,41 @@ export function buildKidangKencana3D(): KidangKencanaRig {
   kalungGenta.position.set(-0.04, 0.08, 0);
   leherKepala.add(kalungGenta);
 
+  // Bandul genta kuningan di leher kijang
+  const gentaBandul = new THREE.Mesh(
+    new THREE.SphereGeometry(0.024, 8, 8),
+    tandukEmasMat,
+  );
+  gentaBandul.position.set(-0.11, 0.03, 0.012);
+  leherKepala.add(gentaBandul);
+
+  const telingaGrup = new THREE.Group();
+  telingaGrup.name = 'kidang-telinga';
+  telingaGrup.position.set(0.01, 0.43, 0);
   const telingaMesh = new THREE.Mesh(
-    new THREE.ConeGeometry(0.036, 0.16, 6),
+    new THREE.ConeGeometry(0.036, 0.17, 6),
     emasKidangMat,
   );
   telingaMesh.rotation.z = -0.82;
   telingaMesh.scale.z = 0.35;
-  telingaMesh.position.set(0.02, 0.44, 0);
-  leherKepala.add(telingaMesh);
+  telingaMesh.position.set(0.04, 0.02, 0.01);
+  const telingaBelakang = new THREE.Mesh(
+    new THREE.ConeGeometry(0.03, 0.15, 6),
+    tandukEmasMat,
+  );
+  telingaBelakang.rotation.z = -0.62;
+  telingaBelakang.scale.z = 0.32;
+  telingaBelakang.position.set(0.01, 0.04, -0.014);
+  telingaGrup.add(telingaMesh, telingaBelakang);
+  leherKepala.add(telingaGrup);
+
+  const jamangDahi = new THREE.Mesh(
+    new THREE.OctahedronGeometry(0.024, 0),
+    tandukEmasMat,
+  );
+  jamangDahi.scale.set(0.9, 1.3, 0.45);
+  jamangDahi.position.set(-0.09, 0.43, 0.012);
+  leherKepala.add(jamangDahi);
 
   const mataKidang = new THREE.Mesh(
     new THREE.SphereGeometry(0.016, 8, 8),
@@ -1162,6 +1300,13 @@ export function buildKidangKencana3D(): KidangKencanaRig {
 
   const buatPasangKakiKijang = (arahDepan: boolean): THREE.Group => {
     const grup = new THREE.Group();
+    const engselPin = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.022, 0.022, 0.048, 8),
+      tandukEmasMat,
+    );
+    engselPin.rotation.x = Math.PI / 2;
+    grup.add(engselPin);
+
     for (const [zOff, rotOffset] of [
       [0.016, arahDepan ? -0.25 : 0.22],
       [-0.016, arahDepan ? 0.12 : -0.15],
@@ -1184,6 +1329,13 @@ export function buildKidangKencana3D(): KidangKencanaRig {
       betis.position.set(arahDepan ? -0.04 : 0.04, -0.29, zOff);
       betis.rotation.z = arahDepan ? -0.22 : 0.22;
 
+      const binggelKijang = new THREE.Mesh(
+        new THREE.TorusGeometry(0.021, 0.007, 6, 10),
+        tandukEmasMat,
+      );
+      binggelKijang.rotation.x = Math.PI / 2;
+      binggelKijang.position.set(arahDepan ? -0.065 : 0.025, -0.38, zOff);
+
       const teracak = new THREE.Mesh(
         new THREE.ConeGeometry(0.026, 0.065, 6),
         teracakGelapMat,
@@ -1191,7 +1343,7 @@ export function buildKidangKencana3D(): KidangKencanaRig {
       teracak.rotation.z = arahDepan ? Math.PI * 0.42 : Math.PI * 0.55;
       teracak.position.set(arahDepan ? -0.08 : 0.02, -0.41, zOff);
 
-      tungkai.add(paha, betis, teracak);
+      tungkai.add(paha, betis, binggelKijang, teracak);
       grup.add(tungkai);
     }
     return grup;
@@ -1293,12 +1445,69 @@ export function buildGunungan3D(): THREE.Group {
   banaspatiRing.position.set(0, -0.05, 0);
   grup.add(banaspatiRing);
 
+  // Sepasang mata Banaspati & Gapura Keraton bertingkat di pangkal Gunungan
+  for (const gx of [-0.045, 0.045]) {
+    const mataBanaspati = new THREE.Mesh(
+      new THREE.SphereGeometry(0.018, 8, 8),
+      emasReliefMat,
+    );
+    mataBanaspati.position.set(gx, -0.02, 0.02);
+    grup.add(mataBanaspati);
+  }
+
+  for (const [gw, gh, gy] of [
+    [0.52, 0.09, -0.78],
+    [0.4, 0.08, -0.68],
+    [0.28, 0.14, -0.54],
+  ]) {
+    const undakGapura = new THREE.Mesh(
+      new THREE.BoxGeometry(gw, gh, 0.042),
+      emasReliefMat,
+    );
+    undakGapura.position.set(0, gy, 0.008);
+    grup.add(undakGapura);
+  }
+
+  // Sepasang penjaga gerbang & dahan Pohon Hayat Kalpataru kiri-kanan
+  for (const dir of [-1, 1]) {
+    const candiPilar = new THREE.Mesh(
+      new THREE.ConeGeometry(0.055, 0.28, 6),
+      emasReliefMat,
+    );
+    candiPilar.scale.z = 0.45;
+    candiPilar.position.set(dir * 0.26, -0.45, 0.014);
+    candiPilar.rotation.z = dir * -0.08;
+    grup.add(candiPilar);
+
+    for (const [dy, dRot, dLen] of [
+      [0.34, 0.72, 0.36],
+      [0.62, 0.62, 0.28],
+      [0.86, 0.48, 0.2],
+    ]) {
+      const dahan = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.008, 0.015, dLen, 6),
+        emasReliefMat,
+      );
+      dahan.position.set(dir * (dLen * 0.38), dy, 0.016);
+      dahan.rotation.z = dir * -dRot;
+      grup.add(dahan);
+    }
+  }
+
   const batangPohon = new THREE.Mesh(
     new THREE.CylinderGeometry(0.018, 0.032, 1.18, 8),
     emasReliefMat,
   );
   batangPohon.position.set(0, 0.56, 0.016);
   grup.add(batangPohon);
+
+  const kemuncakKayon = new THREE.Mesh(
+    new THREE.OctahedronGeometry(0.042, 0),
+    emasReliefMat,
+  );
+  kemuncakKayon.scale.set(0.75, 1.45, 0.45);
+  kemuncakKayon.position.set(0, 1.33, 0);
+  grup.add(kemuncakKayon);
 
   const gapit = new THREE.Mesh(
     new THREE.CylinderGeometry(0.018, 0.024, 2.75, 8),
@@ -1390,6 +1599,14 @@ export function buildSimpinganWayang3D(warnaKain: number, tinggiSkala = 1): THRE
   const kampuhMesh = new THREE.Mesh(kampuhGeo, dodotSimpinganMat);
   kampuhMesh.position.z = -0.013;
   grup.add(kampuhMesh);
+
+  const kalungSimpingan = new THREE.Mesh(
+    new THREE.TorusGeometry(0.11, 0.012, 6, 12),
+    kulitSimpinganMat,
+  );
+  kalungSimpingan.rotation.set(Math.PI * 0.42, 0, 0);
+  kalungSimpingan.position.set(0, 0.56, 0.012);
+  grup.add(kalungSimpingan);
 
   const gapitMat = new THREE.MeshStandardMaterial({ color: 0x241810, roughness: 0.4 });
   const gapit = new THREE.Mesh(new THREE.CylinderGeometry(0.013, 0.017, 2.2, 6), gapitMat);

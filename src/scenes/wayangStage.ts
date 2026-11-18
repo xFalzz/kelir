@@ -174,6 +174,19 @@ export class WayangStage {
   private blencongGrup!: THREE.Group;
   private nyalaIntiMesh: THREE.Mesh | null = null;
   private haloApiMesh: THREE.Mesh | null = null;
+  private simpinganList: THREE.Group[] = [];
+  private cempalaPivot: THREE.Group | null = null;
+  private kepyakPlates: THREE.Mesh[] = [];
+  private taliAtasMesh: THREE.Mesh | null = null;
+  private taliBawahMesh: THREE.Mesh | null = null;
+  private panahBusurGrup: THREE.Object3D | null = null;
+  private mataPanahBusurMat: THREE.MeshStandardMaterial | null = null;
+  private kidangEkorGrup: THREE.Object3D | null = null;
+  private kidangTelingaGrup: THREE.Object3D | null = null;
+  private bayanganRama: THREE.Mesh | null = null;
+  private bayanganKidang: THREE.Mesh | null = null;
+  private bayanganGunungan: THREE.Mesh | null = null;
+  private impakCincin: THREE.Mesh | null = null;
 
   private lampuBlencong!: THREE.SpotLight;
   private nyalaApi!: THREE.PointLight;
@@ -188,11 +201,40 @@ export class WayangStage {
   private abortCtrl = new AbortController();
   private stopObservasi: (() => void) | null = null;
   private cancelMulaiLoop: (() => void) | null = null;
-  private targetRamaX = 0.72;
-  private targetKidangX = -1.12;
+  private lastLoopMs = 0;
+
+  private targetRamaX = 0.92;
+  private targetKidangX = -1.16;
+  private baseGununganX = 2.04;
   private targetSabetan = 0;
+  private cempalaStrikeImpulse = 0;
+  private impakPulse = 0;
   private panahAktif = false;
   private progresPanah = 0;
+  private panahDari: [number, number, number] = [0.4, 0.36, 0.22];
+  private panahKe: [number, number, number] = [-1.0, -0.25, 0.16];
+
+  private gesturAktif = false;
+  private targetRamaLiftY = 0;
+  private targetRamaZ = 0.14;
+  private targetRamaYawY = -0.05;
+  private targetRamaTiltZ = 0;
+  private targetLenganKananZ = -0.34;
+  private targetSikuKananZ = 0.56;
+  private targetLenganKiriZ = 0.4;
+  private targetSikuKiriZ = -0.88;
+  private targetTarikBusur = 0;
+  private currentTarikBusur = 0;
+  private targetKidangLiftY = 0;
+  private targetKidangZ = 0.12;
+  private targetKidangYawY = 0.04;
+  private targetKidangTiltZ = 0;
+  private targetKidangNeckZ = 0;
+  private targetKidangEarPerk = 0;
+  private targetKidangTailWag = 0;
+  private targetGununganSwayZ = 0;
+  private targetGununganLiftY = 0;
+  private targetBlencongBoost = 0;
 
   constructor(container: HTMLElement) {
     this.container = container;
@@ -201,8 +243,8 @@ export class WayangStage {
     this.scene.fog = new THREE.FogExp2(0x0c0805, 0.048);
 
     this.camera = new THREE.PerspectiveCamera(40, 16 / 9, 0.1, 50);
-    this.camera.position.set(0, 0.34, 5.95);
-    this.camera.lookAt(0, 0.24, 0);
+    this.camera.position.set(0, 0.36, 6.24);
+    this.camera.lookAt(0, 0.28, 0);
 
     this.renderer = createSafeWebGLRenderer(container, {
       alpha: false,
@@ -360,13 +402,54 @@ export class WayangStage {
       this.panggungGrup.add(plunturAtas);
     }
 
-    // 3. Dua Batang Gedebog Pisang Bertingkat (Gedebog Atas & Bawah) dengan Pluntur Bambu
+    // 3. Dua Batang Gedebog Pisang Bertingkat, Umpak Tiang & Plangkan Penyangga di Panggung Pendopo
     const gedebogMat = new THREE.MeshStandardMaterial({
       color: 0x566e34,
       map: gedebogTex,
       roughness: 0.74,
       metalness: 0.05,
     });
+
+    // Alas panggung kayu jati gelap agar Kothak, Plangkan & Umpak bertumpu mantap tanpa mengambang
+    const lantaiPanggung = new THREE.Mesh(
+      new THREE.BoxGeometry(7.95, 0.24, 1.56),
+      kayuJatiUkirMat,
+    );
+    lantaiPanggung.position.set(0, -1.53, 0.24);
+    lantaiPanggung.receiveShadow = true;
+    this.panggungGrup.add(lantaiPanggung);
+
+    const lisPanggung = new THREE.Mesh(
+      new THREE.BoxGeometry(7.98, 0.04, 0.06),
+      lisPradaMat,
+    );
+    lisPanggung.position.set(0, -1.425, 1.0);
+    this.panggungGrup.add(lisPanggung);
+
+    // Umpak landasan tiang Kelir kiri-kanan
+    for (const ux of [-3.52, 3.52]) {
+      const umpak = new THREE.Mesh(
+        new THREE.BoxGeometry(0.32, 0.16, 0.32),
+        kayuJatiUkirMat,
+      );
+      umpak.position.set(ux, -1.33, -0.22);
+      const sabukUmpak = new THREE.Mesh(
+        new THREE.BoxGeometry(0.34, 0.03, 0.34),
+        lisPradaMat,
+      );
+      sabukUmpak.position.set(ux, -1.26, -0.22);
+      this.panggungGrup.add(umpak, sabukUmpak);
+    }
+
+    // Tiga penyangga plangkan/jagrag tersembunyi rapi tepat di bawah gedebog hingga lantai panggung
+    for (const px of [-2.35, 0, 2.35]) {
+      const plangkan = new THREE.Mesh(
+        new THREE.BoxGeometry(0.16, 0.22, 0.38),
+        kayuJatiUkirMat,
+      );
+      plangkan.position.set(px, -1.32, 0.12);
+      this.panggungGrup.add(plangkan);
+    }
 
     const gedebogAtas = new THREE.Mesh(
       new THREE.CylinderGeometry(0.18, 0.19, 7.1, 24),
@@ -397,59 +480,123 @@ export class WayangStage {
       this.panggungGrup.add(ikat);
     }
 
-    // 4. Kothak Wayang Kayu Jati Ukir + Kepyak Kuningan & Cempala Dalang di Sisi Kiri
+    // 4. Kothak Wayang Kayu Jati Ukir + Kepyak Kuningan Ayun & Cempala Dalang Berengsel
     const kothakGrup = new THREE.Group();
-    kothakGrup.position.set(-2.55, -1.36, 0.68);
-    kothakGrup.rotation.y = 0.22;
+    kothakGrup.position.set(-2.68, -1.09, 0.54);
+    kothakGrup.rotation.y = -0.26;
 
     const kothakBody = new THREE.Mesh(
-      new THREE.BoxGeometry(1.42, 0.64, 0.68),
+      new THREE.BoxGeometry(1.26, 0.62, 0.62),
       kayuJatiUkirMat,
     );
     kothakBody.castShadow = true;
     kothakGrup.add(kothakBody);
 
     const kothakRim = new THREE.Mesh(
-      new THREE.BoxGeometry(1.46, 0.06, 0.72),
+      new THREE.BoxGeometry(1.3, 0.06, 0.66),
       lisPradaMat,
     );
-    kothakRim.position.y = 0.31;
+    kothakRim.position.y = 0.3;
     kothakGrup.add(kothakRim);
 
-    // 4 Keping Kepyak / Keprak Kuningan tergantung di sisi kanan Kothak Wayang
-    for (let k = 0; k < 4; k++) {
-      const keping = new THREE.Mesh(
-        new THREE.BoxGeometry(0.014, 0.22, 0.16),
+    // Panel ukiran kuningan di sisi depan Kothak Wayang agar berdimensi saat disorot Blencong
+    const panelDepan = new THREE.Mesh(
+      new THREE.BoxGeometry(0.96, 0.34, 0.02),
+      lisPradaMat,
+    );
+    panelDepan.position.set(0, -0.02, 0.315);
+    const panelDalam = new THREE.Mesh(
+      new THREE.BoxGeometry(0.86, 0.24, 0.028),
+      new THREE.MeshStandardMaterial({ color: 0x5c361d, roughness: 0.45, metalness: 0.14 }),
+    );
+    panelDalam.position.set(0, -0.02, 0.32);
+    kothakGrup.add(panelDepan, panelDalam);
+
+    // Kaki sudut Kothak agar dudukan ke panggung terlihat presisi
+    for (const [fx, fz] of [
+      [-0.54, -0.22],
+      [0.54, -0.22],
+      [-0.54, 0.22],
+      [0.54, 0.22],
+    ]) {
+      const kaki = new THREE.Mesh(
+        new THREE.BoxGeometry(0.1, 0.04, 0.1),
         lisPradaMat,
       );
-      keping.position.set(0.72 + k * 0.018, 0.04 - k * 0.015, 0.06);
-      keping.rotation.z = 0.08 + k * 0.03;
+      kaki.position.set(fx, -0.31, fz);
+      kothakGrup.add(kaki);
+    }
+
+    // Batang gantungan + 4 Keping Kepyak / Keprak Kuningan yang bergetar saat Sabetan
+    const kepyakBar = new THREE.Mesh(
+      new THREE.BoxGeometry(0.06, 0.04, 0.26),
+      lisPradaMat,
+    );
+    kepyakBar.position.set(0.66, 0.19, 0.08);
+    kothakGrup.add(kepyakBar);
+
+    this.kepyakPlates = [];
+    for (let k = 0; k < 4; k++) {
+      const keping = new THREE.Mesh(
+        new THREE.BoxGeometry(0.012, 0.23, 0.17),
+        lisPradaMat,
+      );
+      keping.position.set(0.665 + k * 0.016, 0.05 - k * 0.008, 0.08);
+      keping.rotation.z = 0.04 + k * 0.02;
+      this.kepyakPlates.push(keping);
       kothakGrup.add(keping);
     }
 
-    // Cempala (Pemukul Kayu Jati Dalang) di atas Kothak
-    const cempala = new THREE.Mesh(
-      new THREE.CapsuleGeometry(0.042, 0.18, 8, 14),
+    // Cempala (Pemukul Kayu Jati Dalang) berengsel di bibir Kothak untuk memukul Kepyak
+    this.cempalaPivot = new THREE.Group();
+    this.cempalaPivot.position.set(0.52, 0.33, 0.14);
+    const tangkaiCempala = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.014, 0.02, 0.22, 10),
       kayuJatiUkirMat,
     );
-    cempala.rotation.z = Math.PI * 0.42;
-    cempala.position.set(0.32, 0.38, 0.12);
-    kothakGrup.add(cempala);
+    tangkaiCempala.rotation.z = Math.PI * 0.38;
+    tangkaiCempala.position.set(-0.08, 0.06, 0);
+    const kepalaCempala = new THREE.Mesh(
+      new THREE.CapsuleGeometry(0.036, 0.1, 8, 12),
+      kayuJatiUkirMat,
+    );
+    kepalaCempala.rotation.z = Math.PI * 0.42;
+    kepalaCempala.position.set(0.03, 0.02, 0);
+    const ringCempala = new THREE.Mesh(
+      new THREE.TorusGeometry(0.038, 0.008, 6, 12),
+      lisPradaMat,
+    );
+    ringCempala.rotation.y = Math.PI / 2;
+    ringCempala.position.set(0.03, 0.02, 0);
+    this.cempalaPivot.add(tangkaiCempala, kepalaCempala, ringCempala);
+    kothakGrup.add(this.cempalaPivot);
 
     this.panggungGrup.add(kothakGrup);
 
-    // 5. Lampu Minyak Kelapa Kyai Blencong Bersayap Garuda di Atas Tengah Kelir
+    // 5. Lampu Minyak Kelapa Kyai Blencong Bersayap Garuda + Rantai Gantung dari Palang Atas
+    const konsolGantung = new THREE.Mesh(
+      new THREE.BoxGeometry(0.08, 0.07, 1.0),
+      kayuJatiUkirMat,
+    );
+    konsolGantung.position.set(0, 2.13, 0.24);
+    const rantaiBlencong = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.012, 0.012, 0.56, 8),
+      lisPradaMat,
+    );
+    rantaiBlencong.position.set(0, 1.84, 0.72);
+    this.panggungGrup.add(konsolGantung, rantaiBlencong);
+
     const blencongData = buildBlencongWayang3D();
     this.blencongGrup = blencongData.grup;
     this.nyalaIntiMesh = blencongData.nyalaInti;
     this.haloApiMesh = blencongData.haloApi;
-    this.blencongGrup.scale.setScalar(0.68);
-    this.blencongGrup.position.set(0, 1.38, 0.85);
+    this.blencongGrup.scale.setScalar(0.62);
+    this.blencongGrup.position.set(0, 1.38, 0.72);
     this.blencongGrup.rotation.y = Math.PI;
     this.panggungGrup.add(this.blencongGrup);
 
     // Kerucut berkas cahaya hangat Blencong (Volumetric Light Cone)
-    const coneGeo = new THREE.ConeGeometry(2.6, 3.2, 24, 1, true);
+    const coneGeo = new THREE.ConeGeometry(2.65, 3.25, 24, 1, true);
     const coneMat = new THREE.MeshBasicMaterial({
       color: 0xffb84a,
       transparent: true,
@@ -458,47 +605,99 @@ export class WayangStage {
       depthWrite: false,
     });
     const lightCone = new THREE.Mesh(coneGeo, coneMat);
-    lightCone.position.set(0, 0.12, 0.32);
+    lightCone.position.set(0, 0.14, 0.24);
     lightCone.rotation.x = -0.22;
     this.panggungGrup.add(lightCone);
 
-    // 6. Simpingan Wayang Kiri & Kanan (Jajaran Tokoh Berukir Tertancap Rapi di Gedebog Atas)
+    // Bayangan Proyeksi Dinamis Wayang di Layar Kelir (Gradien Radial Halus Tanpa Tepi Kotak)
+    const buatBayanganMat = (op: number) => {
+      const cv = document.createElement('canvas');
+      cv.width = 128;
+      cv.height = 128;
+      const g2d = cv.getContext('2d');
+      if (g2d) {
+        const grad = g2d.createRadialGradient(64, 64, 8, 64, 64, 62);
+        grad.addColorStop(0, 'rgba(20, 12, 6, 0.92)');
+        grad.addColorStop(0.45, 'rgba(20, 12, 6, 0.56)');
+        grad.addColorStop(0.78, 'rgba(20, 12, 6, 0.18)');
+        grad.addColorStop(1, 'rgba(20, 12, 6, 0)');
+        g2d.fillStyle = grad;
+        g2d.fillRect(0, 0, 128, 128);
+      }
+      const tex = new THREE.CanvasTexture(cv);
+      return new THREE.MeshBasicMaterial({
+        map: tex,
+        transparent: true,
+        opacity: op,
+        depthWrite: false,
+      });
+    };
+    this.bayanganRama = new THREE.Mesh(new THREE.PlaneGeometry(0.95, 1.85), buatBayanganMat(0.32));
+    this.bayanganRama.position.set(0.92, 0.04, -0.236);
+    this.bayanganKidang = new THREE.Mesh(new THREE.PlaneGeometry(0.88, 1.02), buatBayanganMat(0.3));
+    this.bayanganKidang.position.set(-1.16, -0.34, -0.236);
+    this.bayanganGunungan = new THREE.Mesh(new THREE.PlaneGeometry(1.05, 1.88), buatBayanganMat(0.24));
+    this.bayanganGunungan.position.set(2.04, 0.02, -0.238);
+    this.panggungGrup.add(this.bayanganGunungan, this.bayanganRama, this.bayanganKidang);
+
+    // 6. Simpingan Wayang Kiri & Kanan (Tersusun Melengkung Rapi di Gedebog Sisi Luar)
     const warnaSimpingan = [0x9e2a1c, 0xc87d28, 0x7a1f16, 0xb55d19];
+    this.simpinganList = [];
     for (let i = 0; i < 4; i++) {
-      const wKiri = buildSimpinganWayang3D(warnaSimpingan[i], 0.68 + i * 0.045);
-      wKiri.position.set(-3.16 + i * 0.31, -0.06 + i * 0.04, 0.04 + i * 0.01);
+      const skala = 0.66 + i * 0.045;
+      const ySimpingan = -0.18 + i * 0.045;
+      const wKiri = buildSimpinganWayang3D(warnaSimpingan[i], skala);
+      wKiri.position.set(-3.24 + i * 0.25, ySimpingan, 0.04 + i * 0.012);
       wKiri.rotation.y = 0.08;
-      wKiri.rotation.z = -0.05 + i * 0.015;
+      wKiri.rotation.z = -0.05 + i * 0.014;
+      this.simpinganList.push(wKiri);
       this.panggungGrup.add(wKiri);
 
-      const wKanan = buildSimpinganWayang3D(warnaSimpingan[(i + 1) % 4], 0.68 + i * 0.045);
+      const wKanan = buildSimpinganWayang3D(warnaSimpingan[(i + 1) % 4], skala);
       wKanan.scale.x *= -1;
-      wKanan.position.set(3.16 - i * 0.31, -0.06 + i * 0.04, 0.04 + i * 0.01);
+      wKanan.position.set(3.24 - i * 0.25, ySimpingan, 0.04 + i * 0.012);
       wKanan.rotation.y = -0.08;
-      wKanan.rotation.z = 0.05 - i * 0.015;
+      wKanan.rotation.z = 0.05 - i * 0.014;
+      this.simpinganList.push(wKanan);
       this.panggungGrup.add(wKanan);
     }
 
-    // 7. Gunungan (Kayon Surakarta) di Sisi Kanan Tengah
+    // 7. Gunungan (Kayon Surakarta) Tertancap di Gedebog Atas Tanpa Bertabrakan dengan Tokoh
     this.gunungan = buildGunungan3D();
-    this.gunungan.scale.setScalar(0.84);
-    this.gunungan.position.set(1.58, -0.1, -0.08);
+    this.gunungan.scale.setScalar(0.82);
+    this.gunungan.position.set(2.04, -0.13, -0.03);
     this.gunungan.rotation.y = -0.08;
     this.panggungGrup.add(this.gunungan);
 
-    // 8. Wayang Kulit Sri Rama (Tokoh Utama Ksatria Pemanah)
+    // 8. Wayang Kulit Sri Rama (Tokoh Utama Ksatria Pemanah Berdiri Tegas di Gedebog Atas)
     this.sriRama = buildSriRamaWayang3D();
-    this.sriRama.root.scale.setScalar(0.88);
-    this.sriRama.root.position.set(0.72, 0.08, 0.14);
+    this.sriRama.root.scale.setScalar(0.86);
+    this.sriRama.root.position.set(0.92, 0.04, 0.14);
+    this.taliAtasMesh = (this.sriRama.busur.getObjectByName('busur-tali-atas') as THREE.Mesh) ?? null;
+    this.taliBawahMesh = (this.sriRama.busur.getObjectByName('busur-tali-bawah') as THREE.Mesh) ?? null;
+    this.panahBusurGrup = this.sriRama.busur.getObjectByName('busur-panah') ?? null;
+    const mataPanahObj = this.sriRama.busur.getObjectByName('busur-mata-panah') as THREE.Mesh | undefined;
+    this.mataPanahBusurMat = (mataPanahObj?.material as THREE.MeshStandardMaterial) ?? null;
     this.panggungGrup.add(this.sriRama.root);
 
-    // 9. Wayang Kulit Kijang Kencana (Penyamaran Marica)
+    // 9. Wayang Kulit Kijang Kencana (Berdiri Menapak Rapi di Atas Gedebog Atas)
     this.kidang = buildKidangKencana3D();
-    this.kidang.root.scale.setScalar(0.9);
-    this.kidang.root.position.set(-1.12, 0.02, 0.12);
+    this.kidang.root.scale.setScalar(0.8);
+    this.kidang.root.position.set(-1.16, -0.57, 0.12);
+    // Pangkas panjang gapit khusus panggung agar ujungnya tertancap tepat di batang gedebog tanpa menembus lantai
+    const gapitKidang = this.kidang.badan.children.find(
+      (c): c is THREE.Mesh =>
+        c instanceof THREE.Mesh && c.geometry instanceof THREE.CylinderGeometry && Math.abs(c.position.y + 0.35) < 0.02,
+    );
+    if (gapitKidang) {
+      gapitKidang.scale.y = 0.62;
+      gapitKidang.position.y = -0.18;
+    }
+    this.kidangEkorGrup = this.kidang.badan.getObjectByName('kidang-ekor') ?? null;
+    this.kidangTelingaGrup = this.kidang.leherKepala.getObjectByName('kidang-telinga') ?? null;
     this.panggungGrup.add(this.kidang.root);
 
-    // 10. Anak Panah Pusaka Guwawijaya (Melesat Saat Tombol Panah Ditekan)
+    // 10. Anak Panah Pusaka Guwawijaya & Cincin Kilau Benturan Sihir Marica
     this.panahTerbang = new THREE.Group();
     const batang = new THREE.Mesh(
       new THREE.CylinderGeometry(0.011, 0.011, 0.78, 10),
@@ -528,36 +727,137 @@ export class WayangStage {
     this.panahTerbang.add(batang, mataPanah, buluPanah);
     this.panahTerbang.visible = false;
     this.panggungGrup.add(this.panahTerbang);
+
+    this.impakCincin = new THREE.Mesh(
+      new THREE.TorusGeometry(0.28, 0.022, 8, 28),
+      new THREE.MeshBasicMaterial({
+        color: 0xffd36b,
+        transparent: true,
+        opacity: 0,
+        depthWrite: false,
+      }),
+    );
+    this.impakCincin.visible = false;
+    this.panggungGrup.add(this.impakCincin);
   }
 
   public aturPosisiTokoh(ramaNorm: number, kidangNorm: number): void {
-    this.targetRamaX = THREE.MathUtils.clamp(ramaNorm, -0.85, 0.85) * 2.65;
-    this.targetKidangX = THREE.MathUtils.clamp(kidangNorm, -0.85, 0.85) * 2.65;
+    this.targetRamaX = THREE.MathUtils.clamp(ramaNorm, -0.85, 0.85) * 2.18;
+    this.targetKidangX = THREE.MathUtils.clamp(kidangNorm, -0.85, 0.85) * 2.18;
   }
 
   public terapkanGesturPanggung(opts: { kemiringan?: number; intensitasSabetan?: number }): void {
-    if (typeof opts.kemiringan === 'number' && this.sriRama) {
-      this.sriRama.lenganKanan.rotation.z = THREE.MathUtils.clamp(
-        -0.34 + opts.kemiringan * 0.55,
-        -1.25,
-        0.65,
+    if (typeof opts.kemiringan === 'number') {
+      const rel = Math.atan2(
+        Math.sin(opts.kemiringan + Math.PI / 2),
+        Math.cos(opts.kemiringan + Math.PI / 2),
       );
-      this.sriRama.sikuKanan.rotation.z = THREE.MathUtils.clamp(
-        0.56 - opts.kemiringan * 0.35,
-        0.1,
-        1.2,
-      );
+      this.gesturAktif = true;
+      this.targetLenganKananZ = THREE.MathUtils.clamp(-0.34 + rel * 0.55, -1.25, 0.55);
+      this.targetSikuKananZ = THREE.MathUtils.clamp(0.56 - rel * 0.35, 0.12, 1.25);
     }
     if (typeof opts.intensitasSabetan === 'number' && opts.intensitasSabetan > 0.5) {
       this.picuSabetanWayang();
     }
   }
 
+  public terapkanGesturPakeliran(k: {
+    aktif: boolean;
+    ramaPosNorm: number;
+    kidangPosNorm: number;
+    ramaLiftY: number;
+    kidangLiftY: number;
+    ramaZ: number;
+    kidangZ: number;
+    ramaYawY: number;
+    kidangYawY: number;
+    ramaTiltZ: number;
+    kidangTiltZ: number;
+    kidangNeckZ: number;
+    kidangEarPerk: number;
+    kidangTailWag: number;
+    ramaLenganKananZ: number;
+    ramaSikuKananZ: number;
+    ramaLenganKiriZ: number;
+    ramaSikuKiriZ: number;
+    tarikBusur: number;
+    gununganSwayZ: number;
+    gununganLiftY: number;
+    blencongBoost: number;
+    sabetanIntensitas: number;
+    picuSabetan: boolean;
+    picuPanah: boolean;
+  }): void {
+    if (!k.aktif) {
+      this.matikanGesturPakeliran();
+      return;
+    }
+    this.gesturAktif = true;
+    this.aturPosisiTokoh(k.ramaPosNorm, k.kidangPosNorm);
+    this.targetRamaLiftY = THREE.MathUtils.clamp(k.ramaLiftY, -0.08, 0.34);
+    this.targetKidangLiftY = THREE.MathUtils.clamp(k.kidangLiftY, -0.06, 0.4);
+    this.targetRamaZ = THREE.MathUtils.clamp(k.ramaZ, -0.08, 0.34);
+    this.targetKidangZ = THREE.MathUtils.clamp(k.kidangZ, -0.08, 0.34);
+    this.targetRamaYawY = k.ramaYawY;
+    this.targetKidangYawY = k.kidangYawY;
+    this.targetRamaTiltZ = THREE.MathUtils.clamp(k.ramaTiltZ, -0.38, 0.38);
+    this.targetKidangTiltZ = THREE.MathUtils.clamp(k.kidangTiltZ, -0.42, 0.42);
+    this.targetKidangNeckZ = THREE.MathUtils.clamp(k.kidangNeckZ, -0.48, 0.54);
+    this.targetKidangEarPerk = THREE.MathUtils.clamp(k.kidangEarPerk, -0.25, 0.5);
+    this.targetKidangTailWag = THREE.MathUtils.clamp(k.kidangTailWag, -0.48, 0.48);
+    this.targetLenganKananZ = THREE.MathUtils.clamp(k.ramaLenganKananZ, -1.35, 0.55);
+    this.targetSikuKananZ = THREE.MathUtils.clamp(k.ramaSikuKananZ, 0.12, 1.35);
+    this.targetLenganKiriZ = THREE.MathUtils.clamp(k.ramaLenganKiriZ, -0.35, 1.25);
+    this.targetSikuKiriZ = THREE.MathUtils.clamp(k.ramaSikuKiriZ, -1.35, 0.25);
+    this.targetTarikBusur = THREE.MathUtils.clamp(k.tarikBusur, 0, 1);
+    this.targetGununganSwayZ = THREE.MathUtils.clamp(k.gununganSwayZ, -0.32, 0.32);
+    this.targetGununganLiftY = THREE.MathUtils.clamp(k.gununganLiftY, -0.05, 0.2);
+    this.targetBlencongBoost = THREE.MathUtils.clamp(k.blencongBoost, 0, 1);
+
+    if (k.picuSabetan) {
+      this.picuSabetanWayang();
+    } else if (k.sabetanIntensitas > 0.35) {
+      this.targetSabetan = Math.max(this.targetSabetan, k.sabetanIntensitas * 0.55);
+    }
+
+    if (k.picuPanah) {
+      this.picuPanahRama();
+    }
+  }
+
+  public matikanGesturPakeliran(): void {
+    this.gesturAktif = false;
+    this.targetRamaLiftY = 0;
+    this.targetKidangLiftY = 0;
+    this.targetRamaZ = 0.14;
+    this.targetKidangZ = 0.12;
+    this.targetRamaYawY = -0.05;
+    this.targetKidangYawY = 0.04;
+    this.targetRamaTiltZ = 0;
+    this.targetKidangTiltZ = 0;
+    this.targetKidangNeckZ = 0;
+    this.targetKidangEarPerk = 0;
+    this.targetKidangTailWag = 0;
+    this.targetLenganKananZ = -0.34;
+    this.targetSikuKananZ = 0.56;
+    this.targetLenganKiriZ = 0.4;
+    this.targetSikuKiriZ = -0.88;
+    this.targetTarikBusur = 0;
+    this.targetGununganSwayZ = 0;
+    this.targetGununganLiftY = 0;
+    this.targetBlencongBoost = 0;
+  }
+
+  public aturGununganBabak(indeksBabak: number): void {
+    this.baseGununganX = [2.04, 0.02, 2.04, -2.04][indeksBabak] ?? 2.04;
+  }
+
   public aturBabak(indeksBabak: number): void {
-    const posRama = [0.72, 0.85, 0.55, 0.35][indeksBabak] ?? 0.72;
-    const posKidang = [-1.12, -0.78, -1.35, -0.95][indeksBabak] ?? -1.12;
+    const posRama = [0.92, 0.72, 1.05, 0.64][indeksBabak] ?? 0.92;
+    const posKidang = [-1.16, -0.78, -1.24, -0.92][indeksBabak] ?? -1.16;
     this.targetRamaX = posRama;
     this.targetKidangX = posKidang;
+    this.aturGununganBabak(indeksBabak);
     this.picuSabetanWayang();
   }
 
@@ -569,11 +869,22 @@ export class WayangStage {
 
   public picuSabetanWayang(): void {
     this.targetSabetan = 1;
+    this.cempalaStrikeImpulse = 1;
   }
 
   public picuPanahRama(): void {
     this.panahAktif = true;
     this.progresPanah = 0;
+    this.targetTarikBusur = Math.max(this.targetTarikBusur, 0.95);
+    const yaw = this.sriRama ? this.sriRama.root.rotation.y : 0;
+    const arahX = Math.cos(yaw) >= 0 ? -1 : 1;
+    const ramaX = this.sriRama ? this.sriRama.root.position.x : this.targetRamaX;
+    const ramaY = this.sriRama ? this.sriRama.root.position.y : 0.04;
+    const kidangX = this.kidang ? this.kidang.root.position.x : this.targetKidangX;
+    const kidangY = this.kidang ? this.kidang.root.position.y : -0.57;
+
+    this.panahDari = [ramaX + arahX * 0.46, ramaY + 0.34, this.sriRama?.root.position.z ?? 0.18];
+    this.panahKe = [kidangX - arahX * 0.12, kidangY + 0.18, this.kidang?.root.position.z ?? 0.14];
     this.panahTerbang.visible = true;
   }
 
@@ -609,6 +920,57 @@ export class WayangStage {
     this.renderer.setSize(w, h, false);
   }
 
+  private perbaruiTarikanBusur(draw: number): void {
+    const pull = THREE.MathUtils.clamp(draw, 0, 1) * 0.22;
+    const nockX = 0.12 + pull;
+    if (this.taliAtasMesh) {
+      const len = Math.hypot(pull, 0.58);
+      this.taliAtasMesh.position.set(0.12 + pull * 0.5, 0.29, 0);
+      this.taliAtasMesh.scale.set(1, len, 1);
+      this.taliAtasMesh.rotation.z = Math.atan2(pull, 0.58);
+    }
+    if (this.taliBawahMesh) {
+      const len = Math.hypot(pull, 0.58);
+      this.taliBawahMesh.position.set(0.12 + pull * 0.5, -0.29, 0);
+      this.taliBawahMesh.scale.set(1, len, 1);
+      this.taliBawahMesh.rotation.z = -Math.atan2(pull, 0.58);
+    }
+    if (this.panahBusurGrup) {
+      this.panahBusurGrup.position.x = nockX - 0.12;
+      this.panahBusurGrup.visible = !this.panahAktif || this.progresPanah > 0.3;
+    }
+    if (this.mataPanahBusurMat) {
+      this.mataPanahBusurMat.emissiveIntensity = 0.45 + draw * 1.45;
+    }
+  }
+
+  private perbaruiBayanganKelir(
+    bayangan: THREE.Mesh | null,
+    objX: number,
+    objY: number,
+    objZ: number,
+    yawY: number,
+    tiltZ: number,
+    baseScaleX: number,
+    baseScaleY: number,
+  ): void {
+    if (!bayangan) return;
+    const pembesaranZ = 1 + (objZ - 0.1) * 0.72;
+    const projX = THREE.MathUtils.clamp(objX * (0.98 + (objZ - 0.1) * 0.35), -2.75, 2.75);
+    const projY = THREE.MathUtils.clamp(objY * 0.96 - (1.38 - objY) * (objZ * 0.14), -0.95, 1.35);
+    const pipihYaw = 0.36 + 0.64 * Math.abs(Math.cos(yawY));
+    bayangan.position.set(projX, projY, -0.236);
+    bayangan.rotation.z = tiltZ;
+    bayangan.scale.set(
+      baseScaleX * pipihYaw * pembesaranZ,
+      baseScaleY * pembesaranZ,
+      1,
+    );
+    const mat = bayangan.material as THREE.MeshBasicMaterial;
+    const kelirFactor = this.moodCahaya === 'kelir' ? 1.45 : this.moodCahaya === 'sorot' ? 0.55 : 1;
+    mat.opacity = THREE.MathUtils.clamp((0.36 - (objZ - 0.08) * 0.25) * kelirFactor, 0.12, 0.62);
+  }
+
   private loop = (): void => {
     if (!this.renderer || !this.loopAktif) {
       this.rafId = null;
@@ -616,13 +978,23 @@ export class WayangStage {
     }
     this.rafId = window.requestAnimationFrame(this.loop);
 
-    const t = performance.now() * 0.001;
+    const nowMs = performance.now();
+    const dt =
+      this.lastLoopMs > 0
+        ? Math.min(Math.max((nowMs - this.lastLoopMs) / 1000, 0.008), 0.05)
+        : 1 / 60;
+    this.lastLoopMs = nowMs;
+    const t = nowMs * 0.001;
+    const dampFast = 1 - Math.exp(-11 * dt);
+    const dampSmooth = 1 - Math.exp(-7 * dt);
 
-    // Kedip api minyak kelapa Blencong & goyangan lembut lampu gantung
+    // Kedip api minyak kelapa Blencong & respon energi gestur / sabetan
     const faktorKedip = this.moodCahaya === 'sorot' ? 0.35 : 1;
-    const flicker = (Math.sin(t * 7.4) * 0.42 + Math.cos(t * 12.1) * 0.22) * faktorKedip;
-    this.nyalaApi.intensity = this.baseApiIntensity + flicker;
-    this.blencongGrup.rotation.z = Math.sin(t * 1.4) * 0.025;
+    const flicker =
+      (Math.sin(t * 7.4) * 0.42 + Math.cos(t * 12.1) * 0.22 + this.targetBlencongBoost * 1.15) *
+      faktorKedip;
+    this.nyalaApi.intensity = this.baseApiIntensity + flicker + this.targetSabetan * 1.1;
+    this.blencongGrup.rotation.z = Math.sin(t * 1.4) * 0.025 + this.targetSabetan * 0.06;
     if (this.nyalaIntiMesh) {
       this.nyalaIntiMesh.scale.y = 1 + flicker * 0.18;
     }
@@ -631,50 +1003,212 @@ export class WayangStage {
       this.haloApiMesh.scale.setScalar(s);
     }
 
-    // Gerak Dalang mengayunkan Sri Rama (badan, bahu, siku, tuding)
+    // 1. Gerak Dalang Mengayunkan Sri Rama (X, Y Solah, Z Kedalaman Kelir, Yaw Walikan & Dual Tuding)
     const dxRama = this.targetRamaX - this.sriRama.root.position.x;
-    this.sriRama.root.position.x += dxRama * 0.1;
-    this.sriRama.root.position.y = 0.08 + Math.sin(t * 2.2) * 0.025;
-    this.sriRama.root.rotation.y = THREE.MathUtils.clamp(-dxRama * 0.24, -0.32, 0.32) - 0.06;
-    this.sriRama.root.rotation.z = Math.sin(t * 1.9) * 0.025 + Math.sin(this.targetSabetan * Math.PI * 2) * 0.22;
+    this.sriRama.root.position.x += dxRama * dampFast;
+    const desiredRamaY = this.gesturAktif
+      ? 0.04 + this.targetRamaLiftY + Math.sin(t * 2.4) * 0.015
+      : 0.04 + Math.sin(t * 2.2) * 0.022;
+    this.sriRama.root.position.y += (desiredRamaY - this.sriRama.root.position.y) * dampFast;
 
-    this.sriRama.lenganKanan.rotation.z = -0.34 + Math.sin(t * 2.6) * 0.08 - this.targetSabetan * 0.48;
-    this.sriRama.sikuKanan.rotation.z = 0.56 + Math.cos(t * 2.6) * 0.06 + this.targetSabetan * 0.32;
-    this.sriRama.lenganKiri.rotation.z = 0.4 + Math.cos(t * 2.1) * 0.07 + this.targetSabetan * 0.35;
+    const desiredRamaZ = this.gesturAktif ? this.targetRamaZ : 0.14;
+    this.sriRama.root.position.z += (desiredRamaZ - this.sriRama.root.position.z) * dampSmooth;
 
-    // Gerak Kidang Kencana melompat anggun dengan sendi kaki berartikulasi
+    const desiredRamaYaw = this.gesturAktif
+      ? this.targetRamaYawY
+      : THREE.MathUtils.clamp(-dxRama * 0.26, -0.34, 0.34) - 0.05;
+    this.sriRama.root.rotation.y += (desiredRamaYaw - this.sriRama.root.rotation.y) * dampFast;
+
+    const sabetanWave = Math.sin(this.targetSabetan * Math.PI * 2) * 0.22;
+    const desiredRamaTilt = (this.gesturAktif ? this.targetRamaTiltZ : Math.sin(t * 1.9) * 0.025) + sabetanWave;
+    this.sriRama.root.rotation.z += (desiredRamaTilt - this.sriRama.root.rotation.z) * dampFast;
+
+    const idleLenganKanan = -0.34 + Math.sin(t * 2.6) * 0.08 - this.targetSabetan * 0.48;
+    const idleSikuKanan = 0.56 + Math.cos(t * 2.6) * 0.06 + this.targetSabetan * 0.32;
+    const idleLenganKiri = 0.4 + Math.cos(t * 2.1) * 0.07 + this.targetSabetan * 0.35;
+    const idleSikuKiri = -0.88 + Math.sin(t * 2.1) * 0.06 - this.targetSabetan * 0.24;
+
+    const tLenganKanan = this.gesturAktif
+      ? this.targetLenganKananZ - this.targetSabetan * 0.36
+      : idleLenganKanan;
+    const tSikuKanan = this.gesturAktif
+      ? this.targetSikuKananZ + this.targetSabetan * 0.24
+      : idleSikuKanan;
+    const tLenganKiri = this.gesturAktif
+      ? this.targetLenganKiriZ + this.targetSabetan * 0.28
+      : idleLenganKiri;
+    const tSikuKiri = this.gesturAktif ? this.targetSikuKiriZ : idleSikuKiri;
+
+    this.sriRama.lenganKanan.rotation.z += (tLenganKanan - this.sriRama.lenganKanan.rotation.z) * dampFast;
+    this.sriRama.sikuKanan.rotation.z += (tSikuKanan - this.sriRama.sikuKanan.rotation.z) * dampFast;
+    this.sriRama.lenganKiri.rotation.z += (tLenganKiri - this.sriRama.lenganKiri.rotation.z) * dampFast;
+    this.sriRama.sikuKiri.rotation.z += (tSikuKiri - this.sriRama.sikuKiri.rotation.z) * dampFast;
+
+    // Tarikan tali busur & kilau anak panah siaga
+    const goalBowDraw = this.panahAktif && this.progresPanah < 0.25 ? 0.92 : this.targetTarikBusur;
+    this.currentTarikBusur += (goalBowDraw - this.currentTarikBusur) * dampFast;
+    this.perbaruiTarikanBusur(this.currentTarikBusur);
+    if (!this.gesturAktif && !this.panahAktif) {
+      this.targetTarikBusur *= Math.pow(0.86, dt * 60);
+    }
+
+    // 2. Gerak Kidang Kencana (Tumpuan Sempurna di Gedebog, Melompat Solah, Kepala-Telinga-Ekor Berartikulasi)
     const dxKidang = this.targetKidangX - this.kidang.root.position.x;
-    this.kidang.root.position.x += dxKidang * 0.1;
-    const lompat = Math.abs(Math.sin(t * 3.2));
-    this.kidang.root.position.y = 0.02 + lompat * 0.16;
-    this.kidang.root.rotation.y = dxKidang > 0.05 ? 0.08 : 0.04;
-    this.kidang.leherKepala.rotation.z = Math.sin(t * 3.4) * 0.09;
-    this.kidang.kakiDepan.rotation.z = Math.sin(t * 3.2) * 0.34;
-    this.kidang.kakiBelakang.rotation.z = -Math.sin(t * 3.2) * 0.34;
+    this.kidang.root.position.x += dxKidang * dampFast;
+    const lompatIdle = Math.abs(Math.sin(t * 3.1)) * 0.065;
+    const desiredKidangY = this.gesturAktif
+      ? -0.57 + this.targetKidangLiftY + lompatIdle * 0.4
+      : -0.57 + lompatIdle;
+    this.kidang.root.position.y += (desiredKidangY - this.kidang.root.position.y) * dampFast;
 
-    // Gunungan Kayon berayun khidmat
-    this.gunungan.rotation.z = Math.sin(t * 1.1) * 0.02;
+    const desiredKidangZ = this.gesturAktif ? this.targetKidangZ : 0.12;
+    this.kidang.root.position.z += (desiredKidangZ - this.kidang.root.position.z) * dampSmooth;
 
-    this.targetSabetan *= 0.91;
+    const desiredKidangYaw = this.gesturAktif
+      ? this.targetKidangYawY
+      : THREE.MathUtils.clamp(-dxKidang * 0.22, -0.28, 0.28) + 0.04;
+    this.kidang.root.rotation.y += (desiredKidangYaw - this.kidang.root.rotation.y) * dampFast;
 
-    // Lesatan Panah Guwawijaya
+    const desiredNeckZ = this.gesturAktif ? this.targetKidangNeckZ : Math.sin(t * 3.4) * 0.09;
+    this.kidang.leherKepala.rotation.z += (desiredNeckZ - this.kidang.leherKepala.rotation.z) * dampFast;
+
+    if (this.kidangTelingaGrup) {
+      const earTarget = this.gesturAktif ? this.targetKidangEarPerk : Math.sin(t * 5.2) * 0.12;
+      this.kidangTelingaGrup.rotation.z += (earTarget - this.kidangTelingaGrup.rotation.z) * dampFast;
+    }
+    if (this.kidangEkorGrup) {
+      const tailTarget = this.gesturAktif ? this.targetKidangTailWag : Math.sin(t * 4.4) * 0.2;
+      this.kidangEkorGrup.rotation.z += (tailTarget - this.kidangEkorGrup.rotation.z) * dampFast;
+    }
+
+    const strideFactor = Math.max(0.24, Math.min(0.65, 0.34 + Math.abs(dxKidang) * 0.35 + (this.gesturAktif ? Math.max(0, this.targetKidangLiftY) : 0)));
+    this.kidang.kakiDepan.rotation.z = Math.sin(t * 3.4) * strideFactor;
+    this.kidang.kakiBelakang.rotation.z = -Math.sin(t * 3.4) * strideFactor;
+
+    // 3. Gunungan Kayon menghindar otomatis agar tidak bertabrakan dengan Rama/Kidang + respons gestur
+    let targetGununganX = this.baseGununganX;
+    let targetGununganZ = -0.03;
+    const minDist = Math.min(
+      Math.abs(targetGununganX - this.sriRama.root.position.x),
+      Math.abs(targetGununganX - this.kidang.root.position.x),
+    );
+    if (minDist < 0.72) {
+      targetGununganZ = -0.095;
+      const dorong = this.baseGununganX >= 0 ? 0.24 : -0.24;
+      targetGununganX = THREE.MathUtils.clamp(this.baseGununganX + dorong, -2.18, 2.18);
+    }
+    this.gunungan.position.x += (targetGununganX - this.gunungan.position.x) * dampSmooth;
+    this.gunungan.position.z += (targetGununganZ - this.gunungan.position.z) * dampSmooth;
+    const gununganY = -0.13 + (this.gesturAktif ? this.targetGununganLiftY : 0);
+    this.gunungan.position.y += (gununganY - this.gunungan.position.y) * dampSmooth;
+    const gununganRot = Math.sin(t * 1.1) * 0.02 + (this.gesturAktif ? this.targetGununganSwayZ : 0);
+    this.gunungan.rotation.z += (gununganRot - this.gunungan.rotation.z) * dampFast;
+
+    // Simpingan samping bergetar lembut saat sabetan angin panggung
+    for (let i = 0; i < this.simpinganList.length; i++) {
+      const side = i % 2 === 0 ? -1 : 1;
+      const sway = Math.sin(t * 2.2 + i) * 0.008 * this.targetSabetan;
+      const baseTilt = side * (0.05 - Math.floor(i / 2) * 0.014);
+      this.simpinganList[i].rotation.z = baseTilt + sway;
+    }
+
+    // 4. Animasi Pukulan Ganda Cempala & Getaran Kepyak Kuningan pada Sabetan
+    if (this.cempalaPivot) {
+      const doubleStrike =
+        this.cempalaStrikeImpulse > 0.02
+          ? Math.abs(Math.sin((1 - this.cempalaStrikeImpulse) * Math.PI * 2)) *
+            this.cempalaStrikeImpulse *
+            -0.56
+          : 0;
+      this.cempalaPivot.rotation.z = doubleStrike;
+    }
+    for (let k = 0; k < this.kepyakPlates.length; k++) {
+      const kepyakRattle = Math.sin(t * 42 + k * 0.9) * this.cempalaStrikeImpulse * (0.14 - k * 0.018);
+      this.kepyakPlates[k].rotation.z = 0.04 + k * 0.02 + kepyakRattle;
+    }
+
+    // 5. Proyeksi Bayangan Kulit Wayang di Kelir Secara Real-Time
+    this.perbaruiBayanganKelir(
+      this.bayanganRama,
+      this.sriRama.root.position.x,
+      this.sriRama.root.position.y + 0.08,
+      this.sriRama.root.position.z,
+      this.sriRama.root.rotation.y,
+      this.sriRama.root.rotation.z,
+      0.86,
+      0.92,
+    );
+    this.perbaruiBayanganKelir(
+      this.bayanganKidang,
+      this.kidang.root.position.x,
+      this.kidang.root.position.y + 0.2,
+      this.kidang.root.position.z,
+      this.kidang.root.rotation.y,
+      this.kidang.root.rotation.z,
+      0.84,
+      0.86,
+    );
+    this.perbaruiBayanganKelir(
+      this.bayanganGunungan,
+      this.gunungan.position.x,
+      this.gunungan.position.y + 0.14,
+      this.gunungan.position.z,
+      this.gunungan.rotation.y,
+      this.gunungan.rotation.z,
+      0.9,
+      0.96,
+    );
+
+    const decayFast = Math.pow(0.9, dt * 60);
+    this.targetSabetan *= decayFast;
+    this.cempalaStrikeImpulse *= Math.pow(0.92, dt * 60);
+    this.targetBlencongBoost *= Math.pow(0.92, dt * 60);
+
+    // 6. Lesatan Panah Guwawijaya ke Tubuh Kijang Kencana & Cincin Kilau Benturan
     if (this.panahAktif) {
-      this.progresPanah += 0.042;
-      const dariX = this.sriRama.root.position.x - 0.52;
-      const keX = this.kidang.root.position.x + 0.15;
-      this.panahTerbang.position.set(
-        THREE.MathUtils.lerp(dariX, keX, this.progresPanah),
-        0.38 + Math.sin(this.progresPanah * Math.PI) * 0.36,
-        0.22,
-      );
-      this.panahTerbang.rotation.z = (0.5 - this.progresPanah) * 0.32;
+      this.progresPanah = Math.min(1, this.progresPanah + dt * 1.9);
+      const x = THREE.MathUtils.lerp(this.panahDari[0], this.panahKe[0], this.progresPanah);
+      const baseY = THREE.MathUtils.lerp(this.panahDari[1], this.panahKe[1], this.progresPanah);
+      const y = baseY + Math.sin(this.progresPanah * Math.PI) * 0.28;
+      const z = THREE.MathUtils.lerp(this.panahDari[2], this.panahKe[2], this.progresPanah);
+      this.panahTerbang.position.set(x, y, z);
+
+      const flyLeft = this.panahKe[0] <= this.panahDari[0];
+      const slopeY = Math.cos(this.progresPanah * Math.PI) * 0.28 * Math.PI;
+      const dxFlight = this.panahKe[0] - this.panahDari[0];
+      this.panahTerbang.rotation.y = flyLeft ? 0 : Math.PI;
+      this.panahTerbang.rotation.z =
+        -Math.atan2(slopeY, Math.max(0.4, Math.abs(dxFlight))) * 0.65;
+
       if (this.progresPanah >= 1) {
         this.panahAktif = false;
         this.panahTerbang.visible = false;
-        this.kidang.root.rotation.z = -0.38;
+        this.kidang.root.rotation.z = -0.34;
+        this.impakPulse = 1;
+        if (this.impakCincin) {
+          this.impakCincin.position.set(
+            this.kidang.root.position.x,
+            this.kidang.root.position.y + 0.18,
+            this.kidang.root.position.z + 0.08,
+          );
+          this.impakCincin.visible = true;
+        }
       }
     } else {
-      this.kidang.root.rotation.z *= 0.9;
+      const goalKidangTilt = this.gesturAktif ? this.targetKidangTiltZ : 0;
+      this.kidang.root.rotation.z +=
+        (goalKidangTilt - this.kidang.root.rotation.z) * (this.gesturAktif ? dampFast : 1 - decayFast);
+    }
+
+    if (this.impakCincin) {
+      if (this.impakPulse > 0.02) {
+        this.impakPulse *= Math.pow(0.88, dt * 60);
+        const expand = 1 + (1 - this.impakPulse) * 1.45;
+        this.impakCincin.scale.setScalar(expand);
+        (this.impakCincin.material as THREE.MeshBasicMaterial).opacity = this.impakPulse * 0.78;
+      } else {
+        this.impakCincin.visible = false;
+      }
     }
 
     this.renderer.render(this.scene, this.camera);

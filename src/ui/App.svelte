@@ -26,6 +26,10 @@
   import { mintaSuaraDalangBabak } from '../lib/dalangVoice.ts';
   import { type GendingId } from '../lib/gendingJawa.ts';
   import type { FrameTangan, PengelolaTangan, StatusKamera } from '../lib/handTracker.ts';
+  import type {
+    AksiGesturPakeliran,
+    KinetikPakeliranGestur,
+  } from '../lib/pakeliranGestur.ts';
   import type { KinetikSaronGestur } from '../lib/saronGestur.ts';
   import { DAFTAR_BAHASA, setI18nLanguage, tI18n } from '../lib/i18n.ts';
   import {
@@ -365,8 +369,16 @@
   let saronStruckWilahIdx: number | null = $state(null);
   let saronStruckTimer: number | null = null;
   let lastTwinKepal = false;
+  let pakeliranAksiAktif: AksiGesturPakeliran = $state(null);
+  let pakeliranModeKontrol: 'nonaktif' | 'satu-tangan' | 'dua-tangan' = $state('nonaktif');
+  let pakeliranTarikBusurPct = $state(0);
   let saronGesturEval: {
     prosesFrame: (frame: FrameTangan) => KinetikSaronGestur;
+    reset: () => void;
+  } | null = null;
+  let pakeliranGesturEval: {
+    prosesFrame: (frame: FrameTangan) => KinetikPakeliranGestur;
+    sinkronkanPosisiAwal: (rama: number, kidang: number) => void;
     reset: () => void;
   } | null = null;
 
@@ -574,6 +586,7 @@
         if (destroyed) return;
         wayangStage = new WayangStage(node);
         wayangStage.aturPosisiTokoh(posRama, posKidang);
+        wayangStage.aturGununganBabak(babakIdx);
         wayangStage.aturMoodCahaya(moodPanggungWayang);
 
         ro = new ResizeObserver(() => wayangStage?.ubahUkuran());
@@ -768,7 +781,14 @@
   }
 
   function pindahHalaman(id: HalamanId, targetAnchorId?: string): void {
-    if (id !== 'pakeliran') hentikanSuaraDalang();
+    if (id !== 'pakeliran') {
+      hentikanSuaraDalang();
+      pakeliranGesturEval?.reset();
+      pakeliranAksiAktif = null;
+      pakeliranModeKontrol = 'nonaktif';
+      pakeliranTarikBusurPct = 0;
+      wayangStage?.matikanGesturPakeliran();
+    }
     if (id !== 'twin') {
       saronGesturEval?.reset();
       saronHoverWilahIdx = null;
@@ -1037,7 +1057,10 @@
     if (bab) {
       posRama = bab.posisiAwalRama;
       posKidang = bab.posisiAwalKidang;
+      pakeliranGesturEval?.sinkronkanPosisiAwal(posRama, posKidang);
+      wayangStage?.aturGununganBabak(i);
       wayangStage?.aturPosisiTokoh(posRama, posKidang);
+      wayangStage?.picuSabetanWayang();
       if (audioAktif) audioBudaya.bunyikanCempalaKeprak();
     }
     if (halamanAktif === 'pakeliran') sinkronkanUrlDeepLink();
@@ -1086,25 +1109,40 @@
     if (statusKamera === 'aktif' || statusKamera === 'memuat') {
       pengelolaTangan?.matikan();
       saronGesturEval?.reset();
+      pakeliranGesturEval?.reset();
       saronHoverWilahIdx = null;
       saronStruckWilahIdx = null;
       lastTwinKepal = false;
+      pakeliranAksiAktif = null;
+      pakeliranModeKontrol = 'nonaktif';
+      pakeliranTarikBusurPct = 0;
       twinStage?.matikanGesturTangan();
+      wayangStage?.matikanGesturPakeliran();
       return;
     }
     if (!videoKameraEl) return;
-    // Buka AudioContext pada interaksi klik agar Saron & efek 3D langsung bersuara saat digerakkan
+    // Buka AudioContext pada interaksi klik agar Saron & Pakeliran langsung bersuara saat digerakkan
     audioBudaya.izinkanEfekSuara();
 
-    if (!pengelolaTangan || !saronGesturEval) {
+    if (!pengelolaTangan || !saronGesturEval || !pakeliranGesturEval) {
       statusKamera = 'memuat';
-      const [{ PengelolaTangan }, { EvaluatorGesturSaron }] = await Promise.all([
+      const [
+        { PengelolaTangan },
+        { EvaluatorGesturSaron },
+        { EvaluatorGesturPakeliran },
+      ] = await Promise.all([
         import('../lib/handTracker.ts'),
         import('../lib/saronGestur.ts'),
+        import('../lib/pakeliranGestur.ts'),
       ]);
       if (!pengelolaTangan) pengelolaTangan = new PengelolaTangan();
       if (!saronGesturEval) saronGesturEval = new EvaluatorGesturSaron();
+      if (!pakeliranGesturEval) {
+        pakeliranGesturEval = new EvaluatorGesturPakeliran();
+      }
     }
+    pakeliranGesturEval.sinkronkanPosisiAwal(posRama, posKidang);
+
     await pengelolaTangan.mulai(
       videoKameraEl,
       (frame: FrameTangan) => {
@@ -1141,26 +1179,39 @@
           }
         }
 
-        if (kiri) {
-          posKidang = Math.max(-0.85, Math.min(0.85, (kiri.pusatX - 0.5) * 1.8));
+        if (halamanAktif === 'pakeliran' && wayangStage && pakeliranGesturEval) {
+          const kinetik = pakeliranGesturEval.prosesFrame(frame);
+          pakeliranModeKontrol = kinetik.modeKontrol;
+          pakeliranAksiAktif = kinetik.aksiLabel;
+          pakeliranTarikBusurPct = Math.round(kinetik.tarikBusur * 100);
+          if (kinetik.aktif) {
+            posRama = kinetik.ramaPosNorm;
+            posKidang = kinetik.kidangPosNorm;
+          }
+          wayangStage.terapkanGesturPakeliran(kinetik);
+          if (kinetik.picuSabetan && audioAktif) {
+            audioBudaya.izinkanEfekSuara();
+            audioBudaya.bunyikanCempalaKeprak();
+          }
+          if (kinetik.picuPanah && audioAktif) {
+            audioBudaya.izinkanEfekSuara();
+            audioBudaya.bunyikanLesatanPanah();
+          }
         }
-        if (kanan) {
-          posRama = Math.max(-0.85, Math.min(0.85, (kanan.pusatX - 0.5) * 1.8));
-          wayangStage?.terapkanGesturPanggung({
-            kemiringan: kanan.kemiringan,
-            intensitasSabetan: kanan.gestur === 'kepal' ? 1 : 0,
-          });
-        }
-        wayangStage?.aturPosisiTokoh(posRama, posKidang);
       },
       (st) => {
         statusKamera = st;
         if (st !== 'aktif' && st !== 'memuat') {
           saronGesturEval?.reset();
+          pakeliranGesturEval?.reset();
           saronHoverWilahIdx = null;
           saronStruckWilahIdx = null;
           lastTwinKepal = false;
+          pakeliranAksiAktif = null;
+          pakeliranModeKontrol = 'nonaktif';
+          pakeliranTarikBusurPct = 0;
           twinStage?.matikanGesturTangan();
+          wayangStage?.matikanGesturPakeliran();
         }
       },
     );
@@ -2142,8 +2193,39 @@
               >
                 {tI18n(bahasa, 'pakeliran.arrowBtn')}
               </button>
+              <button
+                type="button"
+                class="util-pill"
+                class:is-active={statusKamera === 'aktif'}
+                onclick={() => void toggleKameraTangan()}
+                data-testid="pakeliran-gesture-btn"
+                aria-pressed={statusKamera === 'aktif'}
+              >
+                {statusKamera === 'aktif'
+                  ? tI18n(bahasa, 'pakeliran.gestureStopBtn')
+                  : tI18n(bahasa, 'pakeliran.gestureStartBtn')}
+              </button>
             </div>
           </div>
+
+          {#if statusKamera === 'aktif'}
+            <div class="saron-gesture-status pakeliran-gesture-status" data-testid="pakeliran-gesture-status">
+              <span>{tI18n(bahasa, 'pakeliran.gestureStatusHint')}</span>
+              <strong class="saron-active-note">
+                {pakeliranModeKontrol === 'dua-tangan'
+                  ? tI18n(bahasa, 'pakeliran.gestureModeTwo')
+                  : pakeliranModeKontrol === 'satu-tangan'
+                    ? tI18n(bahasa, 'pakeliran.gestureModeOne')
+                    : '-'}
+                {#if pakeliranAksiAktif}
+                  · {tI18n(bahasa, `pakeliran.gestureActions.${pakeliranAksiAktif}`)}
+                {/if}
+                · {tI18n(bahasa, 'pakeliran.gestureBowPct', { pct: pakeliranTarikBusurPct })}
+              </strong>
+            </div>
+          {:else if statusKamera === 'ditolak' || statusKamera === 'tidak-didukung'}
+            <p class="saron-gesture-warn">{tI18n(bahasa, 'pakeliran.gestureDenied')}</p>
+          {/if}
 
           <div class="two-col-editorial" style="margin-top: 4px;">
             <label class="pakeliran-slider-label">
@@ -2156,6 +2238,7 @@
                 value={posKidang}
                 oninput={(e) => {
                   posKidang = Number((e.currentTarget as HTMLInputElement).value);
+                  pakeliranGesturEval?.sinkronkanPosisiAwal(posRama, posKidang);
                   wayangStage?.aturPosisiTokoh(posRama, posKidang);
                 }}
               />
@@ -2170,6 +2253,7 @@
                 value={posRama}
                 oninput={(e) => {
                   posRama = Number((e.currentTarget as HTMLInputElement).value);
+                  pakeliranGesturEval?.sinkronkanPosisiAwal(posRama, posKidang);
                   wayangStage?.aturPosisiTokoh(posRama, posKidang);
                 }}
               />
@@ -2402,7 +2486,9 @@
     <span>
       {halamanAktif === 'twin' && bendaAktifId === 'saron' && saronHoverWilahIdx !== null
         ? `${NADA_SARON_SLENDRO[saronHoverWilahIdx].angka} · ${gesturTerkini}`
-        : gesturTerkini}
+        : halamanAktif === 'pakeliran' && pakeliranAksiAktif
+          ? `${tI18n(bahasa, `pakeliran.gestureActions.${pakeliranAksiAktif}`)} · ${gesturTerkini}`
+          : gesturTerkini}
     </span>
   </div>
 </div>

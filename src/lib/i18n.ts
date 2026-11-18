@@ -241,7 +241,23 @@ const RESOURCES = {
         gestureEyebrow: 'KENDALI GESTUR TANGAN 21-TITIK',
         gestureTitle: 'Simulasi Sabetan Dalang via Kamera Lokal',
         gestureDesc:
-          'Aktifkan tombol Gestur 3D di bilah atas: tangan kanan menggerakkan Sri Rama & kemiringan busur, tangan kiri menggerakkan Kidang Kencana, dan gestur mengepal memicu sabetan keprak.',
+          'Aktifkan Gestur 3D lalu gerakkan tangan kiri-kanan (geser), naik-turun (angkat solah), maju-mundur (jarak ke Blencong/Kelir), miringkan pergelangan, cubit untuk menarik busur dan melepas Panah Guwawijaya, kepal untuk Cempala-Kepyak, serta 2 atau 3 jari untuk Gunungan dan pose Kiprah.',
+        gestureStartBtn: 'Aktifkan Gestur Dalang',
+        gestureStopBtn: 'Matikan Gestur 3D',
+        gestureStatusHint:
+          'X: Geser · Y: Solah · Dekat: Sorot Blencong · Cubit: Tarik & Panah · Kepal: Cempala · 2/3 Jari: Kayon & Kiprah',
+        gestureModeOne: '1 Tangan',
+        gestureModeTwo: '2 Tangan',
+        gestureBowPct: 'Busur {{pct}}%',
+        gestureDenied: 'Izin kamera gestur ditolak atau tidak tersedia pada peramban ini.',
+        gestureActions: {
+          sabetan: 'Sabetan & Keprak',
+          bidik: 'Bidik Gandewa',
+          panah: 'Lepas Guwawijaya',
+          kayon: 'Olah Gunungan',
+          kiprah: 'Pose Kiprah',
+          solah: 'Gerak Solah',
+        },
         gestureCta: 'Bedah Anatomi Wayang di Digital Twin →',
       },
       kawruh: {
@@ -673,7 +689,23 @@ const RESOURCES = {
         gestureEyebrow: '21-POINT HAND GESTURE CONTROL',
         gestureTitle: 'Puppeteer Stage Manipulation via Local Webcam',
         gestureDesc:
-          'Enable 3D Gesture in the top navigation bar: your right hand guides Sri Rama and bow inclination, left hand moves the Golden Deer, and a closed fist triggers the wooden keprak strike.',
+          'Enable 3D Gesture to drive Sri Rama and the Golden Deer across all axes: sweep horizontally, lift for jumping solah, move closer/open to shift shadow depth toward the Blencong flame, tilt wrist, pinch to draw the Guwawijaya bowstring and loose arrows, fist for Cempala-Keprak, or 2-3 fingers for Kayon and Kiprah.',
+        gestureStartBtn: 'Enable Dalang Gesture',
+        gestureStopBtn: 'Disable 3D Gesture',
+        gestureStatusHint:
+          'X: Sweep · Y: Lift Solah · Depth: Blencong Glow · Pinch: Draw & Arrow · Fist: Keprak · 2/3 Fingers: Kayon & Kiprah',
+        gestureModeOne: '1 Hand',
+        gestureModeTwo: '2 Hands',
+        gestureBowPct: 'Bow {{pct}}%',
+        gestureDenied: 'Gesture camera permission denied or unavailable on this browser.',
+        gestureActions: {
+          sabetan: 'Sweep & Keprak',
+          bidik: 'Drawing Bow',
+          panah: 'Arrow Loosed',
+          kayon: 'Gunungan Sway',
+          kiprah: 'Kiprah Poise',
+          solah: 'Puppet Solah',
+        },
         gestureCta: 'Inspect Wayang Anatomy in Digital Twin →',
       },
       kawruh: {
@@ -1105,7 +1137,23 @@ const RESOURCES = {
         gestureEyebrow: 'KENDHALI GESTUR ASTA 21-TITIK',
         gestureTitle: 'Simulasi Sabetan Dhalang Lumantar Kamera Lokal',
         gestureDesc:
-          'Uripna tombol Gestur 3D ing ndhuwur: asta tengen nglakokake Sri Rama, asta kiwa nggerakake Kidang Kencana, lan ngepel asta nuthuk keprak kayu.',
+          'Uripna Gestur 3D lan obahna asta ngiwa-nengen (geser), munggah-mudhun (solah), maju-mundur (cedhak Blencong/Kelir), miringake ugeman, jiwit kanggo narik gendewa saha ngluncurake Panah Guwawijaya, kepel kanggo Cempala-Kepyak, lan 2-3 driji kanggo Gunungan utawi Kiprah.',
+        gestureStartBtn: 'Uripake Gestur Dhalang',
+        gestureStopBtn: 'Pateni Gestur 3D',
+        gestureStatusHint:
+          'X: Geser · Y: Solah · Maju: Cedhak Blencong · Jiwit: Panah · Kepel: Cempala · 2/3 Driji: Kayon & Kiprah',
+        gestureModeOne: '1 Asta',
+        gestureModeTwo: '2 Asta',
+        gestureBowPct: 'Gendewa {{pct}}%',
+        gestureDenied: 'Idin kamera gestur ditolak utawi boten cumawis ing peramban punika.',
+        gestureActions: {
+          sabetan: 'Sabetan & Keprak',
+          bidik: 'Mbidhik Gendewa',
+          panah: 'Jemparing Lumepas',
+          kayon: 'Olah Gunungan',
+          kiprah: 'Solah Kiprah',
+          solah: 'Gerak Solah',
+        },
         gestureCta: 'Bedhah Anatomi Ringgit ing Digital Twin →',
       },
       kawruh: {

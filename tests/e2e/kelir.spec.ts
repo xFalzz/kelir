@@ -382,14 +382,17 @@ test.describe('Kelir Multi-Page Spasial 3D — Verifikasi 5 Halaman & Realisme 3
     await expect(page.locator('main')).toHaveAttribute('data-active-page', 'pakeliran');
     await expect(page.locator('#pakeliran')).toBeVisible();
     await expect(page.locator('#coverflow')).toHaveCount(0);
+    await expect(page.getByTestId('pakeliran-gesture-btn')).toBeVisible();
     await page.getByTestId('babak-2').click();
     await page.getByTestId('btn-panah-rama').click();
-    await page.waitForTimeout(450);
+    await page.locator('.pakeliran-theatre-box').scrollIntoViewIfNeeded();
+    await page.waitForTimeout(320);
     await page.screenshot({ path: `${ARTIFACT_DIR}/mp-08-pakeliran-wayang-detail.png` });
 
     // Verifikasi Tema Gelap Panggung Pakeliran lalu kembali Terang
     await page.getByTestId('toggle-tema').click();
-    await page.waitForTimeout(200);
+    await page.locator('.pakeliran-theatre-box').scrollIntoViewIfNeeded();
+    await page.waitForTimeout(220);
     await page.screenshot({ path: `${ARTIFACT_DIR}/mp-08b-pakeliran-malam.png` });
     await page.getByTestId('toggle-tema').click();
     await expect(page.locator('html')).toHaveAttribute('data-theme', 'terang');
