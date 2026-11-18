@@ -959,7 +959,7 @@ export function buildSriRamaWayang3D(): WayangSriRamaRig {
 
   const panahNockGroup = new THREE.Group();
   panahNockGroup.name = 'busur-panah';
-  panahNockGroup.position.set(0, 0, 0.01);
+  panahNockGroup.position.set(0, 0, 0);
   busur.add(panahNockGroup);
 
   const batangPanah = new THREE.Mesh(
@@ -1229,12 +1229,12 @@ export function buildKidangKencana3D(): KidangKencanaRig {
   kalungGenta.position.set(-0.04, 0.08, 0);
   leherKepala.add(kalungGenta);
 
-  // Bandul genta kuningan di leher kijang
+  // Bandul genta kuningan di leher kijang (simetris dua sisi)
   const gentaBandul = new THREE.Mesh(
     new THREE.SphereGeometry(0.024, 8, 8),
     tandukEmasMat,
   );
-  gentaBandul.position.set(-0.11, 0.03, 0.012);
+  gentaBandul.position.set(-0.11, 0.03, 0);
   leherKepala.add(gentaBandul);
 
   const telingaGrup = new THREE.Group();
@@ -1261,16 +1261,18 @@ export function buildKidangKencana3D(): KidangKencanaRig {
     new THREE.OctahedronGeometry(0.024, 0),
     tandukEmasMat,
   );
-  jamangDahi.scale.set(0.9, 1.3, 0.45);
-  jamangDahi.position.set(-0.09, 0.43, 0.012);
+  jamangDahi.scale.set(0.9, 1.3, 0.78);
+  jamangDahi.position.set(-0.09, 0.43, 0);
   leherKepala.add(jamangDahi);
 
-  const mataKidang = new THREE.Mesh(
+  const mataKidangDepan = new THREE.Mesh(
     new THREE.SphereGeometry(0.016, 8, 8),
     tandukEmasMat,
   );
-  mataKidang.position.set(-0.14, 0.36, 0.016);
-  leherKepala.add(mataKidang);
+  mataKidangDepan.position.set(-0.14, 0.36, 0.016);
+  const mataKidangBelakang = mataKidangDepan.clone();
+  mataKidangBelakang.position.z = -0.016;
+  leherKepala.add(mataKidangDepan, mataKidangBelakang);
 
   const batangTandukCurve = new THREE.CatmullRomCurve3([
     new THREE.Vector3(-0.06, 0.43, 0),
@@ -1361,7 +1363,7 @@ export function buildKidangKencana3D(): KidangKencanaRig {
     new THREE.CylinderGeometry(0.014, 0.018, 1.55, 6),
     gapitMat,
   );
-  gapit.position.set(-0.02, -0.35, -0.022);
+  gapit.position.set(-0.02, -0.35, 0);
   badan.add(gapit);
 
   return {

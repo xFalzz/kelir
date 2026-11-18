@@ -120,11 +120,25 @@ describe('EvaluatorGesturPakeliran (Koreografi Dalang 3D Multi-Sumbu)', () => {
     const dual = ev.prosesFrame(buatFramePakeliran(kanan, 2000, kiri));
     expect(dual.modeKontrol).toBe('dua-tangan');
     expect(dual.jumlahTangan).toBe(2);
-    // Sri Rama berada di kiri Kidang -> yaw melakukan walikan ~ Math.PI menghadap ke kanan
+    // Sri Rama di kiri Kidang -> Rama hadap kanan (~PI), Kidang di kanan Rama -> Kidang hadap kiri (~0) saling adep-adepan
     expect(dual.ramaPosNorm).toBeLessThan(dual.kidangPosNorm);
     expect(Math.abs(dual.ramaYawY - Math.PI)).toBeLessThan(0.6);
+    expect(Math.abs(dual.kidangYawY)).toBeLessThan(0.6);
     expect(dual.kidangLiftY).toBeGreaterThan(0.1);
     expect(dual.kidangEarPerk).toBeGreaterThan(0.3);
+
+    // Posisi normal (Rama kanan, Kidang kiri) -> Kidang menghadap kanan (~PI) ke arah Sri Rama
+    ev.reset();
+    const normalSide = ev.prosesFrame(
+      buatFramePakeliran(
+        buatTanganPakeliran({ pusatX: 0.72 }),
+        2400,
+        buatTanganPakeliran({ pusatX: 0.25 }),
+      ),
+    );
+    expect(normalSide.kidangPosNorm).toBeLessThan(normalSide.ramaPosNorm);
+    expect(Math.abs(normalSide.kidangYawY - Math.PI)).toBeLessThan(0.6);
+    expect(Math.abs(normalSide.ramaYawY)).toBeLessThan(0.6);
   });
 
   it('menarik tali busur pada gestur cubit dan memicu panah & sabetan dengan cooldown', () => {

@@ -227,7 +227,7 @@ export class WayangStage {
   private currentTarikBusur = 0;
   private targetKidangLiftY = 0;
   private targetKidangZ = 0.12;
-  private targetKidangYawY = 0.04;
+  private targetKidangYawY = Math.PI - 0.04;
   private targetKidangTiltZ = 0;
   private targetKidangNeckZ = 0;
   private targetKidangEarPerk = 0;
@@ -680,10 +680,11 @@ export class WayangStage {
     this.mataPanahBusurMat = (mataPanahObj?.material as THREE.MeshStandardMaterial) ?? null;
     this.panggungGrup.add(this.sriRama.root);
 
-    // 9. Wayang Kulit Kijang Kencana (Berdiri Menapak Rapi di Atas Gedebog Atas)
+    // 9. Wayang Kulit Kijang Kencana (Berdiri Menapak Rapi di Gedebog Atas & Menghadap Sri Rama)
     this.kidang = buildKidangKencana3D();
     this.kidang.root.scale.setScalar(0.8);
     this.kidang.root.position.set(-1.16, -0.57, 0.12);
+    this.kidang.root.rotation.y = Math.PI - 0.04;
     // Pangkas panjang gapit khusus panggung agar ujungnya tertancap tepat di batang gedebog tanpa menembus lantai
     const gapitKidang = this.kidang.badan.children.find(
       (c): c is THREE.Mesh =>
@@ -832,7 +833,7 @@ export class WayangStage {
     this.targetRamaZ = 0.14;
     this.targetKidangZ = 0.12;
     this.targetRamaYawY = -0.05;
-    this.targetKidangYawY = 0.04;
+    this.targetKidangYawY = Math.PI - 0.04;
     this.targetRamaTiltZ = 0;
     this.targetKidangTiltZ = 0;
     this.targetKidangNeckZ = 0;
@@ -1014,9 +1015,10 @@ export class WayangStage {
     const desiredRamaZ = this.gesturAktif ? this.targetRamaZ : 0.14;
     this.sriRama.root.position.z += (desiredRamaZ - this.sriRama.root.position.z) * dampSmooth;
 
+    const idleRamaBaseYaw = this.targetRamaX < this.targetKidangX - 0.14 ? Math.PI - 0.05 : -0.05;
     const desiredRamaYaw = this.gesturAktif
       ? this.targetRamaYawY
-      : THREE.MathUtils.clamp(-dxRama * 0.26, -0.34, 0.34) - 0.05;
+      : idleRamaBaseYaw + THREE.MathUtils.clamp(-dxRama * 0.26, -0.34, 0.34);
     this.sriRama.root.rotation.y += (desiredRamaYaw - this.sriRama.root.rotation.y) * dampFast;
 
     const sabetanWave = Math.sin(this.targetSabetan * Math.PI * 2) * 0.22;
@@ -1064,9 +1066,10 @@ export class WayangStage {
     const desiredKidangZ = this.gesturAktif ? this.targetKidangZ : 0.12;
     this.kidang.root.position.z += (desiredKidangZ - this.kidang.root.position.z) * dampSmooth;
 
+    const idleKidangBaseYaw = this.targetKidangX <= this.targetRamaX + 0.14 ? Math.PI - 0.04 : 0.04;
     const desiredKidangYaw = this.gesturAktif
       ? this.targetKidangYawY
-      : THREE.MathUtils.clamp(-dxKidang * 0.22, -0.28, 0.28) + 0.04;
+      : idleKidangBaseYaw + THREE.MathUtils.clamp(-dxKidang * 0.22, -0.28, 0.28);
     this.kidang.root.rotation.y += (desiredKidangYaw - this.kidang.root.rotation.y) * dampFast;
 
     const desiredNeckZ = this.gesturAktif ? this.targetKidangNeckZ : Math.sin(t * 3.4) * 0.09;

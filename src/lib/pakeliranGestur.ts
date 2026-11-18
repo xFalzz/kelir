@@ -108,7 +108,7 @@ export class EvaluatorGesturPakeliran {
   private lastSabetanMs = -COOLDOWN_SABETAN_MS;
 
   private facingRamaFlip = false;
-  private facingKidangFlip = false;
+  private facingKidangRight = true;
 
   public reset(): void {
     this.smoothRamaX = 0.46;
@@ -127,7 +127,7 @@ export class EvaluatorGesturPakeliran {
     this.prevKepalAktif = false;
     this.lastSabetanMs = -COOLDOWN_SABETAN_MS;
     this.facingRamaFlip = false;
-    this.facingKidangFlip = false;
+    this.facingKidangRight = true;
   }
 
   public sinkronkanPosisiAwal(ramaPosNorm: number, kidangPosNorm: number): void {
@@ -160,7 +160,7 @@ export class EvaluatorGesturPakeliran {
         ramaZ: 0.12,
         kidangZ: 0.1,
         ramaYawY: -0.05,
-        kidangYawY: 0.04,
+        kidangYawY: Math.PI - 0.04,
         ramaTiltZ: 0,
         ramaHeadTilt: 0,
         kidangTiltZ: 0,
@@ -256,15 +256,19 @@ export class EvaluatorGesturPakeliran {
       baseYawRama + clamp(tiltRama * 0.42 - vxRama * 0.12, -0.45, 0.45);
 
     if (tanganKidang) {
-      if (!this.facingKidangFlip && vxKidang > 0.65) {
-        this.facingKidangFlip = true;
-      } else if (this.facingKidangFlip && vxKidang < -0.65) {
-        this.facingKidangFlip = false;
+      if (vxKidang > 0.65 || this.smoothKidangX < this.smoothRamaX - 0.16) {
+        this.facingKidangRight = true;
+      } else if (vxKidang < -0.75 || this.smoothKidangX > this.smoothRamaX + 0.16) {
+        this.facingKidangRight = false;
       }
     } else {
-      this.facingKidangFlip = this.smoothKidangX < this.smoothRamaX - 0.35 ? false : this.smoothKidangX > this.smoothRamaX + 0.35;
+      if (this.smoothKidangX <= this.smoothRamaX - 0.16) {
+        this.facingKidangRight = true;
+      } else if (this.smoothKidangX >= this.smoothRamaX + 0.16) {
+        this.facingKidangRight = false;
+      }
     }
-    const baseYawKidang = this.facingKidangFlip ? Math.PI : 0;
+    const baseYawKidang = this.facingKidangRight ? Math.PI : 0;
     const kidangYawY =
       baseYawKidang + clamp(tiltKidang * 0.46 + vxKidang * 0.12, -0.48, 0.48);
 
