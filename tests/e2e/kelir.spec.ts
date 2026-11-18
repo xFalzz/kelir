@@ -226,8 +226,15 @@ test.describe('Kelir Multi-Page Spasial 3D — Verifikasi 5 Halaman & Realisme 3
     await expect(page.getByTestId('twin-saron-gesture-btn')).toBeVisible();
     await expect(page.getByTestId('twin-saron-gesture-btn')).toHaveAttribute('aria-pressed', 'false');
     await expect(page.locator('.saron-keys-bar')).toBeVisible();
-    await page.getByTestId('saron-wilah-2').click();
-    await expect(page.getByTestId('saron-wilah-2')).toHaveClass(/is-struck/);
+    const saronWilah2 = page.getByTestId('saron-wilah-2');
+    await saronWilah2.scrollIntoViewIfNeeded();
+    const struckObserver = page.waitForFunction(
+      () => document.querySelector('[data-testid="saron-wilah-2"]')?.classList.contains('is-struck') ?? false,
+      null,
+      { timeout: 4000 },
+    );
+    await saronWilah2.click();
+    await struckObserver;
     await page.getByTestId('toggle-xray').click({ force: true });
     await page.evaluate(() => window.scrollTo(0, 0));
     await page.waitForTimeout(350);

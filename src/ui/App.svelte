@@ -959,7 +959,7 @@
       saronStruckTimer = window.setTimeout(() => {
         saronStruckWilahIdx = null;
         saronStruckTimer = null;
-      }, 240);
+      }, 340);
     }
   }
 

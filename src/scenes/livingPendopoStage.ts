@@ -554,7 +554,6 @@ export class LivingPendopoStage {
   private batikClothMeshes: { mesh: THREE.Mesh; basePos: Float32Array; phase: number }[] = [];
   private lampApiKelir: THREE.PointLight | null = null;
   private lampPrapen: THREE.PointLight | null = null;
-  private waterMesh: THREE.Mesh | null = null;
   private particlePoints: THREE.Points | null = null;
 
   private hemiLight!: THREE.HemisphereLight;
@@ -867,19 +866,17 @@ export class LivingPendopoStage {
     jalanBarat.position.set(-2.55, 0.12, 0);
     jalanBarat.receiveShadow = true;
 
-    const jalanTimurDalam = new THREE.Mesh(new THREE.BoxGeometry(1.1, 0.08, 0.84), batuAndesitMat);
-    jalanTimurDalam.position.set(1.95, 0.12, 0);
-    jalanTimurDalam.receiveShadow = true;
-
-    const jalanTimurLuar = new THREE.Mesh(new THREE.BoxGeometry(0.65, 0.08, 0.84), batuAndesitMat);
-    jalanTimurLuar.position.set(5.2, 0.12, 0);
-    jalanTimurLuar.receiveShadow = true;
-    this.pulauRoot.add(jalanUtaraSelatan, jalanBarat, jalanTimurDalam, jalanTimurLuar);
+    const jalanTimur = new THREE.Mesh(new THREE.BoxGeometry(5.1, 0.08, 0.84), batuAndesitMat);
+    jalanTimur.position.set(2.55, 0.12, 0);
+    jalanTimur.receiveShadow = true;
+    this.pulauRoot.add(jalanUtaraSelatan, jalanBarat, jalanTimur);
 
     // Jalur batu setapak tegak lurus menuju keempat paviliun kuadran agar semua bangunan terhubung rapi
     for (const [cx, cz, w, d] of [
       [-3.35, -1.0, 0.56, 2.0],
       [-3.35, 1.0, 0.56, 2.0],
+      [3.35, -1.0, 0.56, 1.8],
+      [3.35, 1.0, 0.56, 1.8],
       [1.2, -2.85, 2.2, 0.56],
       [1.2, 2.85, 2.2, 0.56],
     ] as const) {
@@ -941,65 +938,7 @@ export class LivingPendopoStage {
       this.pulauRoot.add(lentera);
     }
 
-    // 5. Kolam Segaran Teratai & Jembatan Kayu Lengkung di Poros Taman Timur (3.75, 0.08, 0)
-    const bingkaiKolam = new THREE.Mesh(new THREE.BoxGeometry(2.68, 0.16, 2.02), batuCandiMat);
-    bingkaiKolam.position.set(3.75, 0.08, 0);
-    this.pulauRoot.add(bingkaiKolam);
-
-    this.waterMesh = new THREE.Mesh(
-      new THREE.BoxGeometry(2.44, 0.14, 1.78),
-      new THREE.MeshPhysicalMaterial({
-        color: 0x166478,
-        roughness: 0.1,
-        metalness: 0.18,
-        clearcoat: 1,
-        transparent: true,
-        opacity: 0.88,
-      }),
-    );
-    this.waterMesh.position.set(3.75, 0.1, 0);
-    this.pulauRoot.add(this.waterMesh);
-
-    // Jembatan lengkung fungsional menyeberangi Kolam Segaran pada sumbu X (jalanTimur)
-    const jembatanGrup = new THREE.Group();
-    jembatanGrup.position.set(3.75, 0.16, 0);
-    for (let p = -4; p <= 4; p++) {
-      const yArc = Math.cos((p / 4.5) * (Math.PI / 2)) * 0.22;
-      const papan = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.045, 0.72), kayuJatiMat);
-      papan.position.set(p * 0.25, yArc, 0);
-      papan.castShadow = true;
-      jembatanGrup.add(papan);
-    }
-    for (const zRail of [-0.32, 0.32]) {
-      const railCurve = new THREE.CatmullRomCurve3([
-        new THREE.Vector3(-1.12, 0.24, zRail),
-        new THREE.Vector3(0, 0.48, zRail),
-        new THREE.Vector3(1.12, 0.24, zRail),
-      ]);
-      const pegangan = new THREE.Mesh(
-        new THREE.TubeGeometry(railCurve, 12, 0.022, 6, false),
-        kayuJatiMat,
-      );
-      jembatanGrup.add(pegangan);
-    }
-    this.pulauRoot.add(jembatanGrup);
-
-    const lotusPadMat = new THREE.MeshStandardMaterial({ color: 0x2f6b3c, roughness: 0.7 });
-    const lotusFlowerMat = new THREE.MeshStandardMaterial({ color: 0xf7a8b8, roughness: 0.4 });
-    for (const [tx, tz] of [
-      [3.15, -0.58],
-      [4.28, -0.56],
-      [3.35, 0.58],
-      [4.45, 0.55],
-    ]) {
-      const daun = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.14, 0.02, 10), lotusPadMat);
-      daun.position.set(tx, 0.19, tz);
-      const kuntum = new THREE.Mesh(new THREE.OctahedronGeometry(0.048, 0), lotusFlowerMat);
-      kuntum.position.set(tx, 0.22, tz);
-      this.pulauRoot.add(daun, kuntum);
-    }
-
-    // 6. Enam Pohon Beringin Agung (Ringin Kurung) di Sudut & Sisi Luar Pulau (Bebas Benturan)
+    // 5. Enam Pohon Beringin Agung (Ringin Kurung) di Sudut & Sisi Luar Pulau (Bebas Benturan)
     const daunUtamaMat = new THREE.MeshStandardMaterial({
       color: 0x2b5c31,
       map: daunTex?.map ?? null,
@@ -1955,9 +1894,6 @@ export class LivingPendopoStage {
     if (this.lampPrapen) {
       this.lampPrapen.intensity =
         ((fokusKeris ? 4.5 : 3.0) + Math.cos(t * 8.2) * 0.55) * this.lampBoost;
-    }
-    if (this.waterMesh) {
-      this.waterMesh.position.y = 0.1 + Math.sin(t * 1.6) * 0.012;
     }
     if (this.particlePoints) {
       this.particlePoints.rotation.y = t * 0.032;
