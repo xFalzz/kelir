@@ -39,8 +39,33 @@ export interface OpsiAuditOutput {
   wajibJangkarBudaya?: boolean;
 }
 
-const DELIMITER_BERBAHAYA_RE =
-  /<\s*\/?\s*(?:system|developer|assistant|tool|function|prompt|instructions?|pertanyaan_pengguna|bukti_arsip_s1_s7|referensi_nusantara|unsur_anatomi_3d|instruksi_kurasi|spesimen_terkurasi|tema_budaya|frasa_pengguna|daftar_titik|preferensi_pengguna|script|iframe|svg)\b|<<\s*sys\s*>>|\[\s*\/?\s*inst\s*\]|###\s*(?:system|instruction|developer|assistant|human)\s*:/gi;
+const DELIMITER_PAT_SRC =
+  '<\\s*\\/?\\s*(?:system|developer|assistant|tool|function|prompt|instructions?|pertanyaan_pengguna|bukti_arsip_s1_s7|referensi_nusantara|unsur_anatomi_3d|instruksi_kurasi|spesimen_terkurasi|tema_budaya|frasa_pengguna|daftar_titik|preferensi_pengguna|script|iframe|svg)\\b|<<\\s*sys\\s*>>|\\[\\s*\\/?\\s*inst\\s*\\]|###\\s*(?:system|instruction|developer|assistant|human)\\s*:';
+const DELIMITER_BERBAHAYA_RE = new RegExp(DELIMITER_PAT_SRC, 'gi');
+const DELIMITER_BERBAHAYA_TEST_RE = new RegExp(DELIMITER_PAT_SRC, 'i');
+
+const HOMOGLYPH_MAP: Record<string, string> = {
+  '\u0430': 'a', '\u0410': 'a',
+  '\u0435': 'e', '\u0415': 'e',
+  '\u0456': 'i', '\u0406': 'i',
+  '\u043E': 'o', '\u041E': 'o',
+  '\u0440': 'p', '\u0420': 'p',
+  '\u0441': 'c', '\u0421': 'c',
+  '\u0443': 'y', '\u0423': 'y',
+  '\u0445': 'x', '\u0425': 'x',
+  '\u043A': 'k', '\u041A': 'k',
+  '\u043D': 'h', '\u041D': 'h',
+  '\u043C': 'm', '\u041C': 'm',
+  '\u0442': 't', '\u0422': 't',
+  '\u0432': 'b', '\u0412': 'b',
+  '\u03B1': 'a', '\u03B5': 'e',
+  '\u03B9': 'i', '\u03BF': 'o',
+  '\u03C1': 'p', '\u03C4': 't',
+};
+
+function normalisasiHomoglyph(teks: string): string {
+  return teks.replace(/[\u0370-\u04FF]/g, (ch) => HOMOGLYPH_MAP[ch] ?? ch);
+}
 
 const POLA_INJEKSI_PROMPT: RegExp[] = [
   /\bignore\s+(?:all\s+|the\s+|any\s+|previous\s+|prior\s+|above\s+){1,3}(?:instructions?|rules?|prompts?|constraints?|system|guidelines?)\b/i,
@@ -135,16 +160,20 @@ export function bersihkanInputPengguna(teks: string, maxLen = BATAS_KARAKTER_TAN
 
 function buatVarianDeobfuskasi(norm: string): { tanpaPemisah: string; leetDecoded: string } {
   let decoded = norm;
-  if (/%[0-9a-f]{2}/i.test(norm)) {
+  for (let pass = 0; pass < 3 && /%[0-9a-f]{2}/i.test(decoded); pass++) {
     try {
-      decoded = decodeURIComponent(norm);
+      const next = decodeURIComponent(decoded);
+      if (next === decoded) break;
+      decoded = next;
     } catch {
-      decoded = norm;
+      break;
     }
   }
-  const tanpaCombining = decoded
-    .replace(/\p{M}/gu, '')
-    .replace(/[\u00AD\u034F\u061C\u180E\u200B-\u200F\u202A-\u202E\u2060-\u206F\uFEFF]/g, '');
+  const tanpaCombining = normalisasiHomoglyph(
+    decoded
+      .replace(/\p{M}/gu, '')
+      .replace(/[\u00AD\u034F\u061C\u180E\u200B-\u200F\u202A-\u202E\u2060-\u206F\uFEFF]/g, ''),
+  );
 
   // Satukan huruf tunggal terpecah tanda titik/garis bawah seperti "p.r.o.m.p.t" atau "a_p_i_k_e_y"
   const tanpaPemisah = tanpaCombining.replace(/(?<=\b[a-z0-9])[._-]+(?=[a-z0-9](?:\b|[._-]))/gi, '');
@@ -189,8 +218,9 @@ export function deteksiSeranganAtauLuarTopik(
     return { aman: false, kategori: 'kosong', inputBersih: '' };
   }
 
+  const homoNorm = normalisasiHomoglyph(norm);
   const { tanpaPemisah, leetDecoded } = buatVarianDeobfuskasi(norm);
-  const kandidatKeamanan = [norm, inputBersih, tanpaPemisah, leetDecoded];
+  const kandidatKeamanan = [norm, homoNorm, inputBersih, tanpaPemisah, leetDecoded];
 
   for (const re of POLA_EXFILTRASI_RAHASIA) {
     if (kandidatKeamanan.some((v) => re.test(v))) {
@@ -198,11 +228,9 @@ export function deteksiSeranganAtauLuarTopik(
     }
   }
 
-  if (DELIMITER_BERBAHAYA_RE.test(norm) || DELIMITER_BERBAHAYA_RE.test(tanpaPemisah)) {
-    DELIMITER_BERBAHAYA_RE.lastIndex = 0;
+  if (DELIMITER_BERBAHAYA_TEST_RE.test(norm) || DELIMITER_BERBAHAYA_TEST_RE.test(tanpaPemisah)) {
     return { aman: false, kategori: 'injeksi-prompt', inputBersih };
   }
-  DELIMITER_BERBAHAYA_RE.lastIndex = 0;
 
   for (const re of POLA_INJEKSI_PROMPT) {
     if (kandidatKeamanan.some((v) => re.test(v))) {
@@ -211,12 +239,37 @@ export function deteksiSeranganAtauLuarTopik(
   }
 
   for (const re of POLA_LUAR_TOPIK) {
-    if (re.test(norm) || re.test(inputBersih) || re.test(tanpaPemisah)) {
+    if (re.test(norm) || re.test(homoNorm) || re.test(inputBersih) || re.test(tanpaPemisah)) {
       return { aman: false, kategori: 'luar-topik', inputBersih };
     }
   }
 
   return { aman: true, kategori: 'aman', inputBersih };
+}
+
+/**
+ * Memeriksa dan membersihkan konteksUnsur bebas dari klien agar tidak menjadi vektor prompt injection.
+ */
+export function sanitasiKonteksUnsurAman(raw: unknown): {
+  judulUnsur?: string;
+  material?: string;
+  fungsiTeknis?: string;
+  ringkasan?: string;
+} | undefined {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return undefined;
+  const src = raw as Record<string, unknown>;
+  const ambilFieldAman = (val: unknown, maxLen: number): string | undefined => {
+    if (typeof val !== 'string') return undefined;
+    const cek = deteksiSeranganAtauLuarTopik(val, maxLen);
+    if (!cek.aman) return undefined;
+    return cek.inputBersih;
+  };
+  const judulUnsur = ambilFieldAman(src.judulUnsur, 120);
+  const material = ambilFieldAman(src.material, 180);
+  const fungsiTeknis = ambilFieldAman(src.fungsiTeknis, 200);
+  const ringkasan = ambilFieldAman(src.ringkasan, 220);
+  if (!judulUnsur && !material && !fungsiTeknis && !ringkasan) return undefined;
+  return { judulUnsur, material, fungsiTeknis, ringkasan };
 }
 
 /**

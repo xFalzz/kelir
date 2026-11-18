@@ -1375,4 +1375,103 @@ test.describe('Kelir Multi-Page Spasial 3D — Verifikasi 5 Halaman & Realisme 3
     await expect(page.getByTestId('notfound-page')).toBeVisible();
     expect(errors).toEqual([]);
   });
+
+  test('Suite 6: Audit Multi-Disiplin - WCAG 2.1.4, Skip-Link, Focus Trap, Pakeliran Manual, Offline PWA, & API Guardrails', async ({
+    page,
+    context,
+    request,
+  }) => {
+    const errors: string[] = [];
+    page.on('pageerror', (err) => errors.push(err.message));
+
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await page.goto('/');
+    await expect(page.locator('.preloader-curtain')).toHaveAttribute('data-preloader-done', 'true', {
+      timeout: 12000,
+    });
+
+    // 1. Skip-link A11y & Landmark
+    await page.keyboard.press('Tab');
+    await expect(page.locator('.skip-link')).toBeFocused();
+    await expect(page.locator('#main-content')).toHaveAttribute('tabindex', '-1');
+
+    // 2. WCAG 2.1.4: huruf tunggal 't' / 'm' / '?' TIDAK memicu shortcut; wajib Alt+T & Ctrl+K
+    await expect(page.locator('html')).toHaveAttribute('data-theme', 'terang');
+    await page.keyboard.press('t');
+    await expect(page.locator('html')).toHaveAttribute('data-theme', 'terang');
+    await page.keyboard.press('?');
+    await expect(page.getByTestId('search-modal')).toHaveCount(0);
+
+    await page.keyboard.press('Alt+t');
+    await expect(page.locator('html')).toHaveAttribute('data-theme', 'malam');
+    await page.keyboard.press('Alt+t');
+    await expect(page.locator('html')).toHaveAttribute('data-theme', 'terang');
+
+    // 3. Modal Focus Trap & Focus Restoration
+    await page.getByTestId('btn-search-modal').click();
+    const searchModal = page.getByTestId('search-modal');
+    await expect(searchModal).toBeVisible();
+    for (let i = 0; i < 6; i += 1) {
+      await page.keyboard.press('Tab');
+      const insideModal = await page.evaluate(() => {
+        const m = document.querySelector('[data-testid="search-modal"]');
+        return Boolean(m && m.contains(document.activeElement));
+      });
+      expect(insideModal).toBe(true);
+    }
+    await page.keyboard.press('Escape');
+    await expect(searchModal).toHaveCount(0);
+    await expect(page.getByTestId('btn-search-modal')).toBeFocused();
+
+    // 4. Pakeliran Non-Camera Solah Controls (Y, Z, Walikan, Auto-Demo)
+    await page.getByTestId('page-tab-pakeliran').click();
+    await expect(page.locator('#pakeliran')).toBeVisible({ timeout: 10000 });
+    await expect(page.getByTestId('pakeliran-solah-y')).toBeVisible();
+    await page.getByTestId('pakeliran-walikan-btn').click();
+    await expect(page.getByTestId('pakeliran-walikan-btn')).toHaveAttribute('aria-pressed', 'true');
+    await page.getByTestId('pakeliran-demo-btn').click();
+    await expect(page.getByTestId('pakeliran-demo-btn')).toHaveAttribute('aria-pressed', 'true');
+    await page.waitForTimeout(350);
+    await page.getByTestId('pakeliran-demo-btn').click();
+    await expect(page.getByTestId('pakeliran-demo-btn')).toHaveAttribute('aria-pressed', 'false');
+
+    // 5. Kawruh AI Helpful Feedback Loop & LocalStorage Persistence
+    await page.getByTestId('page-tab-kawruh').click();
+    await expect(page.getByTestId('ai-feedback-helpful')).toBeVisible({ timeout: 10000 });
+    await page.getByTestId('ai-feedback-helpful').click();
+    await expect(page.getByTestId('ai-feedback-saved')).toBeVisible();
+
+    // 6. PWA Offline Status Pill & Manifest Screenshots Availability
+    const manifestRes = await request.get('/manifest.webmanifest');
+    expect(manifestRes.status()).toBe(200);
+    const manifestJson = await manifestRes.json();
+    expect(Array.isArray(manifestJson.screenshots)).toBe(true);
+    expect(manifestJson.screenshots.length).toBeGreaterThanOrEqual(2);
+    for (const sc of manifestJson.screenshots) {
+      const imgRes = await request.get(sc.src);
+      expect(imgRes.status()).toBe(200);
+    }
+
+    await context.setOffline(true);
+    await page.evaluate(() => window.dispatchEvent(new Event('offline')));
+    await expect(page.getByTestId('offline-status-pill')).toBeVisible();
+    await context.setOffline(false);
+    await page.evaluate(() => window.dispatchEvent(new Event('online')));
+    await expect(page.getByTestId('offline-status-pill')).toHaveCount(0);
+
+    // 7. API Security Guardrail (Method 405, Oversized 413, Cross-Site 403)
+    const getApi = await request.get('/api/tanya');
+    expect(getApi.status()).toBe(405);
+    const csrfApi = await request.post('/api/tanya', {
+      headers: { 'sec-fetch-site': 'cross-site' },
+      data: { bendaId: 'keris', pertanyaan: 'Apa itu keris?' },
+    });
+    expect(csrfApi.status()).toBe(403);
+    const bigApi = await request.post('/api/tanya', {
+      data: { bendaId: 'keris', pertanyaan: 'x'.repeat(20_000) },
+    });
+    expect(bigApi.status()).toBe(413);
+
+    expect(errors).toEqual([]);
+  });
 });

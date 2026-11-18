@@ -3,11 +3,11 @@
 > KELIR (`ꦏꦼꦭꦶꦂ`) adalah platform web kuratorial 5 ruang tematik berbasis WebGL 3D, Web Audio API sintesis gamelan, pelacakan tangan MediaPipe 21 titik secara lokal, serta mesin temu-balik BM25 berbasis arsip resmi Indonesia & UNESCO (S1–S7).
 
 ## Halaman Utama
-- [01 Beranda · Diorama Pendopo & Kronik Budaya](https://xfalzz.github.io/kelir/?hal=beranda): Diorama pulau Pendopo 3D, 5 bab scrollytelling historis, Indeks 12 Anatomi Pusaka (`KLR-01`–`KLR-12`), dan Etalase Lapisan Budaya.
-- [02 Digital Twin · Studio Bedah Anatomi 3D](https://xfalzz.github.io/kelir/?hal=twin): Inspeksi CAD interaktif mode PBR Nyata, Hibrida, dan Kawat X-Ray CAD beserta ledakan komponen 7 koleksi (Keris Luk 5, Saron, Batik, Joglo, Wayang, Kidang Kencana & Blencong, dan Prasasti Hanacaraka U+A980).
-- [03 Coverflow · Galeri 3D & Suluk Pakeliran](https://xfalzz.github.io/kelir/?hal=koleksi): Panggung pedestal WebGL 3D realistis atas 7 koleksi kurasi S1–S7, anatomi terperinci, dan pemutar larik suluk sinkron.
-- [04 Pakeliran · Lakon Kijang Kencana 3D](https://xfalzz.github.io/kelir/?hal=pakeliran): Panggung wayang bayangan layar blacu bersama Sri Rama, Kidang Kencana, Gunungan Kayon, dan pelita Blencong.
-- [05 Aksara & AI · Pamomong BM25 & Lab Hanacaraka](https://xfalzz.github.io/kelir/?hal=kawruh): Tanya jawab budaya terikat rujukan primer S1–S7, astrolabe horologis 3D, serta transliterasi Hanacaraka Unicode `U+A980–U+A9DF`.
+- [01 Beranda · Diorama Pendopo & Kronik Budaya](https://kelir.vercel.app/?hal=beranda): Diorama pulau Pendopo 3D, 5 bab scrollytelling historis, Indeks 12 Anatomi Pusaka (`KLR-01`–`KLR-12`), dan Etalase Lapisan Budaya.
+- [02 Digital Twin · Studio Bedah Anatomi 3D](https://kelir.vercel.app/?hal=twin): Inspeksi CAD interaktif mode PBR Nyata, Hibrida, dan Kawat X-Ray CAD beserta ledakan komponen 7 koleksi (Keris Luk 5, Saron, Batik, Joglo, Wayang, Kidang Kencana & Blencong, dan Prasasti Hanacaraka U+A980).
+- [03 Coverflow · Galeri 3D & Suluk Pakeliran](https://kelir.vercel.app/?hal=koleksi): Panggung pedestal WebGL 3D realistis atas 7 koleksi kurasi S1–S7, anatomi terperinci, dan pemutar larik suluk sinkron.
+- [04 Pakeliran · Lakon Kijang Kencana 3D](https://kelir.vercel.app/?hal=pakeliran): Panggung wayang bayangan layar blacu bersama Sri Rama, Kidang Kencana, Gunungan Kayon, dan pelita Blencong.
+- [05 Aksara & AI · Pamomong BM25 & Lab Hanacaraka](https://kelir.vercel.app/?hal=kawruh): Tanya jawab budaya terikat rujukan primer S1–S7, astrolabe horologis 3D, serta transliterasi Hanacaraka Unicode `U+A980–U+A9DF`.
 
 ## Koleksi Pusaka & Spesifikasi Terverifikasi
 - Keris Luk 5 Pandhawa Lare (`KLR-01 · S1`): Baja inti & meteorit nikel (Pamor Beras Wutah), 5 kelokan simetris, ganja, hulu ukir, dan sarung warangka gayaman pendok.

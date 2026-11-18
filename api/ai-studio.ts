@@ -2,6 +2,13 @@ import { type BahasaAktif } from '../src/content/pusaka.ts';
 import { periksaBatasLajuAI } from '../src/lib/aiGuardrail.ts';
 import { eksekusiPermintaanAiStudio } from '../src/server/aiStudioGemini.ts';
 import { bacaKonfigurasiGemini } from '../src/server/geminiLiveBridge.ts';
+import {
+  BAHASA_API_VALID,
+  cekOriginPermintaanApi,
+  ekstrakIpKlienTerpercaya,
+  pasangHeaderKeamananApi,
+  validasiDanParseBodyJson,
+} from '../src/server/httpRequestGuard.ts';
 
 interface VercelReq {
   method?: string;
@@ -15,25 +22,21 @@ interface VercelRes {
   json: (payload: unknown) => void;
 }
 
-const BAHASA_VALID = new Set<BahasaAktif>(['id', 'en', 'jw', 'aks']);
-const BATAS_BODY_BYTES = 16_384;
-
 export default async function handler(req: VercelReq, res: VercelRes): Promise<void> {
-  res.setHeader?.('X-Content-Type-Options', 'nosniff');
-  res.setHeader?.('Cache-Control', 'no-store');
+  pasangHeaderKeamananApi(res.setHeader);
 
   if (req.method !== 'POST') {
     res.status(405).json({ error: 'Gunakan metode POST.' });
     return;
   }
 
-  const forwarded = req.headers?.['x-forwarded-for'];
-  const clientIp =
-    typeof forwarded === 'string'
-      ? forwarded.split(',')[0].trim()
-      : Array.isArray(forwarded)
-        ? forwarded[0] ?? 'vercel'
-        : 'vercel';
+  const cekOrigin = cekOriginPermintaanApi(req.headers);
+  if (!cekOrigin.diizinkan) {
+    res.status(403).json({ error: cekOrigin.alasan ?? 'Origin tidak diizinkan.' });
+    return;
+  }
+
+  const clientIp = ekstrakIpKlienTerpercaya(req.headers);
   const limit = periksaBatasLajuAI(`studio:${clientIp}`, 60);
   if (!limit.diizinkan) {
     res.setHeader?.('Retry-After', '60');
@@ -41,26 +44,17 @@ export default async function handler(req: VercelReq, res: VercelRes): Promise<v
     return;
   }
 
-  if (typeof req.body === 'string' && req.body.length > BATAS_BODY_BYTES) {
-    res.status(413).json({ error: 'Ukuran payload melebihi batas aman 16 KB.' });
+  const contentLength =
+    typeof req.headers?.['content-length'] === 'string' ? req.headers['content-length'] : undefined;
+  const parsed = validasiDanParseBodyJson(req.body, contentLength);
+  if (!parsed.ok) {
+    res.status(parsed.status).json({ error: parsed.error });
     return;
   }
 
-  let body: Record<string, unknown>;
-  try {
-    const parsed = typeof req.body === 'string' ? JSON.parse(req.body || '{}') : req.body ?? {};
-    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
-      res.status(400).json({ error: 'Format tubuh permintaan harus berupa objek JSON.' });
-      return;
-    }
-    body = parsed as Record<string, unknown>;
-  } catch {
-    res.status(400).json({ error: 'Format JSON tubuh permintaan tidak valid.' });
-    return;
-  }
-
+  const body = parsed.body;
   const rawLang = body.bahasa as BahasaAktif | undefined;
-  const bahasa: BahasaAktif = rawLang && BAHASA_VALID.has(rawLang) ? rawLang : 'id';
+  const bahasa: BahasaAktif = rawLang && BAHASA_API_VALID.has(rawLang) ? rawLang : 'id';
   const { apiKey } = bacaKonfigurasiGemini();
 
   const hasil = await eksekusiPermintaanAiStudio({

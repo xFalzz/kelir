@@ -235,6 +235,9 @@ export class WayangStage {
   private targetGununganSwayZ = 0;
   private targetGununganLiftY = 0;
   private targetBlencongBoost = 0;
+  private manualSolahY = 0;
+  private manualDepthZ = 0.14;
+  private manualWalikan = false;
 
   constructor(container: HTMLElement) {
     this.container = container;
@@ -849,6 +852,22 @@ export class WayangStage {
     this.targetBlencongBoost = 0;
   }
 
+  public aturPoseManual(opts: {
+    solahY?: number;
+    depthZ?: number;
+    walikan?: boolean;
+  }): void {
+    if (typeof opts.solahY === 'number') {
+      this.manualSolahY = THREE.MathUtils.clamp(opts.solahY, -0.05, 0.34);
+    }
+    if (typeof opts.depthZ === 'number') {
+      this.manualDepthZ = THREE.MathUtils.clamp(opts.depthZ, -0.08, 0.34);
+    }
+    if (typeof opts.walikan === 'boolean') {
+      this.manualWalikan = opts.walikan;
+    }
+  }
+
   public aturGununganBabak(indeksBabak: number): void {
     this.baseGununganX = [2.04, 0.02, 2.04, -2.04][indeksBabak] ?? 2.04;
   }
@@ -1009,13 +1028,16 @@ export class WayangStage {
     this.sriRama.root.position.x += dxRama * dampFast;
     const desiredRamaY = this.gesturAktif
       ? 0.04 + this.targetRamaLiftY + Math.sin(t * 2.4) * 0.015
-      : 0.04 + Math.sin(t * 2.2) * 0.022;
+      : 0.04 + this.manualSolahY + Math.sin(t * 2.2) * 0.022;
     this.sriRama.root.position.y += (desiredRamaY - this.sriRama.root.position.y) * dampFast;
 
-    const desiredRamaZ = this.gesturAktif ? this.targetRamaZ : 0.14;
+    const desiredRamaZ = this.gesturAktif ? this.targetRamaZ : this.manualDepthZ;
     this.sriRama.root.position.z += (desiredRamaZ - this.sriRama.root.position.z) * dampSmooth;
 
-    const idleRamaBaseYaw = this.targetRamaX < this.targetKidangX - 0.14 ? Math.PI - 0.05 : -0.05;
+    const idleRamaFacingRight = this.targetRamaX < this.targetKidangX - 0.14;
+    const idleRamaBaseYaw = (this.manualWalikan ? !idleRamaFacingRight : idleRamaFacingRight)
+      ? Math.PI - 0.05
+      : -0.05;
     const desiredRamaYaw = this.gesturAktif
       ? this.targetRamaYawY
       : idleRamaBaseYaw + THREE.MathUtils.clamp(-dxRama * 0.26, -0.34, 0.34);
@@ -1060,13 +1082,18 @@ export class WayangStage {
     const lompatIdle = Math.abs(Math.sin(t * 3.1)) * 0.065;
     const desiredKidangY = this.gesturAktif
       ? -0.57 + this.targetKidangLiftY + lompatIdle * 0.4
-      : -0.57 + lompatIdle;
+      : -0.57 + this.manualSolahY * 0.85 + lompatIdle;
     this.kidang.root.position.y += (desiredKidangY - this.kidang.root.position.y) * dampFast;
 
-    const desiredKidangZ = this.gesturAktif ? this.targetKidangZ : 0.12;
+    const desiredKidangZ = this.gesturAktif
+      ? this.targetKidangZ
+      : THREE.MathUtils.clamp(this.manualDepthZ - 0.02, -0.1, 0.34);
     this.kidang.root.position.z += (desiredKidangZ - this.kidang.root.position.z) * dampSmooth;
 
-    const idleKidangBaseYaw = this.targetKidangX <= this.targetRamaX + 0.14 ? Math.PI - 0.04 : 0.04;
+    const idleKidangFacingLeft = this.targetKidangX <= this.targetRamaX + 0.14;
+    const idleKidangBaseYaw = (this.manualWalikan ? !idleKidangFacingLeft : idleKidangFacingLeft)
+      ? Math.PI - 0.04
+      : 0.04;
     const desiredKidangYaw = this.gesturAktif
       ? this.targetKidangYawY
       : idleKidangBaseYaw + THREE.MathUtils.clamp(-dxKidang * 0.22, -0.28, 0.28);

@@ -17,6 +17,7 @@ import {
   deteksiTokenPenolakanModel,
   pesanPenolakanKeamanan,
   rapikanParagrafResponsAI,
+  sanitasiKonteksUnsurAman,
 } from '../lib/aiGuardrail.ts';
 import {
   MODEL_AI_PAMOMONG,
@@ -236,8 +237,9 @@ export async function jawabDenganGemini38Flash(
     hasilLokal.statusGrounding === 'terbukti' || hasilLokal.statusGrounding === 'ringkasan-benda';
   const isNusantaraLuas = !isArsipUtama;
   const modeEksplorasi = isNusantaraLuas ? 'eksplorasi-nusantara' : 'arsip-s1-s7';
-  const unsurTag = opts.konteksUnsur?.judulUnsur ? `:${opts.konteksUnsur.judulUnsur.toLowerCase()}` : '';
-  const cacheKey = `${modeEksplorasi}:${isNusantaraLuas ? 'idn' : benda.id}${unsurTag}:${bahasaLlm}:${pertanyaanBersih.toLowerCase()}`;
+  const konteksAman = sanitasiKonteksUnsurAman(opts.konteksUnsur);
+  const unsurTag = konteksAman?.judulUnsur ? `:${konteksAman.judulUnsur.toLowerCase()}` : '';
+  const cacheKey = `v2:${modeEksplorasi}:${isNusantaraLuas ? 'idn' : benda.id}${unsurTag}:${bahasaLlm}:${pertanyaanBersih.toLowerCase()}`;
 
   if (!opts.bypassCache) {
     const cached = cacheJawabanLive.get(cacheKey);
@@ -266,7 +268,7 @@ export async function jawabDenganGemini38Flash(
         hasilLokal,
         bahasaLlm,
         pertanyaanBersih || ambilTeks(benda.nama, bahasaLlm),
-        opts.konteksUnsur,
+        konteksAman,
       ),
       voiceName: bahasaLlm === 'en' ? 'Kore' : 'Charon',
       timeoutMs: Math.max(2500, opts.timeoutMs ?? 28000),

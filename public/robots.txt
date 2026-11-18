@@ -16,4 +16,4 @@ Allow: /
 User-agent: Google-Extended
 Allow: /
 
-Sitemap: https://xfalzz.github.io/kelir/sitemap.xml
+Sitemap: https://kelir.vercel.app/sitemap.xml

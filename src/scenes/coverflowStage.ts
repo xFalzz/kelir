@@ -514,6 +514,18 @@ export class CoverflowStage {
     }
   };
 
+  public aturJedaModal(jeda: boolean): void {
+    this.loopAktif = !jeda;
+    if (jeda) {
+      if (this.rafId !== null) {
+        window.cancelAnimationFrame(this.rafId);
+        this.rafId = null;
+      }
+    } else if (this.loopSiapMulai && this.rafId === null) {
+      this.loop();
+    }
+  }
+
   public ubahUkuran(): void {
     if (!this.renderer) return;
     const w = Math.max(this.container.clientWidth || 960, 1);

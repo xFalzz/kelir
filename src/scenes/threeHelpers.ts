@@ -64,16 +64,34 @@ export function createSafeWebGLRenderer(
     if (getComputedStyle(container).position === 'static') {
       container.style.position = 'relative';
     }
+    container.dataset.webglState = 'ready';
     canvas.style.position = 'absolute';
     canvas.style.inset = '0';
     canvas.style.zIndex = '0';
     canvas.style.width = '100%';
     canvas.style.height = '100%';
     canvas.style.display = 'block';
+    canvas.addEventListener('webglcontextlost', (ev) => {
+      ev.preventDefault();
+      container.dataset.webglState = 'lost';
+      container.dispatchEvent(
+        new CustomEvent('kelirwebglstatus', { detail: { ok: false, reason: 'lost' } }),
+      );
+    });
+    canvas.addEventListener('webglcontextrestored', () => {
+      container.dataset.webglState = 'ready';
+      container.dispatchEvent(
+        new CustomEvent('kelirwebglstatus', { detail: { ok: true, reason: 'restored' } }),
+      );
+    });
     container.querySelectorAll('canvas').forEach((el) => el.remove());
     container.prepend(canvas);
     return renderer;
   } catch {
+    container.dataset.webglState = 'unavailable';
+    container.dispatchEvent(
+      new CustomEvent('kelirwebglstatus', { detail: { ok: false, reason: 'unavailable' } }),
+    );
     return null;
   }
 }
@@ -272,6 +290,7 @@ export async function applyStudioHDR(
     if (!gl || gl.isContextLost()) return;
     const pmrem = new THREE.PMREMGenerator(renderer);
     const envRT = pmrem.fromScene(ambilSceneStudioRingan(), 0.04);
+    scene.userData.__envRT = envRT;
     scene.environment = envRT.texture;
     pmrem.dispose();
   } catch {
@@ -393,9 +412,16 @@ export function pinProyeksiBerubah<T extends { x: number; y: number; terlihat: b
 }
 
 export function disposeSceneObject(obj: THREE.Object3D): void {
-  if (obj instanceof THREE.Scene && obj.environment) {
-    obj.environment.dispose();
-    obj.environment = null;
+  if (obj instanceof THREE.Scene) {
+    const envRT = obj.userData.__envRT as THREE.WebGLRenderTarget | undefined;
+    if (envRT) {
+      envRT.dispose();
+      delete obj.userData.__envRT;
+    }
+    if (obj.environment) {
+      obj.environment.dispose();
+      obj.environment = null;
+    }
   }
   obj.traverse((node) => {
     const mesh = node as THREE.Mesh;

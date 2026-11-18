@@ -161,7 +161,9 @@ export async function panggilGemini38Live(opts: OpsiPanggilLive): Promise<HasilP
     };
 
     const timer = setTimeout(() => {
-      if (transcript.trim().length > 10 || directText.trim().length > 10 || (opts.includeWavAudio && pcmChunks.length > 2)) {
+      const hasEnoughText = transcript.trim().length >= 45 || directText.trim().length >= 45;
+      const hasEnoughAudio = opts.includeWavAudio && pcmChunks.length >= 4;
+      if (hasEnoughText || hasEnoughAudio) {
         finish();
       } else {
         finish(new Error('Gemini 3.8 Live timeout'));

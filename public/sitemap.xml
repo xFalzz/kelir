@@ -1,37 +1,37 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
-    <loc>https://xfalzz.github.io/kelir/?hal=beranda</loc>
+    <loc>https://kelir.vercel.app/?hal=beranda</loc>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
   </url>
   <url>
-    <loc>https://xfalzz.github.io/kelir/?hal=twin</loc>
+    <loc>https://kelir.vercel.app/?hal=twin</loc>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://xfalzz.github.io/kelir/?hal=koleksi</loc>
+    <loc>https://kelir.vercel.app/?hal=koleksi</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://xfalzz.github.io/kelir/?hal=pakeliran</loc>
+    <loc>https://kelir.vercel.app/?hal=pakeliran</loc>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://xfalzz.github.io/kelir/?hal=kawruh</loc>
+    <loc>https://kelir.vercel.app/?hal=kawruh</loc>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://xfalzz.github.io/kelir/llms.txt</loc>
+    <loc>https://kelir.vercel.app/llms.txt</loc>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://xfalzz.github.io/kelir/llms-full.txt</loc>
+    <loc>https://kelir.vercel.app/llms-full.txt</loc>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>

@@ -16,7 +16,7 @@ export interface InfoSeoHalaman {
   geoTopic: string;
 }
 
-export const SITE_CANONICAL_FALLBACK = 'https://xfalzz.github.io/kelir';
+export const SITE_CANONICAL_FALLBACK = 'https://kelir.vercel.app';
 
 export const META_HALAMAN_SEO: Record<HalamanSeoId, InfoSeoHalaman> = {
   beranda: {
@@ -234,8 +234,10 @@ export function sinkronkanSeoHalaman(hal: HalamanSeoId, bahasa: BahasaAktif = 'i
   setMetaContent('meta[property="og:title"]', localizedTitle);
   setMetaContent('meta[property="og:description"]', info.description);
   setMetaContent('meta[property="og:url"]', canonicalUrl);
+  setMetaContent('meta[property="og:image"]', `${origin}/og-kelir.png`);
   setMetaContent('meta[name="twitter:title"]', localizedTitle);
   setMetaContent('meta[name="twitter:description"]', info.description);
+  setMetaContent('meta[name="twitter:image"]', `${origin}/og-kelir.png`);
 
   const canonicalLink = document.querySelector<HTMLLinkElement>('link[rel="canonical"]');
   if (canonicalLink) canonicalLink.setAttribute('href', canonicalUrl);

@@ -13,6 +13,7 @@
   } from '../../content/pusaka.ts';
   import { tI18n } from '../../lib/i18n.ts';
   import { NADA_SARON_SLENDRO } from '../../lib/audioBudaya.ts';
+  import WebGLStatusBanner from './WebGLStatusBanner.svelte';
   import { tanyakanKeAsisten, type HasilTanya } from '../../lib/tanya.ts';
   import type { ModeVisualTwin, ProyeksiPinTwin } from '../../scenes/digitalTwinStage.ts';
 
@@ -349,6 +350,7 @@
     <div class="twin-viewport-col">
       <div class="twin-viewport-card">
         <div class="twin-canvas-host" data-wheel-native="true" use:mountStage>
+        <WebGLStatusBanner {bahasa} />
           <div class="twin-viewport-hud">
             <div class="twin-hud-badges">
               <span class="twin-viewport-spec">

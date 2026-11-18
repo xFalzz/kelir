@@ -31,7 +31,7 @@ Dirancang dengan sistem visual museum kuratorial **Washi Alabaster** (Terang) da
 ## Arsitektur 5 Ruang Kurasi Spasial
 
 ### 01 - Beranda & Diorama Hidup (`?hal=beranda`)
-- **Diorama Suaka Budaya 3D (`LivingPendopoStage`)**: Kompleks spasial PBR dengan pencahayaan HDR studio (`studio_small_08_1k.hdr`) dan lapisan wireframe CAD pasif yang memuat **Pendopo Joglo Agung** (*tumpang sari*, 16 tiang kayu jati, lampu *robyong*), **Besalen Empu Keris** (*prapen*, *ububan* kembar, paron), **Bale Karawitan** (gayor gong ageng, saron, kendang), **Gazebo Wastra Batik** (kain kawung berkibar real-time ~30Hz), **Panggung Kelir Wayang**, gapura **Candi Bentar**, jembatan kanal air, dan pepohonan beringin.
+- **Diorama Suaka Budaya 3D (`LivingPendopoStage`)**: Kompleks spasial PBR dengan pencahayaan PMREM studio prosedural dan lapisan wireframe CAD pasif yang memuat **Pendopo Joglo Agung** (*tumpang sari*, 16 tiang kayu jati, lampu *robyong*), **Besalen Empu Keris** (*prapen*, *ububan* kembar, paron), **Bale Karawitan** (gayor gong ageng, saron, kendang), **Gazebo Wastra Batik** (kain kawung berkibar real-time ~30Hz), **Panggung Kelir Wayang**, gapura **Candi Bentar**, jembatan kanal air, dan pepohonan beringin.
 - **Scrollytelling 5 Bab Historis**: Panduan naratif berangka piksel SVG beserta pin fokus 3D interaktif yang menggerakkan kamera diorama secara sinkron.
 - **Indeks 12 Anatomi Pusaka (`KLR-01` s.d. `KLR-12`)**: Dinding pelat perspektif 3D yang menautkan setiap komponen ke titik bedah spesifik di Digital Twin atau langsung ke Lab Aksara.
 - **Etalase Pita Horizontal**: 8 foto studio 3D PBR beresolusi terkalibrasi (`etalaseSnapshotRenderer.ts`, *offscreen lazy-cached*) bebas scrollbar horizontal dengan kendali seret mouse (*drag panning*) dan penerjemah roda gulir.
@@ -92,10 +92,10 @@ Dirancang dengan sistem visual museum kuratorial **Washi Alabaster** (Terang) da
 ## Tumpukan Teknologi
 
 - **Antarmuka & Reaktivitas**: Svelte 5 (`$state`, `$derived`, `$effect`), Vite 8, TypeScript 5.8
-- **Grafik 3D Spasial**: Three.js (`0.187`), `OrbitControls`, `HDRLoader` (kompilasi shader asinkron `compileAsync` + manajemen siklus hidup GPU)
+- **Grafik 3D Spasial**: Three.js (`0.187`), `OrbitControls`, pencahayaan PMREM prosedural (kompilasi shader asinkron `compileAsync`, guard `webglcontextlost`, & manajemen siklus hidup GPU)
 - **Penglihatan Komputer Lokal**: `@mediapipe/tasks-vision` (bobot model & WASM lokal di `public/mediapipe/`)
 - **Sintesis Audio**: Web Audio API native (`OscillatorNode`, `BiquadFilterNode`, `ConvolverNode`, `DynamicsCompressorNode`)
-- **Internasionalisasi & Font Luring**: `i18next`, Fontsource (`Space Grotesk`, `Archivo Black`, `Inter`, `JetBrains Mono`, `Fraunces`, `Noto Sans Javanese`)
+- **Internasionalisasi & Font Luring**: `i18next`, Fontsource (`Space Grotesk`, `Archivo Black`, `Inter`, `JetBrains Mono`, `Noto Sans Javanese`)
 - **Lapisan Serverless & AI**: Endpoint Vercel serverless (`/api/tanya`, `/api/ai-studio`, `/api/suluk-suara`) berbasis `@google/genai`
 - **Pengujian Otomatis**: `svelte-check`, `Vitest` (unit), dan `Playwright` (end-to-end visual, fungsional, responsivitas, dan scroll lock)
 

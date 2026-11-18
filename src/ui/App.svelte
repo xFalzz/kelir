@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onDestroy, onMount, tick } from 'svelte';
+  import WebGLStatusBanner from './components/WebGLStatusBanner.svelte';
   import {
     DAFTAR_BEDAH_TWIN,
     DAFTAR_BENDA,
@@ -160,10 +161,66 @@
   let babakIdx = $state(0);
   let posRama = $state(0.46);
   let posKidang = $state(-0.58);
+  let pakeliranSolahY = $state(0);
+  let pakeliranDepthZ = $state(0.14);
+  let pakeliranWalikan = $state(false);
+  let pakeliranAutoDemo = $state(false);
+  let pakeliranDemoTimer: ReturnType<typeof setInterval> | null = null;
   let moodPanggungWayang: MoodPanggungWayang = $state('blencong');
   let dalangSuaraStatus: 'diam' | 'memuat' | 'gemini' | 'webspeech' = $state('diam');
   let dalangAudioEl: HTMLAudioElement | null = null;
   let dalangAudioUrl: string | null = null;
+
+  // Offline status, UI Toast & Screen Reader Announcer
+  let statusOffline = $state(false);
+  let toastPesan: string | null = $state(null);
+  let toastTimer: ReturnType<typeof setTimeout> | null = null;
+  let pengumumanLayar = $state('');
+
+  function tampilkanToast(pesan: string): void {
+    toastPesan = pesan;
+    pengumumanLayar = pesan;
+    if (toastTimer) clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => {
+      toastPesan = null;
+    }, 2400);
+  }
+
+  function hentikanDemoPakeliran(): void {
+    pakeliranAutoDemo = false;
+    if (pakeliranDemoTimer) {
+      clearInterval(pakeliranDemoTimer);
+      pakeliranDemoTimer = null;
+    }
+  }
+
+  function toggleDemoPakeliran(): void {
+    if (pakeliranAutoDemo) {
+      hentikanDemoPakeliran();
+      return;
+    }
+    pakeliranAutoDemo = true;
+    let step = 0;
+    const jalankanLangkah = () => {
+      const nextBabak = (babakIdx + 1) % LAKON_KIJANG_KENCANA.daftarBabak.length;
+      pilihBabak(nextBabak);
+      pakeliranSolahY = step % 2 === 0 ? 0.08 : 0.02;
+      pakeliranDepthZ = step % 2 === 0 ? 0.2 : 0.1;
+      wayangStage?.aturPoseManual({
+        solahY: pakeliranSolahY,
+        depthZ: pakeliranDepthZ,
+        walikan: pakeliranWalikan,
+      });
+      if (nextBabak === 2) {
+        wayangStage?.picuPanahRama();
+      } else {
+        wayangStage?.picuSabetanWayang();
+      }
+      step += 1;
+    };
+    jalankanLangkah();
+    pakeliranDemoTimer = setInterval(jalankanLangkah, 3200);
+  }
 
   // Pencarian Global, Paspor Jejak Kurasi & Skala Keterbacaan
   let searchModalBuka = $state(false);
@@ -323,6 +380,15 @@
     if (modalSulukBuka) {
       pastikanModalSuluk();
     }
+    coverflowStage?.aturJedaModal(modalSulukBuka);
+  });
+
+  $effect(() => {
+    if (halamanAktif !== 'pakeliran' && pakeliranAutoDemo) {
+      hentikanDemoPakeliran();
+    }
+    const labelHalaman = tI18n(bahasa, `pages.${halamanAktif}.label`);
+    pengumumanLayar = labelHalaman;
   });
 
   $effect(() => {
@@ -701,6 +767,19 @@
       favoritIds: ada ? daftar.filter((item) => item !== id) : [...daftar, id],
     };
     simpanJejakKurasi(jejakKurasi);
+    const label =
+      bahasa === 'en'
+        ? ada
+          ? 'Removed from Curation Passport'
+          : 'Saved to Curation Passport'
+        : bahasa === 'jw'
+          ? ada
+            ? 'Kapusak saking Paspor Kurasi'
+            : 'Kasimpen wonten Paspor Kurasi'
+          : ada
+            ? 'Dihapus dari Paspor Kurasi'
+            : 'Disimpan ke Paspor Kurasi';
+    tampilkanToast(label);
   }
 
   function bukaLangkahTur(step: LangkahRuteTur): void {
@@ -1330,6 +1409,7 @@
     pwaIosSafari = cekIosSafari();
     const unsubPwa = berlanggananPwa((st) => {
       pwaTerpasang = st.terpasang;
+      statusOffline = st.offline;
       if (st.deferredPrompt) {
         deferredInstallPrompt = st.deferredPrompt;
         pwaPanduanTerbuka = false;
@@ -1413,6 +1493,11 @@
       mouseMoveRaf = null;
     }
     hentikanSuaraDalang();
+    hentikanDemoPakeliran();
+    if (toastTimer) {
+      clearTimeout(toastTimer);
+      toastTimer = null;
+    }
     pengelolaTangan?.matikan();
     audioBudaya.hentikanSuasanaPendopo();
     dioramaStage?.destroy();
@@ -1450,15 +1535,17 @@
         tgt.tagName === 'TEXTAREA' ||
         tgt.tagName === 'SELECT' ||
         tgt.isContentEditable);
-    if (isInput || e.ctrlKey || e.metaKey || e.altKey) return;
+    if (isInput) return;
     const lowKey = e.key.toLowerCase();
-    if (e.key === '?') {
-      e.preventDefault();
-      searchModalBuka = true;
-    } else if (lowKey === 't') {
-      toggleTema();
-    } else if (lowKey === 'm') {
-      toggleAudio();
+    // WCAG 2.1.4: wajib modifier Alt/Ctrl/Meta agar tidak bertabrakan dengan ketikan atau screen reader
+    if (e.altKey && !e.ctrlKey && !e.metaKey) {
+      if (lowKey === 't') {
+        e.preventDefault();
+        toggleTema();
+      } else if (lowKey === 'm') {
+        e.preventDefault();
+        toggleAudio();
+      }
     }
   }}
 />
@@ -1506,6 +1593,16 @@
 </div>
 
 <!-- Bilah navigasi atas -->
+<a href="#main-content" class="skip-link">{tI18n(bahasa, 'nav.skipToMain')}</a>
+<div class="sr-only" aria-live="polite" data-testid="sr-announcer">{pengumumanLayar}</div>
+
+{#if statusOffline}
+  <div class="offline-status-pill" role="status" data-testid="offline-status-pill">
+    <span class="live-dot" aria-hidden="true"></span>
+    <span>{tI18n(bahasa, 'nav.offlinePill')}</span>
+  </div>
+{/if}
+
 <header class="top-nav">
   <button
     type="button"
@@ -1765,7 +1862,7 @@
   {/each}
 </nav>
 
-<main class="page-stage-shell" data-active-page={ruteTidakDitemukan ? 'notfound' : halamanAktif}>
+<main id="main-content" tabindex="-1" class="page-stage-shell" data-active-page={ruteTidakDitemukan ? 'notfound' : halamanAktif}>
   {#if ruteTidakDitemukan && infoRute404}
     <NotFoundPage
       {bahasa}
@@ -1820,6 +1917,7 @@
     <section id="pendopo" class="diorama-master-band" aria-label="Diorama Pendopo Budaya Jawa 3D">
       <div class="diorama-sticky-stage">
         <div class="diorama-webgl-host" use:mountDioramaStage aria-hidden="true"></div>
+        <WebGLStatusBanner {bahasa} />
         <div class="diorama-scrim"></div>
 
         <!-- Pin Callout 3D Terproyeksi Langsung ke Bangunan Diorama -->
@@ -2109,6 +2207,7 @@
 
       <div class="pakeliran-theatre-box">
         <div class="pakeliran-canvas-host" use:mountWayangStage></div>
+        <WebGLStatusBanner {bahasa} />
 
         <div class="pakeliran-console">
           <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 16px;">
@@ -2259,6 +2358,78 @@
               />
             </label>
           </div>
+
+          <div class="two-col-editorial pakeliran-manual-extra">
+            <label class="pakeliran-slider-label">
+              <span>{tI18n(bahasa, 'pakeliran.solahYLabel', { val: pakeliranSolahY.toFixed(2) })}</span>
+              <input
+                type="range"
+                min="-0.05"
+                max="0.34"
+                step="0.01"
+                value={pakeliranSolahY}
+                data-testid="pakeliran-solah-y"
+                oninput={(e) => {
+                  pakeliranSolahY = Number((e.currentTarget as HTMLInputElement).value);
+                  wayangStage?.aturPoseManual({
+                    solahY: pakeliranSolahY,
+                    depthZ: pakeliranDepthZ,
+                    walikan: pakeliranWalikan,
+                  });
+                }}
+              />
+            </label>
+            <label class="pakeliran-slider-label">
+              <span>{tI18n(bahasa, 'pakeliran.depthZLabel', { val: pakeliranDepthZ.toFixed(2) })}</span>
+              <input
+                type="range"
+                min="-0.08"
+                max="0.34"
+                step="0.01"
+                value={pakeliranDepthZ}
+                data-testid="pakeliran-depth-z"
+                oninput={(e) => {
+                  pakeliranDepthZ = Number((e.currentTarget as HTMLInputElement).value);
+                  wayangStage?.aturPoseManual({
+                    solahY: pakeliranSolahY,
+                    depthZ: pakeliranDepthZ,
+                    walikan: pakeliranWalikan,
+                  });
+                }}
+              />
+            </label>
+          </div>
+
+          <div class="pakeliran-demo-actions">
+            <button
+              type="button"
+              class="util-pill"
+              class:is-active={pakeliranWalikan}
+              aria-pressed={pakeliranWalikan}
+              data-testid="pakeliran-walikan-btn"
+              onclick={() => {
+                pakeliranWalikan = !pakeliranWalikan;
+                wayangStage?.aturPoseManual({
+                  solahY: pakeliranSolahY,
+                  depthZ: pakeliranDepthZ,
+                  walikan: pakeliranWalikan,
+                });
+              }}
+            >
+              {tI18n(bahasa, 'pakeliran.flipBtn')}
+            </button>
+
+            <button
+              type="button"
+              class="util-pill is-accent"
+              class:is-active={pakeliranAutoDemo}
+              aria-pressed={pakeliranAutoDemo}
+              data-testid="pakeliran-demo-btn"
+              onclick={toggleDemoPakeliran}
+            >
+              {pakeliranAutoDemo ? tI18n(bahasa, 'pakeliran.demoStopBtn') : tI18n(bahasa, 'pakeliran.demoStartBtn')}
+            </button>
+          </div>
         </div>
       </div>
 
@@ -2358,6 +2529,12 @@
   </section>
   {/if}
 </main>
+
+{#if toastPesan}
+  <div class="kelir-toast" role="status" aria-live="polite" data-testid="kelir-toast">
+    <span>{toastPesan}</span>
+  </div>
+{/if}
 
 <FooterSection
   {bahasa}

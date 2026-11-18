@@ -8,6 +8,7 @@ const APP_SHELL_URLS = [
   '/icons/icon-512.png',
   '/icons/icon-maskable-512.png',
   '/icons/apple-touch-icon-180.png',
+  '/og-kelir.png',
   '/og-kelir.svg',
 ];
 
@@ -142,6 +143,7 @@ self.addEventListener('fetch', (event) => {
     url.pathname.startsWith('/mediapipe/') ||
     url.pathname === '/favicon.svg' ||
     url.pathname === '/manifest.webmanifest' ||
+    url.pathname === '/og-kelir.png' ||
     url.pathname === '/og-kelir.svg' ||
     url.pathname === '/llms.txt' ||
     url.pathname === '/robots.txt';

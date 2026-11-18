@@ -4,8 +4,16 @@ import {
   BATAS_KARAKTER_TANYA,
   bersihkanInputPengguna,
   periksaBatasLajuAI,
+  sanitasiKonteksUnsurAman,
 } from '../src/lib/aiGuardrail.ts';
 import { jawabDariKurasiLokal } from '../src/lib/tanya.ts';
+import {
+  BAHASA_API_VALID,
+  cekOriginPermintaanApi,
+  ekstrakIpKlienTerpercaya,
+  pasangHeaderKeamananApi,
+  validasiDanParseBodyJson,
+} from '../src/server/httpRequestGuard.ts';
 import {
   MODEL_GEMINI_TETAP,
   bacaKonfigurasiGemini,
@@ -24,25 +32,21 @@ interface VercelRes {
   json: (payload: unknown) => void;
 }
 
-const BAHASA_VALID = new Set<BahasaAktif>(['id', 'en', 'jw', 'aks']);
-const BATAS_BODY_BYTES = 16_384;
-
 export default async function handler(req: VercelReq, res: VercelRes): Promise<void> {
-  res.setHeader?.('X-Content-Type-Options', 'nosniff');
-  res.setHeader?.('Cache-Control', 'no-store');
+  pasangHeaderKeamananApi(res.setHeader);
 
   if (req.method !== 'POST') {
     res.status(405).json({ error: 'Gunakan metode POST.' });
     return;
   }
 
-  const forwarded = req.headers?.['x-forwarded-for'];
-  const clientIp =
-    typeof forwarded === 'string'
-      ? forwarded.split(',')[0].trim()
-      : Array.isArray(forwarded)
-        ? forwarded[0] ?? 'vercel'
-        : 'vercel';
+  const cekOrigin = cekOriginPermintaanApi(req.headers);
+  if (!cekOrigin.diizinkan) {
+    res.status(403).json({ error: cekOrigin.alasan ?? 'Origin tidak diizinkan.' });
+    return;
+  }
+
+  const clientIp = ekstrakIpKlienTerpercaya(req.headers);
   const limit = periksaBatasLajuAI(`tanya:${clientIp}`, 90);
   if (!limit.diizinkan) {
     res.setHeader?.('Retry-After', '60');
@@ -50,49 +54,32 @@ export default async function handler(req: VercelReq, res: VercelRes): Promise<v
     return;
   }
 
-  if (typeof req.body === 'string' && req.body.length > BATAS_BODY_BYTES) {
-    res.status(413).json({ error: 'Ukuran payload melebihi batas aman 16 KB.' });
+  const contentLength =
+    typeof req.headers?.['content-length'] === 'string' ? req.headers['content-length'] : undefined;
+  const parsed = validasiDanParseBodyJson(req.body, contentLength);
+  if (!parsed.ok) {
+    res.status(parsed.status).json({ error: parsed.error });
     return;
   }
 
-  let body: {
+  const body = parsed.body as {
     bendaId?: BendaPusaka['id'];
     pertanyaan?: string;
     bahasa?: BahasaAktif;
-    konteksUnsur?: { judulUnsur?: string; material?: string; fungsiTeknis?: string; ringkasan?: string };
+    konteksUnsur?: unknown;
   };
-  try {
-    const parsed = typeof req.body === 'string' ? JSON.parse(req.body || '{}') : req.body ?? {};
-    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
-      res.status(400).json({ error: 'Format tubuh permintaan harus berupa objek JSON.' });
-      return;
-    }
-    body = parsed as {
-      bendaId?: BendaPusaka['id'];
-      pertanyaan?: string;
-      bahasa?: BahasaAktif;
-      konteksUnsur?: { judulUnsur?: string; material?: string; fungsiTeknis?: string; ringkasan?: string };
-    };
-  } catch {
-    res.status(400).json({ error: 'Format JSON tubuh permintaan tidak valid.' });
-    return;
-  }
 
   const idValid = DAFTAR_BENDA.some((b) => b.id === body.bendaId);
   const bendaId: BendaPusaka['id'] = idValid && body.bendaId ? body.bendaId : 'keris';
   const pertanyaanRaw = typeof body.pertanyaan === 'string' ? body.pertanyaan : '';
   const pertanyaanBersih = bersihkanInputPengguna(pertanyaanRaw, BATAS_KARAKTER_TANYA);
   const bahasa: BahasaAktif =
-    body.bahasa && BAHASA_VALID.has(body.bahasa) ? body.bahasa : 'id';
-  const konteksUnsur =
-    body.konteksUnsur && typeof body.konteksUnsur === 'object' && !Array.isArray(body.konteksUnsur)
-      ? body.konteksUnsur
-      : undefined;
+    body.bahasa && BAHASA_API_VALID.has(body.bahasa) ? body.bahasa : 'id';
+  const konteksUnsur = sanitasiKonteksUnsurAman(body.konteksUnsur);
 
   const { apiKey } = bacaKonfigurasiGemini();
 
   try {
-    // Kirimkan pertanyaanRaw (dipotong aman 640 char) ke pemeriksa agar tag injeksi tertangkap sebelum dihapus
     const hasil = await jawabDenganGemini38Flash({
       bendaId,
       pertanyaan: pertanyaanRaw.slice(0, 640),

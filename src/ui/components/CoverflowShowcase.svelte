@@ -11,6 +11,7 @@
   import { latinKeAksaraJawa } from '../../lib/aksara.ts';
   import { tI18n } from '../../lib/i18n.ts';
   import { canUseHoverPointer } from '../../lib/revealAnim.ts';
+  import WebGLStatusBanner from './WebGLStatusBanner.svelte';
 
   interface Props {
     items: ItemCoverflow[];
@@ -172,6 +173,7 @@
   >
     <div class="coverflow-stage-aura" aria-hidden="true"></div>
     <div class="coverflow-webgl-host" use:mountStage></div>
+    <WebGLStatusBanner {bahasa} />
     <div class="coverflow-edge-fade" aria-hidden="true"></div>
 
     <div class="coverflow-hud-top">

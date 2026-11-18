@@ -57,5 +57,21 @@
       "url": "/?hal=kawruh",
       "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png" }]
     }
+  ],
+  "screenshots": [
+    {
+      "src": "/icons/screenshot-wide.png",
+      "sizes": "1280x720",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "Diorama Pendopo Budaya Jawa 3D KELIR"
+    },
+    {
+      "src": "/icons/screenshot-mobile.png",
+      "sizes": "540x960",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Tampilan Ponsel Eksibisi Pusaka 3D KELIR"
+    }
   ]
 }

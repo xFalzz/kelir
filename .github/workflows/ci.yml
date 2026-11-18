@@ -1,0 +1,41 @@
+name: KELIR CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  verify:
+    name: Typecheck, Unit Tests, Build & E2E
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Svelte & TypeScript check
+        run: npm run check
+
+      - name: Run unit & security tests
+        run: npm run test:unit
+
+      - name: Build production bundle
+        run: npm run build
+
+      - name: Install Playwright Chromium browser
+        run: npx playwright install --with-deps chromium
+
+      - name: Run E2E suite (WebGL + A11y + Security + Responsive)
+        run: npm run test:e2e:ci

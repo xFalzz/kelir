@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { Action } from 'svelte/action';
-  import { onDestroy } from 'svelte';
+  import { onDestroy, onMount } from 'svelte';
+  import WebGLStatusBanner from './WebGLStatusBanner.svelte';
   import {
     DAFTAR_BEDAH_TWIN,
     DAFTAR_SUMBER,
@@ -240,6 +241,38 @@
       studioAudioUrl = null;
     }
     suaraStudioAktif = null;
+  }
+
+  const AI_FEEDBACK_STORAGE_KEY = 'kelir_ai_feedback_v1';
+  let umpanBalikAiMap: Record<string, 'membantu' | 'lapor'> = $state({});
+
+  onMount(() => {
+    try {
+      const saved = window.localStorage.getItem(AI_FEEDBACK_STORAGE_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+          umpanBalikAiMap = parsed as Record<string, 'membantu' | 'lapor'>;
+        }
+      }
+    } catch {
+      umpanBalikAiMap = {};
+    }
+  });
+
+  let kunciFeedback = $derived(
+    `${(jawabanPamomong.sumber ?? []).join(',')}::${jawabanPamomong.jawaban.slice(0, 64)}`,
+  );
+  let statusFeedback = $derived(umpanBalikAiMap[kunciFeedback]);
+
+  function catatUmpanBalikAi(nilai: 'membantu' | 'lapor'): void {
+    const next = { ...umpanBalikAiMap, [kunciFeedback]: nilai };
+    umpanBalikAiMap = next;
+    try {
+      window.localStorage.setItem(AI_FEEDBACK_STORAGE_KEY, JSON.stringify(next));
+    } catch {
+      // Abaikan jika storage diblokir
+    }
   }
 
   onDestroy(() => {
@@ -550,6 +583,34 @@
             >
               {statusLabel}
             </span>
+
+            <div class="ai-feedback-row" role="group" aria-label="Evaluasi Jawaban AI">
+              <button
+                type="button"
+                class="util-pill ai-feedback-btn"
+                class:is-active={statusFeedback === 'membantu'}
+                aria-pressed={statusFeedback === 'membantu'}
+                onclick={() => catatUmpanBalikAi('membantu')}
+                data-testid="ai-feedback-helpful"
+              >
+                {tI18n(bahasa, 'kawruh.feedbackHelpful')}
+              </button>
+              <button
+                type="button"
+                class="util-pill ai-feedback-btn"
+                class:is-active={statusFeedback === 'lapor'}
+                aria-pressed={statusFeedback === 'lapor'}
+                onclick={() => catatUmpanBalikAi('lapor')}
+                data-testid="ai-feedback-report"
+              >
+                {tI18n(bahasa, 'kawruh.feedbackReport')}
+              </button>
+              {#if statusFeedback}
+                <span class="ai-feedback-saved" data-testid="ai-feedback-saved">
+                  {tI18n(bahasa, 'kawruh.feedbackSaved')}
+                </span>
+              {/if}
+            </div>
           </div>
 
           <div style="display: flex; flex-wrap: wrap; gap: 6px;">
@@ -1068,6 +1129,7 @@
         </span>
       </div>
       <div class="pamomong-orb-host" use:mountOrbStage aria-hidden="true"></div>
+      <WebGLStatusBanner {bahasa} />
       <p class="pamomong-orb-caption">
         {tI18n(bahasa, 'kawruh.orbCaption')}
       </p>

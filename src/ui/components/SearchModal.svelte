@@ -2,6 +2,7 @@
   import { tick } from 'svelte';
   import { type BahasaAktif, type SpesimenBedahId } from '../../content/pusaka.ts';
   import { BANK_KUIS_S1_S7 } from '../../lib/aiStudio.ts';
+  import { fokusModalTrap } from '../../lib/focusTrap.ts';
   import { tI18n } from '../../lib/i18n.ts';
   import {
     bangunIndeksPencarian,
@@ -131,7 +132,7 @@
       onclick={onClose}
     ></button>
 
-    <div class="search-modal-card">
+    <div class="search-modal-card" use:fokusModalTrap={terbuka}>
       <div class="search-modal-head">
         <div class="search-input-wrap">
           <svg class="search-ico-svg" viewBox="0 0 18 18" fill="none" aria-hidden="true">

@@ -11,6 +11,8 @@
   import { latinKeAksaraJawa } from '../../lib/aksara.ts';
   import { audioBudaya, NADA_SARON_SLENDRO } from '../../lib/audioBudaya.ts';
   import { DAFTAR_BAHASA, tI18n } from '../../lib/i18n.ts';
+  import { fokusModalTrap } from '../../lib/focusTrap.ts';
+  import WebGLStatusBanner from './WebGLStatusBanner.svelte';
   import {
     ambilSuaraSuluk,
     base64AudioKeBlobUrl,
@@ -380,6 +382,7 @@
   aria-label="Modal Suluk & Bedah {ambilTeks(track.nama, bahasa)}"
   data-testid="modal-suluk"
   style="--suluk-accent: {aksen};"
+  use:fokusModalTrap={true}
 >
   <audio bind:this={naratorAudioEl} preload="auto" style="display: none;" aria-hidden="true"></audio>
 
@@ -418,6 +421,7 @@
       onmouseleave={() => stage?.aturParalaks(0, 0)}
     >
       <div class="suluk-webgl-host" use:mountSuluk3D></div>
+      <WebGLStatusBanner {bahasa} />
 
       <div class="suluk-art-hud-top">
         <span class="suluk-stage-pill">

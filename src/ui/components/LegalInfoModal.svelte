@@ -1,6 +1,7 @@
 <script lang="ts">
   import { tick } from 'svelte';
   import { ambilTeks, type BahasaAktif } from '../../content/pusaka.ts';
+  import { fokusModalTrap } from '../../lib/focusTrap.ts';
   import {
     KONTAK_META_TEKS,
     KONTAK_PENGELOLA,
@@ -91,7 +92,7 @@
       aria-label={ambilTeks(KONTAK_META_TEKS.tutupModal, bahasa)}
     ></button>
 
-    <section class="legal-modal-card">
+    <section class="legal-modal-card" use:fokusModalTrap={terbuka}>
       <header class="legal-modal-head">
         <div class="legal-modal-head-top">
           <div style="min-width: 0;">

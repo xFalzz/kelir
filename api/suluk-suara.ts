@@ -5,6 +5,13 @@ import {
 } from '../src/content/pusaka.ts';
 import { periksaBatasLajuAI } from '../src/lib/aiGuardrail.ts';
 import { MODEL_TTS_SULUK, susunNaskahNarasiSuluk } from '../src/lib/sulukNarasi.ts';
+import {
+  BAHASA_API_VALID,
+  cekOriginPermintaanApi,
+  ekstrakIpKlienTerpercaya,
+  pasangHeaderKeamananApi,
+  validasiDanParseBodyJson,
+} from '../src/server/httpRequestGuard.ts';
 import { bacaKonfigurasiGemini } from '../src/server/pamomongGemini.ts';
 import { hasilkanSuaraSulukGemini } from '../src/server/sulukVoiceGemini.ts';
 
@@ -20,25 +27,21 @@ interface VercelRes {
   json: (payload: unknown) => void;
 }
 
-const BAHASA_VALID = new Set<BahasaAktif>(['id', 'en', 'jw', 'aks']);
-const BATAS_BODY_BYTES = 16_384;
-
 export default async function handler(req: VercelReq, res: VercelRes): Promise<void> {
-  res.setHeader?.('X-Content-Type-Options', 'nosniff');
-  res.setHeader?.('Cache-Control', 'no-store');
+  pasangHeaderKeamananApi(res.setHeader);
 
   if (req.method !== 'POST') {
     res.status(405).json({ error: 'Gunakan metode POST.' });
     return;
   }
 
-  const forwarded = req.headers?.['x-forwarded-for'];
-  const clientIp =
-    typeof forwarded === 'string'
-      ? forwarded.split(',')[0].trim()
-      : Array.isArray(forwarded)
-        ? forwarded[0] ?? 'vercel'
-        : 'vercel';
+  const cekOrigin = cekOriginPermintaanApi(req.headers);
+  if (!cekOrigin.diizinkan) {
+    res.status(403).json({ error: cekOrigin.alasan ?? 'Origin tidak diizinkan.' });
+    return;
+  }
+
+  const clientIp = ekstrakIpKlienTerpercaya(req.headers);
   const limit = periksaBatasLajuAI(`suluk:${clientIp}`, 60);
   if (!limit.diizinkan) {
     res.setHeader?.('Retry-After', '60');
@@ -46,28 +49,19 @@ export default async function handler(req: VercelReq, res: VercelRes): Promise<v
     return;
   }
 
-  if (typeof req.body === 'string' && req.body.length > BATAS_BODY_BYTES) {
-    res.status(413).json({ error: 'Ukuran payload melebihi batas aman 16 KB.' });
+  const contentLength =
+    typeof req.headers?.['content-length'] === 'string' ? req.headers['content-length'] : undefined;
+  const parsed = validasiDanParseBodyJson(req.body, contentLength);
+  if (!parsed.ok) {
+    res.status(parsed.status).json({ error: parsed.error });
     return;
   }
 
-  let body: { artefakId?: SpesimenBedahId; bahasa?: BahasaAktif };
-  try {
-    const parsed = typeof req.body === 'string' ? JSON.parse(req.body || '{}') : req.body ?? {};
-    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
-      res.status(400).json({ error: 'Format tubuh permintaan harus berupa objek JSON.' });
-      return;
-    }
-    body = parsed as { artefakId?: SpesimenBedahId; bahasa?: BahasaAktif };
-  } catch {
-    res.status(400).json({ error: 'Format JSON tubuh permintaan tidak valid.' });
-    return;
-  }
-
+  const body = parsed.body as { artefakId?: SpesimenBedahId; bahasa?: BahasaAktif };
   const item =
     KOLEKSI_COVERFLOW.find((c) => c.artefakId === body.artefakId) ?? KOLEKSI_COVERFLOW[0];
   const bahasa: BahasaAktif =
-    body.bahasa && BAHASA_VALID.has(body.bahasa) ? body.bahasa : 'id';
+    body.bahasa && BAHASA_API_VALID.has(body.bahasa) ? body.bahasa : 'id';
 
   const { apiKey } = bacaKonfigurasiGemini();
 
