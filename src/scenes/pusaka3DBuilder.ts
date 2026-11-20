@@ -16,6 +16,23 @@ export interface PaketModel3D {
   orbitAccent?: THREE.Object3D | null;
   saronWilahs?: THREE.Group[];
   saronGandhen?: THREE.Group | null;
+  pinAnchors?: Record<string, THREE.Object3D>;
+}
+
+function tanamPinAnchor(
+  parent: THREE.Object3D,
+  id: string,
+  x: number,
+  y: number,
+  z: number,
+  anchors: Record<string, THREE.Object3D>,
+): void {
+  const anchor = new THREE.Object3D();
+  anchor.name = `pin-anchor-${id}`;
+  anchor.position.set(x, y, z);
+  anchor.userData.skipCad = true;
+  parent.add(anchor);
+  anchors[id] = anchor;
 }
 
 interface PasanganTekstur {
@@ -628,7 +645,7 @@ function buatGeometriAtapTrapesiumTwin(
   return geo;
 }
 
-/** Membuat instrumen 3D Pelita Minyak Blencong Kuningan bersayap Garuda dengan nyala api aktif. */
+/** Membuat instrumen 3D Pelita Minyak Blencong Kuningan bersayap Garuda dengan 5 sub-rakitan anatomi bedah. */
 export function buildBlencongWayang3D(): {
   group: THREE.Group;
   flame: THREE.Mesh;
@@ -658,6 +675,9 @@ export function buildBlencongWayang3D(): {
 
   const blencong = new THREE.Group();
 
+  // 1. Cawan Kuningan Cor Berukir Sabuk & Kaki Pendulum
+  const cawanGrup = new THREE.Group();
+  cawanGrup.userData.explodeVec = new THREE.Vector3(0, -0.18, 0);
   const profil = [
     new THREE.Vector2(0.001, -0.22),
     new THREE.Vector2(0.055, -0.18),
@@ -670,31 +690,40 @@ export function buildBlencongWayang3D(): {
   ];
   const mangkuk = new THREE.Mesh(new THREE.LatheGeometry(profil, 32), kuninganMat);
   mangkuk.castShadow = true;
-  blencong.add(mangkuk);
+  const sabukCawan = new THREE.Mesh(new THREE.TorusGeometry(0.22, 0.013, 10, 28), perungguGelapMat);
+  sabukCawan.rotation.x = Math.PI / 2;
+  sabukCawan.position.y = 0.02;
+  cawanGrup.add(mangkuk, sabukCawan);
 
+  // 2. Wadah Genangan Minyak Kelapa Klentik & Cincin Pelampung
+  const minyakGrup = new THREE.Group();
+  minyakGrup.userData.explodeVec = new THREE.Vector3(0, 0.18, 0.04);
   const minyak = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.16, 0.025, 24), minyakMat);
   minyak.position.y = 0.045;
-  blencong.add(minyak);
+  const cincinMinyak = new THREE.Mesh(new THREE.TorusGeometry(0.145, 0.008, 8, 22), kuninganMat);
+  cincinMinyak.rotation.x = Math.PI / 2;
+  cincinMinyak.position.y = 0.058;
+  minyakGrup.add(minyak, cincinMinyak);
 
+  // 3. Corong Sumbu Kapas & Nyala Api Blencong
+  const corongGrup = new THREE.Group();
+  corongGrup.userData.explodeVec = new THREE.Vector3(0.32, 0.08, 0.04);
   const corong = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.055, 0.19, 14), kuninganMat);
   corong.rotation.z = -Math.PI * 0.46;
   corong.position.set(0.22, 0.065, 0);
-  blencong.add(corong);
-
   const sumbu = new THREE.Mesh(new THREE.CylinderGeometry(0.016, 0.022, 0.08, 10), perungguGelapMat);
   sumbu.rotation.z = -0.35;
   sumbu.position.set(0.3, 0.09, 0);
-  blencong.add(sumbu);
-
   const flame = new THREE.Mesh(new THREE.SphereGeometry(0.042, 14, 12), apiMat);
   flame.scale.set(0.72, 1.55, 0.72);
   flame.position.set(0.32, 0.16, 0);
-  blencong.add(flame);
-
   const light = new THREE.PointLight(0xff9c3b, 2.2, 5.2);
   light.position.set(0.34, 0.18, 0.04);
-  blencong.add(light);
+  corongGrup.add(corong, sumbu, flame, light);
 
+  // 4. Sayap Ukiran Garuda Penyeimbang Belakang
+  const sayapGrup = new THREE.Group();
+  sayapGrup.userData.explodeVec = new THREE.Vector3(-0.28, 0.12, -0.04);
   const sayapGeo = ambilAtauBuatPusakaExtrude('blencong-sayap', () => {
     const sayapShape = new THREE.Shape();
     sayapShape.moveTo(0, -0.02);
@@ -719,23 +748,35 @@ export function buildBlencongWayang3D(): {
   const sayap = new THREE.Mesh(sayapGeo, kuninganMat);
   sayap.rotation.y = Math.PI / 2;
   sayap.position.set(-0.2, 0.08, 0);
-  blencong.add(sayap);
+  const engselSayap = new THREE.Mesh(new THREE.CylinderGeometry(0.024, 0.028, 0.08, 10), perungguGelapMat);
+  engselSayap.rotation.z = Math.PI / 2;
+  engselSayap.position.set(-0.18, 0.06, 0);
+  sayapGrup.add(sayap, engselSayap);
 
+  // 5. Batang Rantai & Kait Penggantung Plafon Dalang
+  const gantunganGrup = new THREE.Group();
+  gantunganGrup.userData.explodeVec = new THREE.Vector3(0, 0.38, 0);
   const batangGantung = new THREE.Mesh(
     new THREE.CylinderGeometry(0.014, 0.018, 0.62, 10),
     perungguGelapMat,
   );
   batangGantung.position.set(0, 0.42, 0);
+  const kerahGantung = new THREE.Mesh(new THREE.TorusGeometry(0.036, 0.01, 8, 18), kuninganMat);
+  kerahGantung.rotation.x = Math.PI / 2;
+  kerahGantung.position.set(0, 0.13, 0);
   const kait = new THREE.Mesh(new THREE.TorusGeometry(0.048, 0.012, 10, 22), kuninganMat);
   kait.position.set(0, 0.74, 0);
-  blencong.add(batangGantung, kait);
+  gantunganGrup.add(batangGantung, kerahGantung, kait);
+
+  blencong.add(cawanGrup, minyakGrup, corongGrup, sayapGrup, gantunganGrup);
 
   return { group: blencong, flame, light };
 }
 
-/** 1. Keris Luk 5 Pandhawa Lare: Bilah ada-ada, pejetan, greneng, ganja sebit rontal, pesi, mendak selut mirah, hulu nunggak semi, warangka & pendok bunton. */
+/** 1. Keris Luk 5 Pandhawa Lare: Bilah pamor, inti baja sliron, ricikan, kinatah, ganja, pesi, mendak, selut mirah, hulu nunggak semi, warangka 3-lapis. */
 export function buildKerisPusaka3D(): PaketModel3D {
   const group = new THREE.Group();
+  const pinAnchors: Record<string, THREE.Object3D> = {};
   const tex = loadBudayaTextures();
   const pamor = buatTeksturPamorKeris();
 
@@ -746,6 +787,11 @@ export function buildKerisPusaka3D(): PaketModel3D {
     color: 0xe5e7eb,
     metalness: 0.92,
     roughness: 0.22,
+  });
+  const bajaIntiMat = new THREE.MeshStandardMaterial({
+    color: 0x2a323d,
+    metalness: 0.95,
+    roughness: 0.28,
   });
   const emasMat = new THREE.MeshStandardMaterial({
     color: 0xf6c344,
@@ -766,10 +812,15 @@ export function buildKerisPusaka3D(): PaketModel3D {
     roughness: 0.36,
     metalness: 0.08,
   });
+  const lubangDalamMat = new THREE.MeshStandardMaterial({
+    color: 0x1a110b,
+    roughness: 0.92,
+    metalness: 0.05,
+  });
 
-  // A. Wilah Luk 5 + Ada-Ada Tengah + Kembang Kacang + Pejetan + Greneng
+  // A. Wilah Luk 5 + Tulang Punggung Ada-Ada (Lapisan Lipatan Pamor)
   const wilahGrup = new THREE.Group();
-  wilahGrup.userData.explodeVec = new THREE.Vector3(0, 0.72, 0.12);
+  wilahGrup.userData.explodeVec = new THREE.Vector3(0, 0.44, 0.16);
 
   const wilahPoints: THREE.Vector3[] = [];
   const steps = 44;
@@ -804,8 +855,24 @@ export function buildKerisPusaka3D(): PaketModel3D {
   }
   adaAdaGeo.computeVertexNormals();
   wilahGrup.add(new THREE.Mesh(adaAdaGeo, bilahMat));
+  tanamPinAnchor(wilahGrup, 'keris-wilah', 0, 1.32, 0.08, pinAnchors);
 
-  // Sekar Kacang + Jalen + Lambe Gajah di pangkal gandik
+  // A2. Sliron / Baja Inti Karbon (Tersingkap keluar di belakang kulit pamor saat diledakkan)
+  const slironGrup = new THREE.Group();
+  slironGrup.userData.explodeVec = new THREE.Vector3(-0.08, 0.44, -0.34);
+  const slironGeo = new THREE.TubeGeometry(curve, 44, 0.068, 6, false);
+  const slironPos = slironGeo.attributes.position as THREE.BufferAttribute;
+  for (let i = 0; i < slironPos.count; i++) {
+    const t = THREE.MathUtils.clamp((slironPos.getY(i) + 0.3) / 2.18, 0, 1);
+    slironPos.setX(i, slironPos.getX(i) * (0.82 - t * 0.54));
+    slironPos.setZ(i, slironPos.getZ(i) * (0.14 * (1 - t * 0.5)));
+  }
+  slironGeo.computeVertexNormals();
+  slironGrup.add(new THREE.Mesh(slironGeo, bajaIntiMat));
+
+  // A3. Ricikan Gandik Depan (Sekar Kacang, Jalen & Lambe Gajah)
+  const ricikanGrup = new THREE.Group();
+  ricikanGrup.userData.explodeVec = new THREE.Vector3(-0.42, 0.34, 0.24);
   const kembangKacang = new THREE.Mesh(
     new THREE.TorusGeometry(0.058, 0.017, 12, 24, Math.PI * 1.54),
     bilahMat,
@@ -815,9 +882,14 @@ export function buildKerisPusaka3D(): PaketModel3D {
   const jalen = new THREE.Mesh(new THREE.ConeGeometry(0.016, 0.056, 6), bilahMat);
   jalen.rotation.z = Math.PI * 0.68;
   jalen.position.set(-0.175, -0.29, 0);
-  wilahGrup.add(kembangKacang, jalen);
+  const lambeGajah = new THREE.Mesh(new THREE.ConeGeometry(0.013, 0.044, 6), bilahMat);
+  lambeGajah.rotation.z = Math.PI * 0.58;
+  lambeGajah.position.set(-0.195, -0.23, 0);
+  ricikanGrup.add(kembangKacang, jalen, lambeGajah);
 
-  // Alur Sogokan Kembar & Tikel Alis bertatah emas tipis
+  // A4. Kinatah Emas Sogokan Kembar, Tikel Alis & 7 Gerigi Greneng Sorsoran
+  const kinatahGrup = new THREE.Group();
+  kinatahGrup.userData.explodeVec = new THREE.Vector3(0.32, 0.28, 0.34);
   for (const zSide of [-0.025, 0.025]) {
     const sogokan = new THREE.Mesh(
       new THREE.CylinderGeometry(0.008, 0.015, 0.42, 8),
@@ -829,18 +901,20 @@ export function buildKerisPusaka3D(): PaketModel3D {
       emasMat,
     );
     tikelAlis.position.set(0.036, -0.14, zSide);
-    wilahGrup.add(sogokan, tikelAlis);
+    kinatahGrup.add(sogokan, tikelAlis);
   }
-
-  // Detail bergigi 7 Greneng & Ri Pandan di pangkal belakang sorsoran
   for (let g = 0; g < 7; g++) {
     const duri = new THREE.Mesh(new THREE.ConeGeometry(0.011, 0.038, 5), bilahMat);
     duri.rotation.z = -Math.PI / 2;
     duri.position.set(0.16 - g * 0.013, -0.295 + g * 0.032, 0);
-    wilahGrup.add(duri);
+    kinatahGrup.add(duri);
   }
+  tanamPinAnchor(kinatahGrup, 'keris-pamor', 0.08, -0.08, 0.07, pinAnchors);
 
-  // B. Ganja Sebit Rontal / Kelap Lintah (Sirah Cecak -> Buntut Urang)
+  // B. Ganja Sebit Rontal / Kelap Lintah + Lubang Pengunci Pesi
+  const ganjaGrup = new THREE.Group();
+  ganjaGrup.position.set(0, -0.35, 0);
+  ganjaGrup.userData.explodeVec = new THREE.Vector3(-0.34, 0.14, 0.42);
   const ganjaGeo = ambilAtauBuatPusakaExtrude('keris-ganja', () => {
     const ganjaShape = new THREE.Shape();
     ganjaShape.moveTo(-0.27, -0.038);
@@ -860,41 +934,56 @@ export function buildKerisPusaka3D(): PaketModel3D {
     normalisasiUvExtrude(g);
     return g;
   });
-  const ganja = new THREE.Mesh(ganjaGeo, bilahMat);
-  ganja.position.set(0, -0.35, -0.047);
-  ganja.castShadow = true;
-  ganja.userData.explodeVec = new THREE.Vector3(-0.24, 0.18, 0.44);
+  const ganjaMesh = new THREE.Mesh(ganjaGeo, bilahMat);
+  ganjaMesh.position.set(0, 0, -0.047);
+  ganjaMesh.castShadow = true;
+  const lubangGanja = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.098, 12), lubangDalamMat);
+  lubangGanja.position.set(0, -0.01, 0);
+  ganjaGrup.add(ganjaMesh, lubangGanja);
+  tanamPinAnchor(ganjaGrup, 'keris-ganja', -0.04, 0.01, 0.08, pinAnchors);
 
-  // C. Pesi Baja Tempa Penusuk Hulu
-  const pesi = new THREE.Mesh(new THREE.CylinderGeometry(0.024, 0.015, 0.56, 12), bilahMat);
-  pesi.position.set(0, -0.63, 0);
-  pesi.userData.explodeVec = new THREE.Vector3(0, 0.02, -0.34);
+  // C. Pesi Baja Tempa Penusuk Hulu + Bahu Methuk
+  const pesiGrup = new THREE.Group();
+  pesiGrup.position.set(0, -0.63, 0);
+  pesiGrup.userData.explodeVec = new THREE.Vector3(0, -0.08, -0.34);
+  const pesiBatang = new THREE.Mesh(new THREE.CylinderGeometry(0.024, 0.014, 0.58, 12), bajaIntiMat);
+  const methukRing = new THREE.Mesh(new THREE.CylinderGeometry(0.046, 0.036, 0.045, 14), emasMat);
+  methukRing.position.y = 0.27;
+  pesiGrup.add(pesiBatang, methukRing);
 
-  // D. Mendak Ring Bertingkat & Selut 16 Permata Mirah Delima
-  const mendakGrup = new THREE.Group();
-  mendakGrup.position.set(0, -0.46, 0);
-  mendakGrup.userData.explodeVec = new THREE.Vector3(0, -0.18, 0.36);
-
+  // D1. Mendak Ring Kuningan Bertingkat (Terpisah dari Selut saat diledakkan)
+  const mendakRingGrup = new THREE.Group();
+  mendakRingGrup.position.set(0, -0.44, 0);
+  mendakRingGrup.userData.explodeVec = new THREE.Vector3(0, -0.18, 0.38);
   const cincinAtas = new THREE.Mesh(new THREE.TorusGeometry(0.064, 0.018, 14, 30), emasMat);
   cincinAtas.rotation.x = Math.PI / 2;
-  cincinAtas.position.y = 0.024;
-  const cincinUtama = new THREE.Mesh(new THREE.TorusGeometry(0.078, 0.024, 16, 32), emasMat);
+  cincinAtas.position.y = 0.02;
+  const cincinUtama = new THREE.Mesh(new THREE.TorusGeometry(0.078, 0.022, 16, 32), emasMat);
   cincinUtama.rotation.x = Math.PI / 2;
+  cincinUtama.position.y = -0.008;
+  mendakRingGrup.add(cincinAtas, cincinUtama);
+
+  // D2. Selut Mahkota Bertatah 16 Permata Mirah Delima
+  const selutGrup = new THREE.Group();
+  selutGrup.position.set(0, -0.51, 0);
+  selutGrup.userData.explodeVec = new THREE.Vector3(0, -0.42, 0.32);
   const selutBawah = new THREE.Mesh(new THREE.SphereGeometry(0.094, 24, 18), emasMat);
   selutBawah.scale.y = 0.62;
-  selutBawah.position.y = -0.052;
-  mendakGrup.add(cincinAtas, cincinUtama, selutBawah);
-
+  const bibirSelut = new THREE.Mesh(new THREE.TorusGeometry(0.078, 0.012, 10, 24), emasMat);
+  bibirSelut.rotation.x = Math.PI / 2;
+  bibirSelut.position.y = -0.045;
+  selutGrup.add(selutBawah, bibirSelut);
   for (let p = 0; p < 16; p++) {
     const ang = (p / 16) * Math.PI * 2;
     const permata = new THREE.Mesh(new THREE.OctahedronGeometry(0.014, 0), mirahMat);
-    permata.position.set(Math.cos(ang) * 0.092, -0.012, Math.sin(ang) * 0.092);
-    mendakGrup.add(permata);
+    permata.position.set(Math.cos(ang) * 0.092, 0.01, Math.sin(ang) * 0.092);
+    selutGrup.add(permata);
   }
+  tanamPinAnchor(selutGrup, 'keris-pesi', 0, 0.03, 0.12, pinAnchors);
 
-  // E. Hulu Surakarta (Ukiran Nunggak Semi + Sabuk Patra Emas)
+  // E. Hulu Surakarta (Ukiran Nunggak Semi + Rongga Pesi + Sabuk Patra Terpisah)
   const huluGrup = new THREE.Group();
-  huluGrup.userData.explodeVec = new THREE.Vector3(-0.1, -0.68, 0);
+  huluGrup.userData.explodeVec = new THREE.Vector3(-0.14, -0.58, 0);
   const huluPoints = [
     new THREE.Vector3(0, -0.49, 0),
     new THREE.Vector3(0.025, -0.68, 0),
@@ -907,20 +996,31 @@ export function buildKerisPusaka3D(): PaketModel3D {
     kayuKemuningMat,
   );
   huluTube.castShadow = true;
+  const ronggaHulu = new THREE.Mesh(new THREE.CylinderGeometry(0.032, 0.032, 0.04, 14), lubangDalamMat);
+  ronggaHulu.position.set(0, -0.485, 0);
   const bungkulAtas = new THREE.Mesh(new THREE.SphereGeometry(0.096, 18, 16), kayuKemuningMat);
   bungkulAtas.scale.set(0.95, 1.15, 0.85);
   bungkulAtas.position.set(-0.19, -1.22, 0);
-  const sabukHulu = new THREE.Mesh(new THREE.TorusGeometry(0.082, 0.01, 10, 24), emasMat);
+
+  const sabukHuluGrup = new THREE.Group();
+  sabukHuluGrup.position.set(-0.08, -0.94, 0);
+  sabukHuluGrup.userData.explodeVec = new THREE.Vector3(-0.24, -0.08, 0.22);
+  const sabukHulu = new THREE.Mesh(new THREE.TorusGeometry(0.082, 0.011, 10, 24), emasMat);
   sabukHulu.rotation.x = Math.PI / 2;
   sabukHulu.rotation.y = 0.25;
-  sabukHulu.position.set(-0.08, -0.94, 0);
-  huluGrup.add(huluTube, bungkulAtas, sabukHulu);
+  sabukHuluGrup.add(sabukHulu);
 
-  // F. Warangka Gayaman Kayu Timoho + Gandar + Selongsong Pendok Bunton Emas
+  huluGrup.add(huluTube, ronggaHulu, bungkulAtas, sabukHuluGrup);
+  tanamPinAnchor(huluGrup, 'keris-hulu', -0.09, -0.98, 0.11, pinAnchors);
+
+  // F. Warangka 3-Bagian Terpisah: Gayaman Kayu Timoho + Gandar + Selongsong Pendok Bunton Emas
   const warangka = new THREE.Group();
   warangka.position.set(0.38, 0.18, -0.26);
-  warangka.userData.explodeVec = new THREE.Vector3(0.55, 0.08, -0.42);
+  warangka.userData.explodeVec = new THREE.Vector3(0.56, 0.08, -0.22);
 
+  const gayamanGrup = new THREE.Group();
+  gayamanGrup.position.set(0, 0.18, -0.25);
+  gayamanGrup.userData.explodeVec = new THREE.Vector3(0, 0.44, 0.08);
   const gayamanGeo = ambilAtauBuatPusakaExtrude('keris-gayaman', () => {
     const gayamanShape = new THREE.Shape();
     gayamanShape.moveTo(-0.49, 0.06);
@@ -942,18 +1042,27 @@ export function buildKerisPusaka3D(): PaketModel3D {
     return g;
   });
   const gayamanAtas = new THREE.Mesh(gayamanGeo, kayuKemuningMat);
-  gayamanAtas.position.set(0, 0.18, -0.32);
+  gayamanAtas.position.set(0, 0, -0.07);
+  const lubangGayaman = new THREE.Mesh(new THREE.BoxGeometry(0.46, 0.032, 0.055), lubangDalamMat);
+  lubangGayaman.position.set(0.02, 0.24, 0);
+  gayamanGrup.add(gayamanAtas, lubangGayaman);
+  tanamPinAnchor(gayamanGrup, 'keris-warangka', 0.06, 0.06, 0.11, pinAnchors);
 
+  const gandarGrup = new THREE.Group();
+  gandarGrup.position.set(0, -0.68, -0.25);
+  gandarGrup.userData.explodeVec = new THREE.Vector3(0, -0.06, -0.14);
   const gandarKayu = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.11, 0.068, 1.62, 20),
+    new THREE.CylinderGeometry(0.106, 0.064, 1.62, 20),
     kayuKemuningMat,
   );
-  gandarKayu.scale.z = 0.48;
-  gandarKayu.position.set(0, -0.68, -0.25);
+  gandarKayu.scale.z = 0.46;
+  const pasakGandar = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.12, 0.05), kayuKemuningMat);
+  pasakGandar.position.y = 0.84;
+  gandarGrup.add(gandarKayu, pasakGandar);
 
   const pendokGrup = new THREE.Group();
   pendokGrup.position.set(0, -0.72, -0.25);
-  pendokGrup.userData.explodeVec = new THREE.Vector3(0.38, -0.14, 0.24);
+  pendokGrup.userData.explodeVec = new THREE.Vector3(0.36, -0.34, 0.28);
   const pendokEmas = new THREE.Mesh(
     new THREE.CylinderGeometry(0.118, 0.072, 1.54, 20),
     emasMat,
@@ -962,17 +1071,36 @@ export function buildKerisPusaka3D(): PaketModel3D {
   const buntutPendok = new THREE.Mesh(new THREE.SphereGeometry(0.056, 16, 12), emasMat);
   buntutPendok.scale.set(1, 1.35, 0.55);
   buntutPendok.position.set(0, -0.78, 0);
+  for (const py of [0.56, 0.0, -0.52]) {
+    const sabukPendok = new THREE.Mesh(new THREE.TorusGeometry(0.1 - (0.56 - py) * 0.025, 0.009, 8, 22), emasMat);
+    sabukPendok.rotation.x = Math.PI / 2;
+    sabukPendok.scale.y = 0.54;
+    sabukPendok.position.y = py;
+    pendokGrup.add(sabukPendok);
+  }
   pendokGrup.add(pendokEmas, buntutPendok);
 
-  warangka.add(gayamanAtas, gandarKayu, pendokGrup);
-  group.add(wilahGrup, ganja, pesi, mendakGrup, huluGrup, warangka);
+  warangka.add(gayamanGrup, gandarGrup, pendokGrup);
+  group.add(
+    wilahGrup,
+    slironGrup,
+    ricikanGrup,
+    kinatahGrup,
+    ganjaGrup,
+    pesiGrup,
+    mendakRingGrup,
+    selutGrup,
+    huluGrup,
+    warangka,
+  );
 
-  return { group };
+  return { group, pinAnchors };
 }
 
-/** 2. Saron Laras Slendro: Rancakan berrelief lung-lungan prada, pluntur & 12 tawonan, 6 bilah gangsa 78/22, gandhen bubut. */
+/** 2. Saron Laras Slendro: Rancakan berongga akustik asli, plinth terpisah, tebeng ukir, sayap praba, pluntur & 12 tawonan terpisah, 6 bilah gangsa 78/22, gandhen bubut. */
 export function buildSaronPusaka3D(): PaketModel3D {
   const group = new THREE.Group();
+  const pinAnchors: Record<string, THREE.Object3D> = {};
   const tex = loadBudayaTextures();
   const gangsa = buatTeksturPerungguGangsa();
   const ukiran = buatTeksturUkiranRancakan();
@@ -983,6 +1111,11 @@ export function buildSaronPusaka3D(): PaketModel3D {
     color: 0x6b2414,
     roughness: 0.44,
     metalness: 0.1,
+  });
+  const ronggaDalamMat = new THREE.MeshStandardMaterial({
+    color: 0x261009,
+    roughness: 0.88,
+    metalness: 0.04,
   });
   const tebengReliefMat = new THREE.MeshStandardMaterial({
     map: ukiran.diffuse,
@@ -1012,61 +1145,111 @@ export function buildSaronPusaka3D(): PaketModel3D {
     roughness: 0.85,
   });
 
-  // Palungan & Plinth Bawah Rancakan Grobogan
+  // 1. Palungan Resonator Berongga Asli (4 Dinding Kayu Jati + Dasar + 2 Sekat Akustik Internal)
   const palungan = new THREE.Group();
   palungan.position.set(0, -0.24, 0);
-  palungan.userData.explodeVec = new THREE.Vector3(0, -0.58, 0);
+  palungan.userData.explodeVec = new THREE.Vector3(0, -0.28, 0);
 
-  const badanKotak = new THREE.Mesh(new THREE.BoxGeometry(2.55, 0.44, 0.72), jatiMerahMat);
-  badanKotak.castShadow = true;
-  const plinthBawah = new THREE.Mesh(new THREE.BoxGeometry(2.74, 0.1, 0.84), jatiMerahMat);
-  plinthBawah.position.y = -0.25;
-  plinthBawah.receiveShadow = true;
-
-  for (const kx of [-1.12, 1.12]) {
-    for (const kz of [-0.32, 0.32]) {
-      const kakiBubut = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.06, 0.1, 14), emasUkirMat);
-      kakiBubut.position.set(kx, -0.34, kz);
-      palungan.add(kakiBubut);
-    }
+  const dindingDepan = new THREE.Mesh(new THREE.BoxGeometry(2.55, 0.44, 0.09), jatiMerahMat);
+  dindingDepan.position.set(0, 0, 0.315);
+  dindingDepan.castShadow = true;
+  const dindingBelakang = new THREE.Mesh(new THREE.BoxGeometry(2.55, 0.44, 0.09), jatiMerahMat);
+  dindingBelakang.position.set(0, 0, -0.315);
+  dindingBelakang.castShadow = true;
+  const dindingKiri = new THREE.Mesh(new THREE.BoxGeometry(0.11, 0.44, 0.54), jatiMerahMat);
+  dindingKiri.position.set(-1.22, 0, 0);
+  const dindingKanan = new THREE.Mesh(new THREE.BoxGeometry(0.11, 0.44, 0.54), jatiMerahMat);
+  dindingKanan.position.set(1.22, 0, 0);
+  const dasarRongga = new THREE.Mesh(new THREE.BoxGeometry(2.38, 0.08, 0.58), ronggaDalamMat);
+  dasarRongga.position.set(0, -0.18, 0);
+  const ronggaInterior = new THREE.Mesh(new THREE.BoxGeometry(2.32, 0.03, 0.5), ronggaDalamMat);
+  ronggaInterior.position.set(0, -0.135, 0);
+  palungan.add(
+    dindingDepan,
+    dindingBelakang,
+    dindingKiri,
+    dindingKanan,
+    dasarRongga,
+    ronggaInterior,
+  );
+  // Sekat resonansi akustik di dalam palungan (terlihat jelas saat bilah & pluntur terangkat)
+  for (const sx of [-0.42, 0.42]) {
+    const sekatAkustik = new THREE.Mesh(new THREE.BoxGeometry(0.045, 0.28, 0.52), jatiMerahMat);
+    sekatAkustik.position.set(sx, -0.04, 0);
+    palungan.add(sekatAkustik);
   }
-  palungan.add(badanKotak, plinthBawah);
+  tanamPinAnchor(palungan, 'saron-rancakan', -0.55, 0.02, 0.37, pinAnchors);
   group.add(palungan);
 
-  // Sepasang Panel Tebeng Relief Ukiran Lung-Lungan Depan & Belakang
+  // 2. Plinth Alas Bawah & 4 Kaki Bubut Kuningan (Terpisah ke bawah dari Palungan)
+  const plinthGrup = new THREE.Group();
+  plinthGrup.position.set(0, -0.49, 0);
+  plinthGrup.userData.explodeVec = new THREE.Vector3(0, -0.78, 0);
+  const plinthBawah = new THREE.Mesh(new THREE.BoxGeometry(2.74, 0.1, 0.84), jatiMerahMat);
+  plinthBawah.receiveShadow = true;
+  const lisPlinth = new THREE.Mesh(new THREE.BoxGeometry(2.64, 0.03, 0.78), emasUkirMat);
+  lisPlinth.position.y = 0.055;
+  plinthGrup.add(plinthBawah, lisPlinth);
+  for (const kx of [-1.12, 1.12]) {
+    for (const kz of [-0.32, 0.32]) {
+      const kakiBubut = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.06, 0.11, 14), emasUkirMat);
+      kakiBubut.position.set(kx, -0.095, kz);
+      plinthGrup.add(kakiBubut);
+    }
+  }
+  group.add(plinthGrup);
+
+  // 3. Sepasang Panel Tebeng Relief Ukiran Lung-Lungan Depan & Belakang
   for (const zWall of [-0.372, 0.372]) {
     const relief = new THREE.Mesh(new THREE.BoxGeometry(2.3, 0.32, 0.032), tebengReliefMat);
     relief.position.set(0, -0.24, zWall);
-    relief.userData.explodeVec = new THREE.Vector3(0, -0.4, zWall * 1.45);
+    relief.userData.explodeVec = new THREE.Vector3(0, -0.28, zWall * 1.75);
     group.add(relief);
   }
 
-  // Bantalan Tali Pluntur & 12 Paku Penyangga Kuningan Tawonan
-  const plunturGrup = new THREE.Group();
-  plunturGrup.userData.explodeVec = new THREE.Vector3(0, 0.2, 0);
+  // 4. Rel Bantalan Tali Pluntur Peredam Kayu-Logam (Terpisah dari Paku Tawonan)
+  const plunturTaliGrup = new THREE.Group();
+  plunturTaliGrup.userData.explodeVec = new THREE.Vector3(0, 0.18, 0);
   for (const zPlisir of [-0.26, 0.26]) {
-    const bantalan = new THREE.Mesh(new THREE.CylinderGeometry(0.024, 0.024, 2.28, 12), plisirMat);
+    const bantalan = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.025, 2.28, 12), plisirMat);
     bantalan.rotation.z = Math.PI / 2;
     bantalan.position.set(0, 0.02, zPlisir);
-    plunturGrup.add(bantalan);
+    plunturTaliGrup.add(bantalan);
+    for (const px of [-1.14, 1.14]) {
+      const pasakTali = new THREE.Mesh(new THREE.CylinderGeometry(0.018, 0.014, 0.06, 8), emasUkirMat);
+      pasakTali.position.set(px, 0.01, zPlisir);
+      plunturTaliGrup.add(pasakTali);
+    }
   }
+  group.add(plunturTaliGrup);
+
+  // 5. 12 Paku Penyangga Kuningan Tawonan & Cincin Titik Simpul (Terpisah di atas Pluntur)
+  const pakuTawonanGrup = new THREE.Group();
+  pakuTawonanGrup.userData.explodeVec = new THREE.Vector3(0, 0.42, 0);
   for (let i = 0; i < 6; i++) {
     const xPos = -0.875 + i * 0.35;
     const zSpan = (0.76 - i * 0.042) * 0.36;
     for (const zPin of [-zSpan, zSpan]) {
       const paku = new THREE.Mesh(new THREE.CylinderGeometry(0.013, 0.013, 0.18, 8), emasUkirMat);
       paku.position.set(xPos, 0.09, zPin);
+      const cincinSimpul = new THREE.Mesh(new THREE.TorusGeometry(0.02, 0.006, 8, 14), plisirMat);
+      cincinSimpul.rotation.x = Math.PI / 2;
+      cincinSimpul.position.set(xPos, 0.035, zPin);
       const topiPaku = new THREE.Mesh(new THREE.SphereGeometry(0.02, 10, 8), emasUkirMat);
       topiPaku.position.set(xPos, 0.185, zPin);
-      plunturGrup.add(paku, topiPaku);
+      pakuTawonanGrup.add(paku, cincinSimpul, topiPaku);
     }
   }
-  group.add(plunturGrup);
+  tanamPinAnchor(pakuTawonanGrup, 'saron-pluntur', -0.35, 0.15, 0.28, pinAnchors);
+  group.add(pakuTawonanGrup);
 
+  // 6. Sayap Haluan & Buritan Praba Emas dengan Pasak Sambung Kayu
   const buatSayapRancakan = (arah: number): THREE.Group => {
     const sayap = new THREE.Group();
     const blokSayap = new THREE.Mesh(new THREE.ConeGeometry(0.38, 0.74, 6), jatiMerahMat);
     blokSayap.rotation.z = -arah * 0.38;
+    const pasakSambung = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.14, 0.24), jatiMerahMat);
+    pasakSambung.position.set(-arah * 0.18, -0.18, 0);
     const mahkotaNaga = new THREE.Mesh(
       new THREE.TorusGeometry(0.18, 0.042, 12, 24, Math.PI * 1.3),
       emasUkirMat,
@@ -1074,14 +1257,17 @@ export function buildSaronPusaka3D(): PaketModel3D {
     mahkotaNaga.position.set(arah * 0.12, 0.22, 0);
     const bolaPuncak = new THREE.Mesh(new THREE.SphereGeometry(0.056, 12, 10), emasUkirMat);
     bolaPuncak.position.set(arah * 0.26, 0.36, 0);
-    sayap.add(blokSayap, mahkotaNaga, bolaPuncak);
+    sayap.add(blokSayap, pasakSambung, mahkotaNaga, bolaPuncak);
     sayap.position.set(arah * 1.38, 0.04, 0);
-    sayap.userData.explodeVec = new THREE.Vector3(arah * 0.72, -0.16, 0);
+    sayap.userData.explodeVec = new THREE.Vector3(arah * 0.74, -0.12, 0);
     return sayap;
   };
-  group.add(buatSayapRancakan(-1), buatSayapRancakan(1));
+  const sayapKiri = buatSayapRancakan(-1);
+  const sayapKanan = buatSayapRancakan(1);
+  tanamPinAnchor(sayapKanan, 'saron-sayap', 0.06, 0.12, 0.08, pinAnchors);
+  group.add(sayapKiri, sayapKanan);
 
-  // 6 Bilah Slendro (1-2-3-5-6-i) Tempa Gangsa Cembung Bergradasi
+  // 7. 6 Bilah Slendro (1-2-3-5-6-i) Tempa Gangsa Cembung + Lubang Simpul Paku (Mekar Kipas)
   const saronWilahs: THREE.Group[] = [];
   for (let i = 0; i < 6; i++) {
     const wilahGrup = new THREE.Group();
@@ -1089,6 +1275,7 @@ export function buildSaronPusaka3D(): PaketModel3D {
     const panjang = 0.78 - i * 0.045;
     const tebal = 0.054 + i * 0.004;
     const xPos = -0.875 + i * 0.35;
+    const zSpan = (0.76 - i * 0.042) * 0.36;
 
     const wilahMat = gangsaTempaMat.clone();
     const bilah = new THREE.Mesh(new THREE.BoxGeometry(lebar, tebal, panjang), wilahMat);
@@ -1100,17 +1287,29 @@ export function buildSaronPusaka3D(): PaketModel3D {
     punggung.rotation.x = Math.PI / 2;
     punggung.scale.y = 0.38;
     punggung.position.y = tebal * 0.5;
-
     wilahGrup.add(bilah, punggung);
+
+    // Lubang titik simpul nodal di tiap bilah
+    for (const zHole of [-zSpan, zSpan]) {
+      const lubang = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.017, 0.017, tebal + 0.016, 10),
+        ronggaDalamMat,
+      );
+      lubang.position.set(0, 0.005, zHole);
+      wilahGrup.add(lubang);
+    }
+
     wilahGrup.position.set(xPos, 0.15, 0);
-    wilahGrup.userData.explodeVec = new THREE.Vector3(0, 0.52 + i * 0.08, 0);
+    wilahGrup.userData.explodeVec = new THREE.Vector3((i - 2.5) * 0.14, 0.68 + i * 0.075, 0);
+    wilahGrup.userData.baseX = xPos;
     wilahGrup.userData.baseY = 0.15;
     wilahGrup.userData.wilahMat = wilahMat;
     saronWilahs.push(wilahGrup);
     group.add(wilahGrup);
   }
+  tanamPinAnchor(saronWilahs[2], 'saron-wilah', 0, 0.08, 0.22, pinAnchors);
 
-  // Tabuh Gandhen Kayu Sawo Bubut Presisi + Ring Tembaga (gagang tertanam utuh di kepala palu)
+  // 8. Tabuh Gandhen Kayu Sawo Bubut Presisi + Ring Tembaga (gagang tertanam utuh di kepala palu)
   const ganden = new THREE.Group();
   const kepalaProfil = [
     new THREE.Vector2(0.001, -0.18),
@@ -1130,7 +1329,6 @@ export function buildSaronPusaka3D(): PaketModel3D {
     ganden.add(cincinBarrel);
   }
 
-  // Gagang berporos tepat di titik pusat kepala palu (0, 0, 0) sehingga mustahil terpisah
   const gagangUnit = new THREE.Group();
   gagangUnit.rotation.x = 1.62;
 
@@ -1155,18 +1353,19 @@ export function buildSaronPusaka3D(): PaketModel3D {
   gagangUnit.add(leherTembaga, gagang);
   ganden.add(kepalaPalu, gagangUnit);
 
-  // Disandarkan alami tepat di atas bilah Slendro ujung kanan (Wilah i)
   ganden.position.set(0.76, 0.305, 0.02);
   ganden.rotation.set(0.04, -0.22, 0.08);
-  ganden.userData.explodeVec = new THREE.Vector3(0.44, 0.56, 0.38);
+  ganden.userData.explodeVec = new THREE.Vector3(0.46, 0.62, 0.42);
+  tanamPinAnchor(ganden, 'saron-ganden', 0, 0.11, 0.06, pinAnchors);
   group.add(ganden);
 
-  return { group, saronWilahs, saronGandhen: ganden };
+  return { group, saronWilahs, saronGandhen: ganden, pinAnchors };
 }
 
-/** 3. Batik Tulis Kawung: Kain Primissima, Gawangan Bubut, Canting Tulis Nyamplung, Wajan Terangkat & Tungku Anglo Bara. */
+/** 3. Batik Tulis Kawung: Kain Primissima, Relief Lapisan Malam 3D, Gawangan 4-Komponen, Canting 4-Bagian & Tungku Anglo-Wajan 4-Lapis. */
 export function buildBatikPusaka3D(): PaketModel3D {
   const group = new THREE.Group();
+  const pinAnchors: Record<string, THREE.Object3D> = {};
   const tex = loadBudayaTextures();
   const kawung = buatTeksturBatikKawung();
 
@@ -1195,6 +1394,22 @@ export function buildBatikPusaka3D(): PaketModel3D {
     emissiveIntensity: 0.52,
     roughness: 0.14,
   });
+  const malamBekuMat = new THREE.MeshStandardMaterial({
+    color: 0xf6cf71,
+    emissive: 0x78350f,
+    emissiveIntensity: 0.22,
+    roughness: 0.32,
+    metalness: 0.18,
+  });
+  const ronggaAngloMat = new THREE.MeshStandardMaterial({
+    color: 0x1e130c,
+    roughness: 0.92,
+  });
+
+  // 1. Helai Kain Katun Mori Primissima Berpewarna Soga & Tarum
+  const kainGrup = new THREE.Group();
+  kainGrup.rotation.x = -0.22;
+  kainGrup.userData.explodeVec = new THREE.Vector3(0, 0.04, -0.52);
 
   const kainGeo = new THREE.PlaneGeometry(2.15, 1.65, 22, 16);
   const pos = kainGeo.attributes.position as THREE.BufferAttribute;
@@ -1206,35 +1421,98 @@ export function buildBatikPusaka3D(): PaketModel3D {
   }
   kainGeo.computeVertexNormals();
   const kain = new THREE.Mesh(kainGeo, kainMat);
-  kain.rotation.x = -0.22;
   kain.castShadow = true;
-  kain.userData.explodeVec = new THREE.Vector3(0, 0.1, -0.48);
-  group.add(kain);
+  kainGrup.add(kain);
+  tanamPinAnchor(kainGrup, 'batik-soga', -0.72, -0.35, 0.18, pinAnchors);
+  group.add(kainGrup);
 
-  const gawanganGrup = new THREE.Group();
+  // 2. Lapisan Relief Rintang Malam Kawung 3D (Terkelupas ke depan kain saat diledakkan untuk memperlihatkan proses rintang lilin)
+  const lapisanMalamGrup = new THREE.Group();
+  lapisanMalamGrup.rotation.x = -0.22;
+  lapisanMalamGrup.userData.explodeVec = new THREE.Vector3(0, 0.1, 0.28);
+  const kelopakGeo = new THREE.TorusGeometry(0.088, 0.011, 8, 18);
+  const pancerGeo = new THREE.SphereGeometry(0.024, 10, 8);
+  for (const cx of [-0.54, 0, 0.54]) {
+    for (const cy of [-0.38, 0.14]) {
+      const zSurf = Math.sin(cy * 2.4) * 0.16 + Math.cos(cx * 3.1) * 0.045 + 0.016;
+      const pancer = new THREE.Mesh(pancerGeo, malamBekuMat);
+      pancer.scale.z = 0.45;
+      pancer.position.set(cx, cy, zSurf);
+      lapisanMalamGrup.add(pancer);
+
+      for (const [ox, oy, rot] of [
+        [-0.08, -0.08, Math.PI * 0.25],
+        [0.08, -0.08, Math.PI * 0.75],
+        [0.08, 0.08, Math.PI * 1.25],
+        [-0.08, 0.08, Math.PI * 1.75],
+      ]) {
+        const px = cx + ox;
+        const py = cy + oy;
+        const pz = Math.sin(py * 2.4) * 0.16 + Math.cos(px * 3.1) * 0.045 + 0.014;
+        const kelopak = new THREE.Mesh(kelopakGeo, malamBekuMat);
+        kelopak.scale.set(1.12, 0.58, 0.42);
+        kelopak.rotation.z = rot;
+        kelopak.position.set(px, py, pz);
+        lapisanMalamGrup.add(kelopak);
+      }
+    }
+  }
+  tanamPinAnchor(lapisanMalamGrup, 'batik-pusat', 0, 0.14, 0.22, pinAnchors);
+  group.add(lapisanMalamGrup);
+
+  // 3. Rangka Gawangan Jati 4-Bagian Terpisah (Palang Atas, Tiang Kiri, Tiang Kanan, Kaki & Pengikat Bawah)
+  const palangAtasGrup = new THREE.Group();
+  palangAtasGrup.userData.explodeVec = new THREE.Vector3(0, 0.68, 0);
   const palangAtas = new THREE.Mesh(new THREE.CylinderGeometry(0.048, 0.048, 2.54, 16), jatiMat);
   palangAtas.rotation.z = Math.PI / 2;
   palangAtas.position.set(0, 0.84, 0.12);
-  const tiangKiri = new THREE.Mesh(new THREE.CylinderGeometry(0.044, 0.056, 1.85, 14), jatiMat);
-  tiangKiri.position.set(-1.12, -0.05, 0.12);
-  const tiangKanan = tiangKiri.clone();
-  tiangKanan.position.x = 1.12;
+  palangAtasGrup.add(palangAtas);
   for (const fx of [-1.28, 1.28]) {
     const mahkotaPalang = new THREE.Mesh(new THREE.SphereGeometry(0.068, 12, 10), tembagaMat);
     mahkotaPalang.position.set(fx, 0.84, 0.12);
-    gawanganGrup.add(mahkotaPalang);
+    palangAtasGrup.add(mahkotaPalang);
   }
+  for (const tx of [-1.12, 1.12]) {
+    const pasakPalang = new THREE.Mesh(new THREE.CylinderGeometry(0.026, 0.026, 0.12, 10), tembagaMat);
+    pasakPalang.position.set(tx, 0.76, 0.12);
+    palangAtasGrup.add(pasakPalang);
+  }
+  tanamPinAnchor(palangAtasGrup, 'batik-gawangan', -0.95, 0.86, 0.16, pinAnchors);
+
+  const buatTiangGawangan = (xPos: number): THREE.Group => {
+    const tiangGrup = new THREE.Group();
+    tiangGrup.userData.explodeVec = new THREE.Vector3(Math.sign(xPos) * 0.56, 0.08, 0);
+    const tiang = new THREE.Mesh(new THREE.CylinderGeometry(0.044, 0.056, 1.76, 14), jatiMat);
+    tiang.position.set(xPos, -0.05, 0.12);
+    const kerahAtas = new THREE.Mesh(new THREE.TorusGeometry(0.05, 0.011, 8, 18), tembagaMat);
+    kerahAtas.rotation.x = Math.PI / 2;
+    kerahAtas.position.set(xPos, 0.78, 0.12);
+    const purusBawah = new THREE.Mesh(new THREE.BoxGeometry(0.052, 0.11, 0.052), jatiMat);
+    purusBawah.position.set(xPos, -0.92, 0.12);
+    tiangGrup.add(tiang, kerahAtas, purusBawah);
+    return tiangGrup;
+  };
+  const tiangKiriGrup = buatTiangGawangan(-1.12);
+  const tiangKananGrup = buatTiangGawangan(1.12);
+
+  const kakiGawanganGrup = new THREE.Group();
+  kakiGawanganGrup.userData.explodeVec = new THREE.Vector3(0, -0.54, 0);
   for (const bx of [-1.12, 1.12]) {
     const kakiT = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.08, 0.72), jatiMat);
     kakiT.position.set(bx, -0.94, 0.12);
-    gawanganGrup.add(kakiT);
+    kakiGawanganGrup.add(kakiT);
   }
-  gawanganGrup.add(palangAtas, tiangKiri, tiangKanan);
-  gawanganGrup.userData.explodeVec = new THREE.Vector3(0, 0.54, 0);
-  group.add(gawanganGrup);
+  const palangBawah = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 2.24, 12), jatiMat);
+  palangBawah.rotation.z = Math.PI / 2;
+  palangBawah.position.set(0, -0.84, 0.12);
+  kakiGawanganGrup.add(palangBawah);
+  group.add(palangAtasGrup, tiangKiriGrup, tiangKananGrup, kakiGawanganGrup);
 
-  // Canting Klowong (Lathe Reservoir Nyamplung + Cincin Cangklong + Cucuk Presisi)
+  // 4. Canting Klowong 4-Bagian Terpisah (Nyamplung, Malam Cair, Cucuk Kapiler, Cangklong + Gagang Bambu)
   const canting = new THREE.Group();
+  canting.position.set(0.68, 0.28, 0.68);
+  canting.userData.explodeVec = new THREE.Vector3(0.36, 0.32, 0.44);
+
   const nyamplungProfil = [
     new THREE.Vector2(0.001, -0.09),
     new THREE.Vector2(0.075, -0.07),
@@ -1243,42 +1521,75 @@ export function buildBatikPusaka3D(): PaketModel3D {
     new THREE.Vector2(0.075, 0.09),
   ];
   const nyamplung = new THREE.Mesh(new THREE.LatheGeometry(nyamplungProfil, 24), tembagaMat);
-  const isiMalamCanting = new THREE.Mesh(new THREE.CylinderGeometry(0.078, 0.078, 0.02, 16), malamCairMat);
+
+  const isiMalamCantingGrup = new THREE.Group();
+  isiMalamCantingGrup.userData.explodeVec = new THREE.Vector3(0, 0.26, 0);
+  const isiMalamCanting = new THREE.Mesh(new THREE.CylinderGeometry(0.078, 0.078, 0.022, 16), malamCairMat);
   isiMalamCanting.position.y = 0.05;
+  isiMalamCantingGrup.add(isiMalamCanting);
+
+  const cucukGrup = new THREE.Group();
+  cucukGrup.userData.explodeVec = new THREE.Vector3(-0.32, -0.05, 0.06);
   const cucuk = new THREE.Mesh(new THREE.ConeGeometry(0.024, 0.25, 14), tembagaMat);
   cucuk.rotation.z = Math.PI / 2.15;
   cucuk.position.set(-0.155, -0.02, 0);
   const tetesMalam = new THREE.Mesh(new THREE.SphereGeometry(0.025, 12, 12), malamCairMat);
   tetesMalam.position.set(-0.275, -0.05, 0);
+  cucukGrup.add(cucuk, tetesMalam);
+
+  const gagangCantingGrup = new THREE.Group();
+  gagangCantingGrup.userData.explodeVec = new THREE.Vector3(0.34, 0.1, 0);
   const cangklong = new THREE.Mesh(new THREE.TorusGeometry(0.036, 0.012, 10, 18), tembagaMat);
   cangklong.rotation.y = Math.PI / 2;
   cangklong.position.set(0.09, 0.02, 0);
   const gagangBambu = new THREE.Mesh(new THREE.CylinderGeometry(0.024, 0.032, 0.68, 12), jatiMat);
   gagangBambu.rotation.z = -Math.PI / 2.35;
   gagangBambu.position.set(0.35, 0.09, 0);
-  canting.add(nyamplung, isiMalamCanting, cucuk, tetesMalam, cangklong, gagangBambu);
-  canting.position.set(0.68, 0.28, 0.68);
-  canting.userData.explodeVec = new THREE.Vector3(0.52, 0.38, 0.68);
+  gagangCantingGrup.add(cangklong, gagangBambu);
+
+  canting.add(nyamplung, isiMalamCantingGrup, cucukGrup, gagangCantingGrup);
+  tanamPinAnchor(canting, 'batik-canting', 0, 0.09, 0.12, pinAnchors);
   group.add(canting);
 
-  // Tungku Anglo Terakota Berlubang + Bara + Wajan Malam Terpisah
+  // 5. Tungku Anglo Terakota, Bara Arang, Wajan Tembaga & Kolam Malam (4 Lapisan Vertikal Terpisah)
   const komporGrup = new THREE.Group();
   komporGrup.position.set(0.75, -0.82, 0.55);
-  komporGrup.userData.explodeVec = new THREE.Vector3(0.6, -0.42, 0.58);
+  komporGrup.userData.explodeVec = new THREE.Vector3(0.42, -0.26, 0.44);
 
-  const anglo = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.24, 0.29, 0.36, 20),
-    new THREE.MeshStandardMaterial({ color: 0x9a3412, roughness: 0.78 }),
-  );
-  const baraArang = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.16, 0.16, 0.05, 16),
-    new THREE.MeshStandardMaterial({ color: 0xef4444, emissive: 0xea580c, emissiveIntensity: 1.4 }),
-  );
-  baraArang.position.y = 0.11;
-  komporGrup.add(anglo, baraArang);
+  const angloGrup = new THREE.Group();
+  angloGrup.userData.explodeVec = new THREE.Vector3(0, -0.26, 0);
+  const angloMat = new THREE.MeshStandardMaterial({ color: 0x9a3412, roughness: 0.78 });
+  const anglo = new THREE.Mesh(new THREE.CylinderGeometry(0.24, 0.29, 0.36, 20), angloMat);
+  const bibirAnglo = new THREE.Mesh(new THREE.TorusGeometry(0.24, 0.022, 10, 22), angloMat);
+  bibirAnglo.rotation.x = Math.PI / 2;
+  bibirAnglo.position.y = 0.175;
+  const pintuAngin = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.16, 0.08), ronggaAngloMat);
+  pintuAngin.position.set(0, -0.08, 0.25);
+  angloGrup.add(anglo, bibirAnglo, pintuAngin);
+
+  const baraGrup = new THREE.Group();
+  baraGrup.userData.explodeVec = new THREE.Vector3(0, 0.08, 0);
+  const baraMat = new THREE.MeshStandardMaterial({
+    color: 0xef4444,
+    emissive: 0xea580c,
+    emissiveIntensity: 1.45,
+  });
+  const baraArang = new THREE.Mesh(new THREE.CylinderGeometry(0.17, 0.16, 0.05, 16), baraMat);
+  baraArang.position.y = 0.12;
+  baraGrup.add(baraArang);
+  for (const [ex, ez] of [
+    [-0.07, 0.05],
+    [0.06, 0.06],
+    [0, -0.07],
+    [0.08, -0.02],
+  ]) {
+    const arang = new THREE.Mesh(new THREE.DodecahedronGeometry(0.036, 0), baraMat);
+    arang.position.set(ex, 0.155, ez);
+    baraGrup.add(arang);
+  }
 
   const wajanGrup = new THREE.Group();
-  wajanGrup.userData.explodeVec = new THREE.Vector3(0, 0.34, 0);
+  wajanGrup.userData.explodeVec = new THREE.Vector3(0, 0.4, 0);
   const wajan = new THREE.Mesh(new THREE.CylinderGeometry(0.33, 0.16, 0.16, 24), tembagaMat);
   wajan.position.y = 0.24;
   for (const dir of [-1, 1]) {
@@ -1286,19 +1597,25 @@ export function buildBatikPusaka3D(): PaketModel3D {
     kupingan.position.set(dir * 0.33, 0.31, 0);
     wajanGrup.add(kupingan);
   }
-  const kolamMalam = new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.28, 0.04, 22), malamCairMat);
-  kolamMalam.position.y = 0.3;
-  wajanGrup.add(wajan, kolamMalam);
+  wajanGrup.add(wajan);
+  tanamPinAnchor(wajanGrup, 'batik-anglo', 0, 0.28, 0.32, pinAnchors);
 
-  komporGrup.add(wajanGrup);
+  const kolamMalamGrup = new THREE.Group();
+  kolamMalamGrup.userData.explodeVec = new THREE.Vector3(0, 0.72, 0);
+  const kolamMalam = new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.26, 0.04, 22), malamCairMat);
+  kolamMalam.position.y = 0.3;
+  kolamMalamGrup.add(kolamMalam);
+
+  komporGrup.add(angloGrup, baraGrup, wajanGrup, kolamMalamGrup);
   group.add(komporGrup);
 
-  return { group };
+  return { group, pinAnchors };
 }
 
-/** 4. Pendopo Joglo Agung: Bebatur 2 undakan, Umpak, 4 Saka Guru, Sunduk-Kili, Rangka Tumpang Sari Berongga, Lampu Robyong, Atap Terakota. */
+/** 4. Pendopo Joglo Agung: Bebatur 2 undakan terpisah, Umpak, 4 Saka Guru berpurus, Sunduk-Kili, 12 Tiang & Blandar Luar, 6 Tumpang Sari Berongga, Lampu Robyong 4-Lengan, Atap Terakota. */
 export function buildJogloPusaka3D(): PaketModel3D {
   const group = new THREE.Group();
+  const pinAnchors: Record<string, THREE.Object3D> = {};
   const tex = loadBudayaTextures();
   const genteng = buatTeksturGentengAtap();
 
@@ -1308,7 +1625,13 @@ export function buildJogloPusaka3D(): PaketModel3D {
     color: 0x78421c,
     roughness: 0.5,
   });
+  const pasakKayuMat = new THREE.MeshStandardMaterial({
+    color: 0x9a5c2c,
+    roughness: 0.44,
+    metalness: 0.06,
+  });
   const batuMat = new THREE.MeshStandardMaterial({ color: 0x475569, roughness: 0.8 });
+  const batuGelapMat = new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.86 });
   const gentengMat = new THREE.MeshStandardMaterial({
     map: genteng.diffuse,
     bumpMap: genteng.bump,
@@ -1321,64 +1644,144 @@ export function buildJogloPusaka3D(): PaketModel3D {
     metalness: 0.9,
     roughness: 0.2,
   });
+  const lampuRobyongMat = new THREE.MeshStandardMaterial({
+    color: 0xfff3c4,
+    emissive: 0xf59e0b,
+    emissiveIntensity: 1.2,
+    roughness: 0.2,
+  });
 
-  // Bebatur Andesit 2 Tingkat + Undakan Depan
-  const bebaturGrup = new THREE.Group();
-  bebaturGrup.userData.explodeVec = new THREE.Vector3(0, -0.74, 0);
-  const pondasiBawah = new THREE.Mesh(new THREE.BoxGeometry(2.76, 0.14, 2.54), batuMat);
-  pondasiBawah.position.y = -1.2;
-  const pondasiAtas = new THREE.Mesh(new THREE.BoxGeometry(2.5, 0.08, 2.28), batuMat);
-  pondasiAtas.position.y = -1.1;
-  bebaturGrup.add(pondasiBawah, pondasiAtas);
-  group.add(bebaturGrup);
+  // 1. Bebatur Andesit 2 Tingkat Terpisah + Undakan Tangga Depan
+  const pondasiBawahGrup = new THREE.Group();
+  pondasiBawahGrup.position.y = -1.2;
+  pondasiBawahGrup.userData.explodeVec = new THREE.Vector3(0, -0.72, 0);
+  const pondasiBawah = new THREE.Mesh(new THREE.BoxGeometry(2.78, 0.14, 2.56), batuGelapMat);
+  const undakBawah = new THREE.Mesh(new THREE.BoxGeometry(0.92, 0.12, 0.24), batuGelapMat);
+  undakBawah.position.set(0, -0.01, 1.38);
+  pondasiBawahGrup.add(pondasiBawah, undakBawah);
 
-  // 4 Saka Guru + Umpak Andesit Berundak + Sabuk Kuningan
+  const pondasiAtasGrup = new THREE.Group();
+  pondasiAtasGrup.position.y = -1.1;
+  pondasiAtasGrup.userData.explodeVec = new THREE.Vector3(0, -0.44, 0);
+  const pondasiAtas = new THREE.Mesh(new THREE.BoxGeometry(2.5, 0.09, 2.28), batuMat);
+  const undakAtas = new THREE.Mesh(new THREE.BoxGeometry(0.76, 0.08, 0.18), batuMat);
+  undakAtas.position.set(0, -0.01, 1.22);
+  pondasiAtasGrup.add(pondasiAtas, undakAtas);
+  tanamPinAnchor(pondasiAtasGrup, 'joglo-bebatur', 0, 0.06, 1.15, pinAnchors);
+  group.add(pondasiBawahGrup, pondasiAtasGrup);
+
+  // 2. 4 Saka Guru Berpurus Kayu + 4 Umpak Andesit Berundak + Sabuk Kuningan
+  let sakaRef: THREE.Group | null = null;
   for (const sx of [-0.62, 0.62]) {
     for (const sz of [-0.54, 0.54]) {
-      const umpak = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.18, 0.22, 8), batuMat);
-      umpak.position.set(sx, -0.96, sz);
-      umpak.userData.explodeVec = new THREE.Vector3(sx * 0.4, -0.5, sz * 0.4);
+      const umpakGrup = new THREE.Group();
+      umpakGrup.position.set(sx, -0.96, sz);
+      umpakGrup.userData.explodeVec = new THREE.Vector3(sx * 0.44, -0.44, sz * 0.44);
+      const umpakBadan = new THREE.Mesh(new THREE.CylinderGeometry(0.115, 0.18, 0.21, 8), batuMat);
+      const bantalanUmpak = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.03, 0.16), batuGelapMat);
+      bantalanUmpak.position.y = 0.11;
+      umpakGrup.add(umpakBadan, bantalanUmpak);
 
-      const saka = new THREE.Mesh(new THREE.BoxGeometry(0.14, 1.38, 0.14), jatiMat);
-      saka.position.set(sx, -0.18, sz);
-      saka.userData.explodeVec = new THREE.Vector3(sx * 0.5, -0.06, sz * 0.5);
-      group.add(umpak, saka);
+      const sakaGrup = new THREE.Group();
+      sakaGrup.position.set(sx, -0.18, sz);
+      sakaGrup.userData.explodeVec = new THREE.Vector3(sx * 0.56, -0.06, sz * 0.56);
+      const sakaBatang = new THREE.Mesh(new THREE.BoxGeometry(0.14, 1.38, 0.14), jatiMat);
+      const sabukBawah = new THREE.Mesh(new THREE.BoxGeometry(0.165, 0.055, 0.165), emasMat);
+      sabukBawah.position.y = -0.62;
+      const purusAtas = new THREE.Mesh(new THREE.BoxGeometry(0.068, 0.14, 0.068), pasakKayuMat);
+      purusAtas.position.y = 0.74;
+      sakaGrup.add(sakaBatang, sabukBawah, purusAtas);
+
+      if (sx < 0 && sz > 0) sakaRef = sakaGrup;
+      group.add(umpakGrup, sakaGrup);
     }
   }
+  if (sakaRef) {
+    tanamPinAnchor(sakaRef, 'joglo-sakaguru', 0, -0.1, 0.12, pinAnchors);
+  }
 
-  // Kerangka Sunduk & Pangeret (Balok Pengikat Seismik Tanpa Paku)
+  // 3. Kerangka Sunduk, Pangeret & Pasak Pengunci Kili (Sambungan Seismik Tanpa Paku)
   const sundukGrup = new THREE.Group();
-  sundukGrup.userData.explodeVec = new THREE.Vector3(0, 0.16, 0);
+  sundukGrup.userData.explodeVec = new THREE.Vector3(0, 0.2, 0);
   for (const sz of [-0.54, 0.54]) {
-    const sundukX = new THREE.Mesh(new THREE.BoxGeometry(1.42, 0.085, 0.11), jatiMat);
+    const sundukX = new THREE.Mesh(new THREE.BoxGeometry(1.48, 0.088, 0.11), jatiMat);
     sundukX.position.set(0, 0.42, sz);
     sundukGrup.add(sundukX);
+    for (const kx of [-0.76, 0.76]) {
+      const pasakKili = new THREE.Mesh(new THREE.BoxGeometry(0.045, 0.14, 0.05), pasakKayuMat);
+      pasakKili.position.set(kx, 0.42, sz);
+      sundukGrup.add(pasakKili);
+    }
   }
   for (const sx of [-0.62, 0.62]) {
-    const pangeretZ = new THREE.Mesh(new THREE.BoxGeometry(0.11, 0.085, 1.24), jatiMat);
+    const pangeretZ = new THREE.Mesh(new THREE.BoxGeometry(0.11, 0.088, 1.32), jatiMat);
     pangeretZ.position.set(sx, 0.42, 0);
     sundukGrup.add(pangeretZ);
+    for (const kz of [-0.68, 0.68]) {
+      const pasakKiliZ = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.14, 0.045), pasakKayuMat);
+      pasakKiliZ.position.set(sx, 0.42, kz);
+      sundukGrup.add(pasakKiliZ);
+    }
   }
   group.add(sundukGrup);
 
-  // 12 Tiang Keliling Penanggap + Konsol Bahu Danyang
-  for (const sx of [-1.15, 1.15]) {
-    for (const sz of [-0.95, -0.32, 0.32, 0.95]) {
-      const tiangLuar = new THREE.Mesh(new THREE.BoxGeometry(0.09, 1.02, 0.09), jatiMat);
-      tiangLuar.position.set(sx, -0.44, sz);
-      tiangLuar.userData.explodeVec = new THREE.Vector3(sx * 0.65, -0.18, sz * 0.65);
-      group.add(tiangLuar);
-    }
+  // 4. 12 Tiang Keliling Penanggap (dengan Umpak Kecil & Purus) + Balok Blandar Keliling
+  const koordinatTiangLuar: Array<[number, number]> = [
+    [-1.15, -0.95],
+    [-1.15, -0.32],
+    [-1.15, 0.32],
+    [-1.15, 0.95],
+    [1.15, -0.95],
+    [1.15, -0.32],
+    [1.15, 0.32],
+    [1.15, 0.95],
+    [-0.38, -0.95],
+    [0.38, -0.95],
+    [-0.38, 0.95],
+    [0.38, 0.95],
+  ];
+  let tiangLuarRef: THREE.Group | null = null;
+  for (const [sx, sz] of koordinatTiangLuar) {
+    const tiangGrup = new THREE.Group();
+    tiangGrup.position.set(sx, -0.44, sz);
+    tiangGrup.userData.explodeVec = new THREE.Vector3(sx * 0.64, -0.18, sz * 0.64);
+    const batang = new THREE.Mesh(new THREE.BoxGeometry(0.088, 1.0, 0.088), jatiMat);
+    const umpakKecil = new THREE.Mesh(new THREE.CylinderGeometry(0.068, 0.092, 0.12, 8), batuMat);
+    umpakKecil.position.y = -0.54;
+    const purusLuar = new THREE.Mesh(new THREE.BoxGeometry(0.045, 0.09, 0.045), pasakKayuMat);
+    purusLuar.position.y = 0.54;
+    tiangGrup.add(batang, umpakKecil, purusLuar);
+    if (sx > 1 && Math.abs(sz - 0.32) < 0.05) tiangLuarRef = tiangGrup;
+    group.add(tiangGrup);
+  }
+  if (tiangLuarRef) {
+    tanamPinAnchor(tiangLuarRef, 'joglo-penanggap', 0.07, 0.04, 0.08, pinAnchors);
   }
 
-  // 6 Undakan Balok Tumpang Sari Berongga Asli (4 Batang Bingkai Terbuka per Tingkat)
+  const blandarLuarGrup = new THREE.Group();
+  blandarLuarGrup.position.y = 0.11;
+  blandarLuarGrup.userData.explodeVec = new THREE.Vector3(0, 0.44, 0);
+  for (const bz of [-0.95, 0.95]) {
+    const balok = new THREE.Mesh(new THREE.BoxGeometry(2.44, 0.072, 0.085), jatiMat);
+    balok.position.z = bz;
+    blandarLuarGrup.add(balok);
+  }
+  for (const bx of [-1.15, 1.15]) {
+    const balok = new THREE.Mesh(new THREE.BoxGeometry(0.085, 0.072, 2.02), jatiMat);
+    balok.position.x = bx;
+    blandarLuarGrup.add(balok);
+  }
+  group.add(blandarLuarGrup);
+
+  // 5. 6 Undakan Balok Tumpang Sari Berongga Asli (4 Batang Bingkai Terbuka per Tingkat)
+  let tumpangRef: THREE.Group | null = null;
   for (let tier = 0; tier < 6; tier++) {
     const wSpan = 1.48 - tier * 0.17;
     const dSpan = 1.32 - tier * 0.15;
     const thick = 0.075;
     const tierGrup = new THREE.Group();
     tierGrup.position.y = 0.52 + tier * 0.09;
-    tierGrup.userData.explodeVec = new THREE.Vector3(0, 0.28 + tier * 0.19, 0);
+    tierGrup.userData.explodeVec = new THREE.Vector3(0, 0.18 + tier * 0.095, 0);
 
     for (const zSide of [-dSpan / 2, dSpan / 2]) {
       const balokX = new THREE.Mesh(new THREE.BoxGeometry(wSpan + thick, thick, thick), jatiMat);
@@ -1390,22 +1793,37 @@ export function buildJogloPusaka3D(): PaketModel3D {
       balokZ.position.x = xSide;
       tierGrup.add(balokZ);
     }
+    if (tier === 2) tumpangRef = tierGrup;
     group.add(tierGrup);
   }
+  if (tumpangRef) {
+    tanamPinAnchor(tumpangRef, 'joglo-tumpangsari', 0, 0.04, 0.54, pinAnchors);
+  }
 
-  // Lampu Robyong Kuningan Keraton Menggantung di Ruang Uleng
+  // 6. Lampu Robyong Kuningan 4-Lengan Menggantung di Ruang Uleng
   const robyong = new THREE.Group();
-  robyong.position.set(0, 0.34, 0);
-  robyong.userData.explodeVec = new THREE.Vector3(0, 0.18, 0.44);
-  const kapLampu = new THREE.Mesh(new THREE.SphereGeometry(0.125, 18, 14), emasMat);
-  const rantai = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.012, 0.45, 8), emasMat);
+  robyong.position.set(0, 0.3, 0);
+  robyong.userData.explodeVec = new THREE.Vector3(0, 0.14, 0.52);
+  const kapLampu = new THREE.Mesh(new THREE.SphereGeometry(0.115, 18, 14), emasMat);
+  const rantai = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.012, 0.48, 8), emasMat);
   rantai.position.y = 0.28;
   robyong.add(kapLampu, rantai);
+  for (let arm = 0; arm < 4; arm++) {
+    const ang = (arm * Math.PI) / 2 + Math.PI / 4;
+    const lengan = new THREE.Mesh(new THREE.CylinderGeometry(0.008, 0.01, 0.22, 6), emasMat);
+    lengan.rotation.z = Math.PI / 2;
+    lengan.rotation.y = ang;
+    lengan.position.set(Math.cos(ang) * 0.13, -0.02, Math.sin(ang) * 0.13);
+    const bohlam = new THREE.Mesh(new THREE.SphereGeometry(0.032, 10, 8), lampuRobyongMat);
+    bohlam.position.set(Math.cos(ang) * 0.23, 0.01, Math.sin(ang) * 0.23);
+    robyong.add(lengan, bohlam);
+  }
   group.add(robyong);
 
+  // 7. Atap Penanggap Keliling, Brunjung Puncak Curam & Wuwungan Makuta
   const penanggapGrup = new THREE.Group();
   penanggapGrup.position.y = 0.62;
-  penanggapGrup.userData.explodeVec = new THREE.Vector3(0, 0.88, 0);
+  penanggapGrup.userData.explodeVec = new THREE.Vector3(0, 1.28, 0);
   const penanggap = new THREE.Mesh(
     buatGeometriAtapTrapesiumTwin(2.75, 2.48, 1.52, 1.32, 0.46),
     gentengMat,
@@ -1436,7 +1854,7 @@ export function buildJogloPusaka3D(): PaketModel3D {
 
   const brunjungGrup = new THREE.Group();
   brunjungGrup.position.y = 1.32;
-  brunjungGrup.userData.explodeVec = new THREE.Vector3(0, 1.12, 0);
+  brunjungGrup.userData.explodeVec = new THREE.Vector3(0, 1.5, 0);
   const brunjung = new THREE.Mesh(
     buatGeometriAtapTrapesiumTwin(1.58, 1.36, 0.64, 0.16, 0.96),
     gentengMat,
@@ -1464,10 +1882,11 @@ export function buildJogloPusaka3D(): PaketModel3D {
     );
     brunjungGrup.add(juraiBrunjung);
   }
+  tanamPinAnchor(brunjungGrup, 'joglo-brunjung', 0, 0.14, 0.42, pinAnchors);
 
   const wuwunganGrup = new THREE.Group();
   wuwunganGrup.position.y = 1.84;
-  wuwunganGrup.userData.explodeVec = new THREE.Vector3(0, 1.36, 0);
+  wuwunganGrup.userData.explodeVec = new THREE.Vector3(0, 1.72, 0);
   const bubungan = new THREE.Mesh(new THREE.BoxGeometry(0.78, 0.095, 0.14), emasMat);
   wuwunganGrup.add(bubungan);
   for (const wx of [-0.32, 0, 0.32]) {
@@ -1477,20 +1896,38 @@ export function buildJogloPusaka3D(): PaketModel3D {
   }
 
   group.add(penanggapGrup, brunjungGrup, wuwunganGrup);
-  return { group };
+  return { group, pinAnchors };
 }
 
-/** 5. Wayang Kulit Sri Rama, Stand Gedebog Pisang & Pelita Minyak Blencong gantung. */
+/** 5. Wayang Kulit Sri Rama (10 sub-anatomi terpisah), Stand Gedebog Pisang & Pelita Minyak Blencong 5-bagian. */
 export function buildWayangSriRamaDanBlencong3D(): PaketModel3D {
   const group = new THREE.Group();
+  const pinAnchors: Record<string, THREE.Object3D> = {};
   const rama = buildSriRamaWayang3D();
   rama.root.scale.setScalar(1.2);
   rama.root.position.set(0, 0.12, 0);
 
-  // Dudukan Batang Gedebog Pisang & Ring Kuningan Stand Panggung
+  // Sematkan vektor ledak anatomi penuh di seluruh bagian Sri Rama agar tiap unsur wayang terpisah nyata
+  rama.kepalaMahkota.userData.explodeVec = new THREE.Vector3(0, 0.4, 0.14);
+  rama.torsoPrada.userData.explodeVec = new THREE.Vector3(0, 0.06, 0.22);
+  rama.prabaPunggung.userData.explodeVec = new THREE.Vector3(0.38, 0.22, -0.34);
+  rama.dodotKaki.userData.explodeVec = new THREE.Vector3(0, -0.34, 0.12);
+  rama.lenganKanan.userData.explodeVec = new THREE.Vector3(-0.46, 0.1, 0.24);
+  rama.busur.userData.explodeVec = new THREE.Vector3(-0.34, 0.04, 0.16);
+  rama.tudingKanan.userData.explodeVec = new THREE.Vector3(-0.12, -0.3, 0.08);
+  rama.lenganKiri.userData.explodeVec = new THREE.Vector3(0.48, 0.08, 0.16);
+  rama.tudingKiri.userData.explodeVec = new THREE.Vector3(0.14, -0.3, 0.08);
+  rama.gapitCempurit.userData.explodeVec = new THREE.Vector3(0, -0.24, -0.38);
+
+  tanamPinAnchor(rama.torsoPrada, 'wayang-sungging', 0, 0.36, 0.06, pinAnchors);
+  tanamPinAnchor(rama.kepalaMahkota, 'wayang-mahkota', 0.04, 1.12, 0.06, pinAnchors);
+  tanamPinAnchor(rama.lenganKiri, 'wayang-tuding', 0.16, -0.42, 0.08, pinAnchors);
+  tanamPinAnchor(rama.gapitCempurit, 'wayang-cempurit', 0, -1.24, 0.08, pinAnchors);
+
+  // Dudukan Batang Gedebog Pisang, Ring Kuningan & Lubang Tancap Cempurit
   const gedebogGrup = new THREE.Group();
   gedebogGrup.position.set(0, -1.62, 0);
-  gedebogGrup.userData.explodeVec = new THREE.Vector3(0, -0.68, 0);
+  gedebogGrup.userData.explodeVec = new THREE.Vector3(0, -0.42, 0);
   const batangGedebog = new THREE.Mesh(
     new THREE.CylinderGeometry(0.32, 0.36, 0.24, 24),
     new THREE.MeshStandardMaterial({ color: 0x5d6e3a, roughness: 0.78 }),
@@ -1501,58 +1938,90 @@ export function buildWayangSriRamaDanBlencong3D(): PaketModel3D {
   );
   ringGedebog.rotation.x = Math.PI / 2;
   ringGedebog.position.y = 0.08;
-  gedebogGrup.add(batangGedebog, ringGedebog);
+  const lubangTancap = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.036, 0.036, 0.04, 12),
+    new THREE.MeshStandardMaterial({ color: 0x1d2612, roughness: 0.94 }),
+  );
+  lubangTancap.position.y = 0.115;
+  gedebogGrup.add(batangGedebog, ringGedebog, lubangTancap);
 
   const blencongData = buildBlencongWayang3D();
-  blencongData.group.position.set(-1.18, 0.94, 0.28);
+  blencongData.group.position.set(-1.18, 0.86, 0.28);
   blencongData.group.rotation.y = 0.42;
-  blencongData.group.userData.explodeVec = new THREE.Vector3(-0.72, 0.52, 0.35);
+  blencongData.group.userData.explodeVec = new THREE.Vector3(-0.48, 0.18, 0.22);
+  tanamPinAnchor(blencongData.group, 'wayang-blencong', 0.04, 0.08, 0.18, pinAnchors);
 
   group.add(rama.root, gedebogGrup, blencongData.group);
   return {
     group,
     blencongFlame: blencongData.flame,
     blencongLight: blencongData.light,
+    pinAnchors,
   };
 }
 
-/** 6. Kidang Kencana & Pelita Blencong (Lengkap dengan explodeVec CAD untuk Bedah 3D & Coverflow). */
+/** 6. Kidang Kencana (9 sub-anatomi terpisah) & Pelita Blencong 5-bagian (Bedah 3D & Coverflow). */
 export function buildKidangDanBlencong3D(): PaketModel3D {
   const group = new THREE.Group();
+  const pinAnchors: Record<string, THREE.Object3D> = {};
   const kidang = buildKidangKencana3D();
   kidang.root.scale.setScalar(1.36);
   kidang.root.position.set(0.18, -0.26, 0);
 
-  // Sematkan vector ledak anatomi di tiap bagian sendi Kidang Kencana agar Bedah 3D memisahkan bagian secara nyata
-  kidang.leherKepala.userData.explodeVec = new THREE.Vector3(0.28, 0.48, 0.22);
-  kidang.kakiDepan.userData.explodeVec = new THREE.Vector3(0.26, -0.32, 0.24);
-  kidang.kakiBelakang.userData.explodeVec = new THREE.Vector3(-0.28, -0.32, -0.18);
+  // Sematkan vector ledak anatomi lengkap di setiap sub-rakitan Kidang Kencana
+  kidang.badanUtama.userData.explodeVec = new THREE.Vector3(0.08, 0.02, 0);
+  kidang.ceplokPelana.userData.explodeVec = new THREE.Vector3(0.08, 0.44, 0.28);
+  kidang.ekorGrup.userData.explodeVec = new THREE.Vector3(0.4, 0.22, 0.08);
+  kidang.leherKepala.userData.explodeVec = new THREE.Vector3(-0.24, 0.3, 0.14);
+  kidang.tandukMahkota.userData.explodeVec = new THREE.Vector3(-0.04, 0.28, 0.1);
+  kidang.kalungGentaGrup.userData.explodeVec = new THREE.Vector3(-0.18, -0.14, 0.22);
+  kidang.kakiDepan.userData.explodeVec = new THREE.Vector3(-0.24, -0.32, 0.22);
+  kidang.kakiBelakang.userData.explodeVec = new THREE.Vector3(0.36, -0.32, -0.18);
+  kidang.gapitUtama.userData.explodeVec = new THREE.Vector3(0.06, -0.3, -0.34);
+
+  tanamPinAnchor(kidang.tandukMahkota, 'kidang-tanduk', 0.02, 0.72, 0.06, pinAnchors);
+  tanamPinAnchor(kidang.ceplokPelana, 'kidang-badan', 0.02, 0.22, 0.08, pinAnchors);
+  tanamPinAnchor(kidang.kakiDepan, 'kidang-kaki', -0.04, -0.26, 0.08, pinAnchors);
 
   const gedebogGrup = new THREE.Group();
   gedebogGrup.position.set(0.18, -1.68, 0);
-  gedebogGrup.userData.explodeVec = new THREE.Vector3(0, -0.68, 0);
+  gedebogGrup.userData.explodeVec = new THREE.Vector3(0, -0.38, 0);
   const batangGedebog = new THREE.Mesh(
     new THREE.CylinderGeometry(0.32, 0.36, 0.22, 24),
     new THREE.MeshStandardMaterial({ color: 0x5d6e3a, roughness: 0.78 }),
   );
-  gedebogGrup.add(batangGedebog);
+  const ringGedebog = new THREE.Mesh(
+    new THREE.TorusGeometry(0.34, 0.02, 8, 22),
+    new THREE.MeshStandardMaterial({ color: 0xd9a84e, metalness: 0.85, roughness: 0.24 }),
+  );
+  ringGedebog.rotation.x = Math.PI / 2;
+  ringGedebog.position.y = 0.07;
+  const lubangGedebog = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.032, 0.032, 0.04, 12),
+    new THREE.MeshStandardMaterial({ color: 0x1d2612, roughness: 0.94 }),
+  );
+  lubangGedebog.position.y = 0.105;
+  gedebogGrup.add(batangGedebog, ringGedebog, lubangGedebog);
 
   const blencongData = buildBlencongWayang3D();
-  blencongData.group.position.set(-0.92, 0.96, 0.24);
+  blencongData.group.position.set(-1.12, 0.86, 0.24);
   blencongData.group.rotation.y = 0.35;
-  blencongData.group.userData.explodeVec = new THREE.Vector3(-0.56, 0.24, 0.28);
+  blencongData.group.userData.explodeVec = new THREE.Vector3(-0.56, 0.14, 0.18);
+  tanamPinAnchor(blencongData.group, 'kidang-blencong', 0.04, 0.08, 0.18, pinAnchors);
 
   group.add(kidang.root, gedebogGrup, blencongData.group);
   return {
     group,
     blencongFlame: blencongData.flame,
     blencongLight: blencongData.light,
+    pinAnchors,
   };
 }
 
-/** 7. Prasasti Tembaga & Astrolabe Hanacaraka Unicode U+A980-U+A9DF (Lengkap dengan explodeVec CAD). */
+/** 7. Prasasti Tembaga & Astrolabe Hanacaraka Unicode U+A980-U+A9DF (14 komponen bedah CAD terpisah). */
 export function buildPrasastiHanacaraka3D(): PaketModel3D {
   const group = new THREE.Group();
+  const pinAnchors: Record<string, THREE.Object3D> = {};
   const prasasti = buatTeksturPrasastiHanacaraka();
   const tex = loadBudayaTextures();
 
@@ -1562,6 +2031,11 @@ export function buildPrasastiHanacaraka3D(): PaketModel3D {
     bumpScale: 0.036,
     metalness: 0.74,
     roughness: 0.3,
+  });
+  const tembagaIntiMat = new THREE.MeshStandardMaterial({
+    color: 0xa45724,
+    metalness: 0.86,
+    roughness: 0.28,
   });
   const bingkaiJatiMat = new THREE.MeshStandardMaterial({
     map: tex.kayuDiffuse,
@@ -1575,49 +2049,113 @@ export function buildPrasastiHanacaraka3D(): PaketModel3D {
     metalness: 0.9,
     roughness: 0.2,
   });
+  const batuMat = new THREE.MeshStandardMaterial({ color: 0x3b3834, roughness: 0.78 });
+  const celahMat = new THREE.MeshStandardMaterial({ color: 0x161412, roughness: 0.92 });
 
-  // Bingkai Kayu Jati Ukir + 4 Ornamen Paku Sudut Kuningan
-  const bingkaiGrup = new THREE.Group();
-  bingkaiGrup.userData.explodeVec = new THREE.Vector3(0, 0.04, -0.48);
-  const bingkaiKayu = new THREE.Mesh(new THREE.BoxGeometry(1.76, 2.3, 0.14), bingkaiJatiMat);
-  bingkaiKayu.castShadow = true;
-  bingkaiGrup.add(bingkaiKayu);
+  // 1. Lempeng Depan Perunggu Bertatah 20 Aksara Nglegena (Meluncur maju ke depan)
+  const lempengDepan = new THREE.Mesh(new THREE.BoxGeometry(1.52, 2.04, 0.075), perungguMat);
+  lempengDepan.position.set(0, 0, 0.044);
+  lempengDepan.castShadow = true;
+  lempengDepan.userData.explodeVec = new THREE.Vector3(0, 0.08, 0.64);
+  tanamPinAnchor(lempengDepan, 'hanacaraka-lempeng', 0, 0.04, 0.08, pinAnchors);
+  group.add(lempengDepan);
+
+  // 2. Pelat Inti Struktural Tembaga & Rusuk Penopang Internal (Tersingkap di tengah saat diledakkan)
+  const intiTembagaGrup = new THREE.Group();
+  intiTembagaGrup.position.set(0, 0, -0.025);
+  intiTembagaGrup.userData.explodeVec = new THREE.Vector3(0, 0.04, 0.04);
+  const pelatInti = new THREE.Mesh(new THREE.BoxGeometry(1.48, 2.0, 0.055), tembagaIntiMat);
+  intiTembagaGrup.add(pelatInti);
+  for (const ry of [-0.62, 0, 0.62]) {
+    const rusuk = new THREE.Mesh(new THREE.BoxGeometry(1.42, 0.036, 0.072), kuninganMat);
+    rusuk.position.y = ry;
+    intiTembagaGrup.add(rusuk);
+  }
+  group.add(intiTembagaGrup);
+
+  // 3. Empat Bilah Bingkai Kayu Jati Terpisah (Atas, Bawah, Kiri, Kanan)
+  const relAtas = new THREE.Group();
+  relAtas.position.set(0, 1.08, -0.01);
+  relAtas.userData.explodeVec = new THREE.Vector3(0, 0.48, -0.34);
+  const balokAtas = new THREE.Mesh(new THREE.BoxGeometry(1.78, 0.14, 0.15), bingkaiJatiMat);
+  const lisAtas = new THREE.Mesh(new THREE.BoxGeometry(1.56, 0.028, 0.165), kuninganMat);
+  lisAtas.position.y = -0.065;
+  relAtas.add(balokAtas, lisAtas);
+
+  const relBawah = new THREE.Group();
+  relBawah.position.set(0, -1.08, -0.01);
+  relBawah.userData.explodeVec = new THREE.Vector3(0, -0.36, -0.34);
+  const balokBawah = new THREE.Mesh(new THREE.BoxGeometry(1.78, 0.14, 0.15), bingkaiJatiMat);
+  const lidahBawah = new THREE.Mesh(new THREE.BoxGeometry(1.24, 0.08, 0.08), bingkaiJatiMat);
+  lidahBawah.position.y = -0.1;
+  relBawah.add(balokBawah, lidahBawah);
+
+  const relKiri = new THREE.Group();
+  relKiri.position.set(-0.82, 0, -0.01);
+  relKiri.userData.explodeVec = new THREE.Vector3(-0.48, 0.04, -0.34);
+  const balokKiri = new THREE.Mesh(new THREE.BoxGeometry(0.14, 2.02, 0.15), bingkaiJatiMat);
+  const lisKiri = new THREE.Mesh(new THREE.BoxGeometry(0.026, 2.0, 0.165), kuninganMat);
+  lisKiri.position.x = 0.065;
+  relKiri.add(balokKiri, lisKiri);
+  tanamPinAnchor(relKiri, 'hanacaraka-bingkai', -0.02, 0.64, 0.11, pinAnchors);
+
+  const relKanan = new THREE.Group();
+  relKanan.position.set(0.82, 0, -0.01);
+  relKanan.userData.explodeVec = new THREE.Vector3(0.48, 0.04, -0.34);
+  const balokKanan = new THREE.Mesh(new THREE.BoxGeometry(0.14, 2.02, 0.15), bingkaiJatiMat);
+  const lisKanan = new THREE.Mesh(new THREE.BoxGeometry(0.026, 2.0, 0.165), kuninganMat);
+  lisKanan.position.x = -0.065;
+  relKanan.add(balokKanan, lisKanan);
+
+  group.add(relAtas, relBawah, relKiri, relKanan);
+
+  // 4. Empat Paku Pengunci Sudut Oktahedron Kuningan (Mekar diagonal keluar saat diledakkan)
   for (const [bx, by] of [
     [-0.78, 1.04],
     [0.78, 1.04],
     [-0.78, -1.04],
     [0.78, -1.04],
   ]) {
-    const pakuSudut = new THREE.Mesh(new THREE.OctahedronGeometry(0.042, 0), kuninganMat);
-    pakuSudut.position.set(bx, by, 0.08);
-    bingkaiGrup.add(pakuSudut);
+    const pakuGrup = new THREE.Group();
+    pakuGrup.position.set(bx, by, 0.075);
+    pakuGrup.userData.explodeVec = new THREE.Vector3(Math.sign(bx) * 0.44, Math.sign(by) * 0.34, 0.32);
+    const kepalaPaku = new THREE.Mesh(new THREE.OctahedronGeometry(0.044, 0), kuninganMat);
+    const pasakPaku = new THREE.Mesh(new THREE.CylinderGeometry(0.014, 0.014, 0.12, 8), kuninganMat);
+    pasakPaku.rotation.x = Math.PI / 2;
+    pasakPaku.position.z = -0.06;
+    pakuGrup.add(kepalaPaku, pasakPaku);
+    group.add(pakuGrup);
   }
-  group.add(bingkaiGrup);
 
-  // Lempeng depan & belakang prasasti bertatah 20 aksara Jawa Nglegena
-  const lempeng = new THREE.Mesh(new THREE.BoxGeometry(1.52, 2.04, 0.16), perungguMat);
-  lempeng.userData.explodeVec = new THREE.Vector3(0, 0.12, 0.46);
-  group.add(lempeng);
-
-  // Pondasi andesit berundak penopang prasasti
-  const kakiGrup = new THREE.Group();
-  kakiGrup.position.set(0, -1.24, 0);
-  kakiGrup.userData.explodeVec = new THREE.Vector3(0, -0.62, 0);
-  const batuMat = new THREE.MeshStandardMaterial({ color: 0x3b3834, roughness: 0.78 });
-  const kakiBawah = new THREE.Mesh(new THREE.BoxGeometry(2.04, 0.14, 0.72), batuMat);
-  kakiBawah.position.y = -0.05;
+  // 5. Pondasi Andesit 2 Tingkat Terpisah + Takik Alur Pemasangan Prasasti
+  const kakiAtasGrup = new THREE.Group();
+  kakiAtasGrup.position.set(0, -1.16, 0);
+  kakiAtasGrup.userData.explodeVec = new THREE.Vector3(0, -0.5, 0);
   const kakiAtas = new THREE.Mesh(new THREE.BoxGeometry(1.88, 0.12, 0.54), batuMat);
-  kakiAtas.position.y = 0.08;
-  kakiGrup.add(kakiBawah, kakiAtas);
-  group.add(kakiGrup);
+  const celahPrasasti = new THREE.Mesh(new THREE.BoxGeometry(1.36, 0.04, 0.12), celahMat);
+  celahPrasasti.position.y = 0.05;
+  kakiAtasGrup.add(kakiAtas, celahPrasasti);
+  tanamPinAnchor(kakiAtasGrup, 'hanacaraka-alas', 0, 0.04, 0.28, pinAnchors);
 
-  // Mahkota Cincin Astrolabe Kuningan di puncak prasasti
+  const kakiBawahGrup = new THREE.Group();
+  kakiBawahGrup.position.set(0, -1.29, 0);
+  kakiBawahGrup.userData.explodeVec = new THREE.Vector3(0, -0.84, 0);
+  const kakiBawah = new THREE.Mesh(new THREE.BoxGeometry(2.08, 0.14, 0.74), batuMat);
+  kakiBawahGrup.add(kakiBawah);
+  group.add(kakiAtasGrup, kakiBawahGrup);
+
+  // 6. Mahkota Astrolabe Dual-Gimbal 3-Bagian Terpisah di puncak prasasti
   const mahkotaOrb = new THREE.Group();
-  mahkotaOrb.position.set(0, 1.38, 0);
-  mahkotaOrb.userData.explodeVec = new THREE.Vector3(0, 0.72, 0);
+  mahkotaOrb.position.set(0, 1.42, 0);
+  mahkotaOrb.userData.explodeVec = new THREE.Vector3(0, 0.46, 0);
+
+  const tangkaiMahkota = new THREE.Mesh(new THREE.CylinderGeometry(0.022, 0.032, 0.18, 10), kuninganMat);
+  tangkaiMahkota.position.y = -0.26;
   const ringLuar = new THREE.Mesh(new THREE.TorusGeometry(0.28, 0.022, 12, 36), kuninganMat);
+  ringLuar.userData.explodeVec = new THREE.Vector3(0, 0, -0.16);
   const ringDalam = new THREE.Mesh(new THREE.TorusGeometry(0.2, 0.016, 12, 30), kuninganMat);
   ringDalam.rotation.x = Math.PI / 3;
+  ringDalam.userData.explodeVec = new THREE.Vector3(0, 0.12, 0.14);
   const intiPermata = new THREE.Mesh(
     new THREE.OctahedronGeometry(0.09, 0),
     new THREE.MeshStandardMaterial({
@@ -1628,8 +2166,10 @@ export function buildPrasastiHanacaraka3D(): PaketModel3D {
       roughness: 0.15,
     }),
   );
-  mahkotaOrb.add(ringLuar, ringDalam, intiPermata);
+  intiPermata.userData.explodeVec = new THREE.Vector3(0, 0.22, 0.26);
+  mahkotaOrb.add(tangkaiMahkota, ringLuar, ringDalam, intiPermata);
+  tanamPinAnchor(mahkotaOrb, 'hanacaraka-mahkota', 0, 0.14, 0.14, pinAnchors);
   group.add(mahkotaOrb);
 
-  return { group, orbitAccent: mahkotaOrb };
+  return { group, orbitAccent: mahkotaOrb, pinAnchors };
 }

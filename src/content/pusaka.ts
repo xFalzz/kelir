@@ -2550,8 +2550,8 @@ export const DAFTAR_BEDAH_TWIN: SpesimenBedahTwin[] = [
       {
         id: 'kidang-tanduk',
         judul: { id: 'Tanduk Bercabang Emas & Profil Kepala Kijang', en: 'Gilded Branched Antlers & Articulated Head', jw: 'Sungon Emas saha Sirah Kidang' },
-        posisi: [0.58, 0.56, 0.04],
-        explodeVec: [0.28, 0.48, 0.22],
+        posisi: [-0.36, 0.56, 0.06],
+        explodeVec: [-0.42, 0.66, 0.24],
         material: { id: 'Wacucal Kerbau Pahatan Tatah + Lapis Prada Emas', en: 'Chiseled Buffalo Hide + Prada Gold Foil', jw: 'Wacucal Kebo Pahatan Tatah + Prada Emas' },
         fungsiTeknis: {
           id: 'Sendi leher berengsel agar dalang dapat menolehkan kepala kijang lincah ke belakang',

@@ -29,17 +29,19 @@ import {
 
 export type ModeVisualTwin = 'pbr' | 'hibrida' | 'kawat';
 
+const EXPLODE_SCALE = 0.85;
+
 const PRESET_KAMERA_PUSAKA: Record<
   SpesimenBedahId,
   { pos: [number, number, number]; target: [number, number, number] }
 > = {
-  keris: { pos: [0.45, 0.28, 7.6], target: [0.06, 0.16, 0] },
-  saron: { pos: [0.78, 1.48, 5.95], target: [0.04, 0.1, 0] },
-  batik: { pos: [0.34, 0.88, 5.8], target: [0.06, 0.08, 0] },
-  joglo: { pos: [4.25, 2.62, 6.05], target: [0, 0.44, 0] },
-  wayang: { pos: [0.2, 0.65, 7.45], target: [-0.18, 0.22, 0] },
-  kidang: { pos: [0.22, 0.72, 7.35], target: [-0.08, 0.16, 0] },
-  hanacaraka: { pos: [0.22, 0.58, 7.15], target: [0, 0.18, 0] },
+  keris: { pos: [0.68, 0.26, 8.65], target: [0.16, 0.22, 0] },
+  saron: { pos: [0.85, 1.65, 6.65], target: [0.02, 0.1, 0] },
+  batik: { pos: [0.38, 0.96, 6.45], target: [0.08, 0.08, 0] },
+  joglo: { pos: [5.35, 3.45, 7.85], target: [0, 0.62, 0] },
+  wayang: { pos: [0.22, 0.52, 8.65], target: [-0.14, 0.14, 0] },
+  kidang: { pos: [0.24, 0.56, 8.45], target: [-0.08, 0.14, 0] },
+  hanacaraka: { pos: [1.55, 0.68, 8.05], target: [0, 0.18, 0] },
 };
 
 export interface ProyeksiPinTwin {
@@ -159,7 +161,19 @@ export class DigitalTwinStage {
   private prevScrollProgress = 0;
   private zoomRatio = 1;
   private lastExplodeApplied = -1;
-  private explodeTargets: Array<{ obj: THREE.Object3D; base: THREE.Vector3; vec: THREE.Vector3 }> = [];
+  private explodeTargets: Array<{
+    obj: THREE.Object3D;
+    base: THREE.Vector3;
+    vec: THREE.Vector3;
+    anchorLocal: THREE.Vector3;
+  }> = [];
+  private pinAnchors: Record<string, THREE.Object3D> = {};
+  private explodeGuideLines: THREE.LineSegments | null = null;
+  private explodeGuideMat: THREE.LineBasicMaterial | null = null;
+  private isDarkTema = false;
+  private readonly guideScratchA = new THREE.Vector3();
+  private readonly guideScratchB = new THREE.Vector3();
+  private readonly guideScratchC = new THREE.Vector3();
   private prevPins: ProyeksiPinTwin[] = [];
   private readonly pinWorldScratch = new THREE.Vector3();
   private onPinCb: ((pins: ProyeksiPinTwin[]) => void) | null = null;
@@ -185,7 +199,7 @@ export class DigitalTwinStage {
     this.controls.enableDamping = true;
     this.controls.dampingFactor = 0.06;
     this.controls.minDistance = 2.2;
-    this.controls.maxDistance = 9.5;
+    this.controls.maxDistance = 12.5;
 
     this.ambientLight = new THREE.AmbientLight(0xdbe2ee, 0.88);
     this.scene.add(this.ambientLight);
@@ -238,9 +252,17 @@ export class DigitalTwinStage {
       this.scene.remove(this.artifactGroup);
       disposeSceneObject(this.artifactGroup);
     }
+    if (this.explodeGuideLines) {
+      this.scene.remove(this.explodeGuideLines);
+      this.explodeGuideLines.geometry.dispose();
+      this.explodeGuideMat?.dispose();
+      this.explodeGuideLines = null;
+      this.explodeGuideMat = null;
+    }
 
     this.solidMaterials = [];
     this.explodeTargets = [];
+    this.pinAnchors = {};
     this.prevPins = [];
     this.lastExplodeApplied = -1;
     this.blencongFlame = null;
@@ -285,6 +307,7 @@ export class DigitalTwinStage {
     this.orbitAccent = paket.orbitAccent ?? null;
     this.saronWilahs = paket.saronWilahs ?? [];
     this.saronGandhen = paket.saronGandhen ?? null;
+    this.pinAnchors = paket.pinAnchors ?? {};
 
     if (id === 'saron') {
       const ringGeo = new THREE.TorusGeometry(0.18, 0.015, 10, 32);
@@ -302,14 +325,26 @@ export class DigitalTwinStage {
       this.artifactGroup.add(this.saronStrikeRing);
     }
 
+    this.artifactGroup.updateMatrixWorld(true);
+    const boxScratch = new THREE.Box3();
+    const centerScratch = new THREE.Vector3();
+
     this.artifactGroup.traverse((child) => {
       if (child.userData.explodeVec) {
         const base = (child.userData.basePos as THREE.Vector3 | undefined) ?? child.position.clone();
         child.userData.basePos = base;
+        boxScratch.setFromObject(child);
+        const anchorLocal = new THREE.Vector3();
+        if (!boxScratch.isEmpty()) {
+          boxScratch.getCenter(centerScratch);
+          child.worldToLocal(centerScratch);
+          anchorLocal.copy(centerScratch);
+        }
         this.explodeTargets.push({
           obj: child,
           base,
           vec: child.userData.explodeVec as THREE.Vector3,
+          anchorLocal,
         });
       }
       const mesh = child as THREE.Mesh;
@@ -320,6 +355,25 @@ export class DigitalTwinStage {
       }
     });
 
+    if (this.explodeTargets.length > 0) {
+      const guideGeo = new THREE.BufferGeometry();
+      guideGeo.setAttribute(
+        'position',
+        new THREE.Float32BufferAttribute(new Float32Array(this.explodeTargets.length * 6), 3),
+      );
+      this.explodeGuideMat = new THREE.LineBasicMaterial({
+        color: this.isDarkTema ? 0xe6b655 : 0xc24117,
+        transparent: true,
+        opacity: 0,
+        depthWrite: false,
+      });
+      this.explodeGuideLines = new THREE.LineSegments(guideGeo, this.explodeGuideMat);
+      this.explodeGuideLines.frustumCulled = false;
+      this.explodeGuideLines.visible = false;
+      this.explodeGuideLines.userData.skipCad = true;
+      this.scene.add(this.explodeGuideLines);
+    }
+
     this.cadLineMat = attachCadWireframeLayer(this.artifactGroup, 0xff5a1f, 0.34);
     this.scene.add(this.artifactGroup);
     this.terapkanModeVisual(this.modeVisual);
@@ -329,6 +383,7 @@ export class DigitalTwinStage {
   public resetKamera(id: SpesimenBedahId = this.bendaIdAktif): void {
     const preset = PRESET_KAMERA_PUSAKA[id] ?? PRESET_KAMERA_PUSAKA.keris;
     this.zoomRatio = 1;
+    this.artifactGroup?.rotation.set(0, 0, 0);
     this.camera.position.set(...preset.pos);
     this.camera.fov = hitungFovResponsif(37, this.camera.aspect, 1.22, 60);
     this.camera.updateProjectionMatrix();
@@ -391,15 +446,21 @@ export class DigitalTwinStage {
   }
 
   public fokusKeTitik(titik: TitikInfoPusaka): void {
-    const exp = this.curExplode * 0.58;
-    const ex = titik.explodeVec ? titik.explodeVec[0] * exp : 0;
-    const ey = titik.explodeVec ? titik.explodeVec[1] * exp : 0;
-    const ez = titik.explodeVec ? titik.explodeVec[2] * exp : 0;
-    this.targetCamFocus.set(
-      titik.posisi[0] + ex,
-      titik.posisi[1] + ey,
-      titik.posisi[2] + ez,
-    );
+    const anchor = this.pinAnchors[titik.id];
+    if (anchor && this.artifactGroup) {
+      this.artifactGroup.updateMatrixWorld(true);
+      anchor.getWorldPosition(this.targetCamFocus);
+    } else {
+      const exp = this.curExplode * EXPLODE_SCALE;
+      const ex = titik.explodeVec ? titik.explodeVec[0] * exp : 0;
+      const ey = titik.explodeVec ? titik.explodeVec[1] * exp : 0;
+      const ez = titik.explodeVec ? titik.explodeVec[2] * exp : 0;
+      this.targetCamFocus.set(
+        titik.posisi[0] + ex,
+        titik.posisi[1] + ey,
+        titik.posisi[2] + ez,
+      );
+    }
     this.spesialPulse = 1;
   }
 
@@ -508,6 +569,10 @@ export class DigitalTwinStage {
   public setTheme(tema: 'malam' | 'terang'): void {
     if (!this.renderer) return;
     const isDark = tema === 'malam';
+    this.isDarkTema = isDark;
+    if (this.explodeGuideMat) {
+      this.explodeGuideMat.color.setHex(isDark ? 0xe6b655 : 0xc24117);
+    }
 
     if (isDark) {
       if (this.ambientLight) {
@@ -601,20 +666,66 @@ export class DigitalTwinStage {
     this.renderer.setSize(w, h, false);
   }
 
+  private perbaruiGarisLedak(): void {
+    if (!this.explodeGuideLines || !this.explodeGuideMat || !this.artifactGroup) return;
+    if (this.curExplode <= 0.015) {
+      this.explodeGuideLines.visible = false;
+      return;
+    }
+
+    this.artifactGroup.updateMatrixWorld(true);
+    const posAttr = this.explodeGuideLines.geometry.attributes.position as THREE.BufferAttribute;
+    const arr = posAttr.array as Float32Array;
+    const curCenter = this.guideScratchA;
+    const basePosWorld = this.guideScratchB;
+    const curPosWorld = this.guideScratchC;
+
+    for (let i = 0; i < this.explodeTargets.length; i++) {
+      const item = this.explodeTargets[i];
+      const parent = item.obj.parent;
+      const offset = i * 6;
+      if (!parent) {
+        arr[offset] = arr[offset + 1] = arr[offset + 2] = 0;
+        arr[offset + 3] = arr[offset + 4] = arr[offset + 5] = 0;
+        continue;
+      }
+
+      curCenter.copy(item.anchorLocal).applyMatrix4(item.obj.matrixWorld);
+      basePosWorld.copy(item.base).applyMatrix4(parent.matrixWorld);
+      curPosWorld.copy(item.obj.position).applyMatrix4(parent.matrixWorld);
+
+      arr[offset] = curCenter.x - (curPosWorld.x - basePosWorld.x);
+      arr[offset + 1] = curCenter.y - (curPosWorld.y - basePosWorld.y);
+      arr[offset + 2] = curCenter.z - (curPosWorld.z - basePosWorld.z);
+      arr[offset + 3] = curCenter.x;
+      arr[offset + 4] = curCenter.y;
+      arr[offset + 5] = curCenter.z;
+    }
+
+    posAttr.needsUpdate = true;
+    this.explodeGuideMat.opacity = Math.min(0.42, this.curExplode * 0.42);
+    this.explodeGuideLines.visible = true;
+  }
+
   private proyeksikanTitik(): void {
     if (!this.onPinCb || !this.artifactGroup || !this.renderer) return;
     const w = this.container.clientWidth || 640;
     const h = this.container.clientHeight || 480;
     const worldV = this.pinWorldScratch;
     const list: ProyeksiPinTwin[] = [];
-    const skalaLedak = this.curExplode * 0.58;
+    const skalaLedak = this.curExplode * EXPLODE_SCALE;
 
     for (const t of this.titikAktif) {
-      const ex = t.explodeVec ? t.explodeVec[0] * skalaLedak : 0;
-      const ey = t.explodeVec ? t.explodeVec[1] * skalaLedak : 0;
-      const ez = t.explodeVec ? t.explodeVec[2] * skalaLedak : 0;
-      worldV.set(t.posisi[0] + ex, t.posisi[1] + ey, t.posisi[2] + ez);
-      this.artifactGroup.localToWorld(worldV);
+      const anchor = this.pinAnchors[t.id];
+      if (anchor) {
+        anchor.getWorldPosition(worldV);
+      } else {
+        const ex = t.explodeVec ? t.explodeVec[0] * skalaLedak : 0;
+        const ey = t.explodeVec ? t.explodeVec[1] * skalaLedak : 0;
+        const ez = t.explodeVec ? t.explodeVec[2] * skalaLedak : 0;
+        worldV.set(t.posisi[0] + ex, t.posisi[1] + ey, t.posisi[2] + ez);
+        this.artifactGroup.localToWorld(worldV);
+      }
       worldV.project(this.camera);
       const x = (worldV.x * 0.5 + 0.5) * w;
       const y = (-worldV.y * 0.5 + 0.5) * h;
@@ -668,7 +779,7 @@ export class DigitalTwinStage {
 
       if (Math.abs(this.curExplode - this.lastExplodeApplied) > 0.0004) {
         this.lastExplodeApplied = this.curExplode;
-        const skalaLedak = this.curExplode * 0.58;
+        const skalaLedak = this.curExplode * EXPLODE_SCALE;
         for (const item of this.explodeTargets) {
           item.obj.position.set(
             item.base.x + item.vec.x * skalaLedak,
@@ -679,16 +790,19 @@ export class DigitalTwinStage {
       }
 
       if (this.bendaIdAktif === 'saron') {
-        const skalaLedak = this.curExplode * 0.58;
+        const skalaLedak = this.curExplode * EXPLODE_SCALE;
         for (let i = 0; i < this.saronWilahs.length; i++) {
           const w = this.saronWilahs[i];
           const vib = this.wilahVib[i];
           const isHover = this.gesturSaronAktif && this.hoveredWilahIdx === i;
+          const baseX = (w.userData.baseX as number | undefined) ?? SARON_WILAH_X[i];
           const baseY = (w.userData.baseY as number | undefined) ?? 0.15;
           const expVec = w.userData.explodeVec as THREE.Vector3 | undefined;
+          const expX = expVec ? expVec.x * skalaLedak : 0;
           const expY = expVec ? expVec.y * skalaLedak : 0;
           const dipOffset = -0.026 * vib + Math.sin(t * 62 + i) * 0.006 * vib;
           const hoverLift = isHover ? 0.012 : 0;
+          w.position.x = baseX + expX;
           w.position.y = baseY + expY + dipOffset + hoverLift;
 
           const mat = w.userData.wilahMat as THREE.MeshStandardMaterial | undefined;
@@ -739,16 +853,17 @@ export class DigitalTwinStage {
           if (this.saronRingPulse > 0.02) {
             const prog = 1 - this.saronRingPulse;
             this.saronStrikeRing.visible = true;
-            this.saronStrikeRing.position.set(this.saronRingX, 0.215 + skalaLedak * 0.65, 0);
+            this.saronStrikeRing.position.set(this.saronRingX, 0.215 + skalaLedak * 0.72, 0);
             const sc = 0.72 + prog * 0.95;
             this.saronStrikeRing.scale.setScalar(sc);
             ringMat.opacity = this.saronRingPulse * 0.85;
             this.saronRingPulse *= Math.exp(-5.4 * dt);
           } else if (this.gesturSaronAktif && this.hoveredWilahIdx !== null) {
             this.saronStrikeRing.visible = true;
+            const hoverW = this.saronWilahs[this.hoveredWilahIdx];
             this.saronStrikeRing.position.set(
-              SARON_WILAH_X[this.hoveredWilahIdx],
-              0.21 + skalaLedak * 0.65,
+              hoverW ? hoverW.position.x : SARON_WILAH_X[this.hoveredWilahIdx],
+              hoverW ? hoverW.position.y + 0.06 : 0.21 + skalaLedak * 0.72,
               0,
             );
             this.saronStrikeRing.scale.setScalar(0.92 + Math.sin(t * 7) * 0.05);
@@ -784,6 +899,7 @@ export class DigitalTwinStage {
         this.blencongLight.intensity = 1.9 + flicker * 0.35;
       }
     }
+    this.perbaruiGarisLedak();
     this.renderer.render(this.scene, this.camera);
     this.proyeksikanTitik();
   };
